@@ -1,0 +1,30 @@
+<p-sidebar
+  [(visible)]="visible"
+  [modal]="true"
+  [baseZIndex]="1100"
+  position="left"
+  class="md:w-72"
+  (visibleChange)="visibleChange.emit($event)"
+>
+  <ng-template pTemplate="header">
+    <div class="flex items-center gap-2">
+      <span class="rounded-full bg-primary-500 p-2 text-surface-0">
+        <i class="pi pi-bolt text-base"></i>
+      </span>
+      <span class="text-lg font-semibold">Sportify Admin</span>
+    </div>
+  </ng-template>
+
+  <ul class="mt-6 space-y-2">
+    <li *ngFor="let item of menuItems">
+      <a
+        [routerLink]="item.routerLink"
+        routerLinkActive="bg-primary-100 text-primary-700"
+        class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-surface-700 transition-colors hover:bg-primary-50 hover:text-primary-700 dark:text-surface-200 dark:hover:bg-surface-700"
+      >
+        <i [ngClass]="item.icon" class="text-base"></i>
+        <span>{{ item.label }}</span>
+      </a>
+    </li>
+  </ul>
+</p-sidebar>

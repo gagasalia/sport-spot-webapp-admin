@@ -1,0 +1,12 @@
+:host ::ng-deep .p-sidebar {
+  background-color: var(--surface-card);
+  color: var(--surface-900);
+}
+
+:host ::ng-deep .p-sidebar .p-sidebar-header {
+  padding: 1.5rem 1.5rem 0;
+}
+
+:host ::ng-deep .p-sidebar .p-sidebar-content {
+  padding: 0 1.5rem 1.5rem;
+}
