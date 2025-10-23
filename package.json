@@ -7,7 +7,9 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:sportify-admin": "node dist/sportify-admin/server/server.mjs"
+    "serve:ssr:sportify-admin": "node dist/sportify-admin/server/server.mjs",
+    "build:css": "tailwindcss -i ./src/input.css -o ./src/output.css",
+    "build:css:watch": "tailwindcss -i ./src/input.css -o ./src/output.css --watch"
   },
   "prettier": {
     "printWidth": 100,
@@ -36,8 +38,10 @@
     "@taiga-ui/event-plugins": "^4.0.2",
     "@taiga-ui/icons": "^4.58.0",
     "@taiga-ui/kit": "^4.58.0",
+    "@tailwindcss/cli": "^4.1.15",
     "express": "^5.1.0",
     "rxjs": "~7.8.0",
+    "tailwindcss": "^4.1.15",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"
   },
