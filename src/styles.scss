@@ -1,2 +1,62 @@
 /* You can add global styles to this file, and also import other style files */
 @import 'output.css';
+
+/* MarkGEO Georgian Font Family */
+@font-face {
+  font-family: 'MarkGEO';
+  src: url('/fonts/3A53FB_0_0.eot');
+  src: url('/fonts/3A53FB_0_0.eot?#iefix') format('embedded-opentype'),
+    url('/fonts/3A53FB_0_0.woff2') format('woff2'), url('/fonts/3A53FB_0_0.woff') format('woff'),
+    url('/fonts/3A53FB_0_0.ttf') format('truetype');
+  font-weight: 400; /* Regular */
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MarkGEO';
+  src: url('/fonts/3A53FB_1_0.eot');
+  src: url('/fonts/3A53FB_1_0.eot?#iefix') format('embedded-opentype'),
+    url('/fonts/3A53FB_1_0.woff2') format('woff2'), url('/fonts/3A53FB_1_0.woff') format('woff'),
+    url('/fonts/3A53FB_1_0.ttf') format('truetype');
+  font-weight: 500; /* Medium */
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MarkGEO';
+  src: url('/fonts/3A53FB_2_0.eot');
+  src: url('/fonts/3A53FB_2_0.eot?#iefix') format('embedded-opentype'),
+    url('/fonts/3A53FB_2_0.woff2') format('woff2'), url('/fonts/3A53FB_2_0.woff') format('woff'),
+    url('/fonts/3A53FB_2_0.ttf') format('truetype');
+  font-weight: 600; /* SemiBold */
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Global font settings for Georgian text */
+:root {
+  --font-family-georgian: 'MarkGEO', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    sans-serif;
+}
+
+/* Apply MarkGEO font to Georgian text elements */
+.georgian-text,
+[lang='ka'],
+.tui-aside-item span[tuiFade],
+.nav-georgian {
+  font-family: var(--font-family-georgian);
+}
+
+/* Ensure proper font rendering for Georgian characters */
+body {
+  font-family: var(--font-family-georgian);
+}
+
+/* Specific styling for Georgian text in navigation */
+.tui-aside-item span[tuiFade]:lang(ka),
+.georgian-nav-text {
+  font-family: 'MarkGEO', sans-serif;
+  font-weight: 400;
+}

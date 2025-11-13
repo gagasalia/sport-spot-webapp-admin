@@ -1,0 +1,42 @@
+<svg width="900" height="300" viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Use currentColor so you can change color via CSS; set to white by default -->
+  <g fill="none" stroke="none" color="#FFFFFF">
+
+    <!-- ICON (map pin + tennis ball) -->
+    <g id="icon" transform="translate(40,20)" fill="currentColor">
+      <!-- Map pin -->
+      <path d="
+        M150 20
+        C 92 20 50 65 50 120
+        C 50 185 120 260 145 285
+        C 147 287 151 287 155 285
+        C 180 260 250 185 250 120
+        C 250 65 208 20 150 20
+        Z
+      "></path>
+
+      <!-- Tennis ball outer ring -->
+      <circle cx="150" cy="120" r="55" fill="none" stroke="currentColor" stroke-width="16"></circle>
+
+      <!-- Left seam -->
+      <path d="
+        M 132 65
+        C 110 75 95 95 92 120
+        C 89 145 100 168 120 185
+      " fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round"></path>
+
+      <!-- Right seam -->
+      <path d="
+        M 168 65
+        C 190 75 205 95 208 120
+        C 211 145 200 168 180 185
+      " fill="none" stroke="currentColor" stroke-width="16" stroke-linecap="round"></path>
+    </g>
+
+    <!-- WORDMARK -->
+    <text x="360" y="150" font-family="Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="120" font-weight="700" fill="currentColor" dominant-baseline="middle">
+      SportSpot
+    </text>
+
+  </g>
+</svg>
