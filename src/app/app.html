@@ -1,6 +1,6 @@
 <tui-root [attr.tuiTheme]="darkMode() ? 'dark' : null">
   <!-- Ignore this part, it is only here to position drawer inside the example block -->
-  <div class="custom-portal">
+  <div>
     <ng-container #viewContainer />
   </div>
   <header tuiNavigationHeader>
@@ -57,9 +57,9 @@
         >
           <span lang="ka" class="georgian-text">კონფიგურაცია</span>
           <ng-template>
-            <button iconStart="@tui.map-pin" tuiAsideItem type="button">
-              <span lang="ka" class="georgian-text">ლოკაციები</span>
-            </button>
+            <a iconStart="@tui.map-pin" tuiAsideItem routerLink="/configuration/facilities">
+              <span lang="ka" class="georgian-text">ობიექტები</span>
+            </a>
             <button iconStart="@tui.table-cells-merge" tuiAsideItem type="button">
               <span lang="ka" class="georgian-text">კორტები</span>
             </button>
@@ -90,7 +90,13 @@
       </footer>
     </aside>
     <main tuiNavigationMain>
-      <!-- Main content area - ready for your content -->
+      <tui-loader [showLoader]="loading()">
+        <div class="w-full flex justify-center">
+          <div class="w-full max-w-[1920px] mx-auto">
+            <router-outlet />
+          </div>
+        </div>
+      </tui-loader>
     </main>
   </div>
 </tui-root>
