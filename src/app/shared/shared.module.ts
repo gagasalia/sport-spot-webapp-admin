@@ -12,23 +12,56 @@
  * ```
  */
 
-import { TuiAlertService, TuiButton, TuiIcon, TuiTextfield } from '@taiga-ui/core';
+import {
+  TuiAlertService,
+  TuiButton,
+  TuiDataList,
+  TuiIcon,
+  TuiLabel,
+  TuiOption,
+  TuiTextfield,
+  TuiTextfieldComponent,
+} from '@taiga-ui/core';
 import { TuiHeader } from '@taiga-ui/layout';
-import { TuiAvatar, TuiBadge, TuiBadgeNotification, TuiChevron, TuiFade } from '@taiga-ui/kit';
+import {
+  TuiAvatar,
+  TuiBadge,
+  TuiBadgeNotification,
+  TuiCheckbox,
+  TuiChevron,
+  TuiDataListWrapper,
+  TuiFade,
+  TuiSelect,
+  TuiSelectOption,
+  TuiTextarea,
+  TuiTooltip,
+} from '@taiga-ui/kit';
+import { TuiDialog } from '@taiga-ui/experimental';
 
 export const SHARED_TAIGA_IMPORTS = [
   // Core
   TuiButton,
+  TuiDataList,
   TuiIcon,
-  TuiTextfield,
+  TuiLabel,
+  TuiOption,
+  TuiTextfieldComponent,
+  ...TuiTextfield, // Spread the textfield array
   // Layout
   TuiHeader,
   // Kit
   TuiAvatar,
   TuiBadge,
   TuiBadgeNotification,
+  TuiCheckbox,
   TuiChevron,
+  TuiDataListWrapper,
   TuiFade,
+  TuiSelect,
+  TuiSelectOption,
+  TuiTextarea,
+  TuiTooltip,
+  TuiDialog,
 ] as const;
 
 // Services (inject these in your components)

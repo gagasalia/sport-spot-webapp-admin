@@ -1,0 +1,69 @@
+<form [formGroup]="facilityForm" (ngSubmit)="onSubmit()" class="space-y-4">
+  <!-- Country -->
+  <label tuiLabel>
+    <span class="georgian-text" lang="ka">ქვეყანა</span>
+    <tui-textfield tuiChevron [stringify]="stringifyCountry">
+      <input tuiSelect formControlName="country" />
+      <tui-data-list *tuiTextfieldDropdown>
+        <button *ngFor="let country of countries" new tuiOption [value]="country.id">
+          {{ country.name }}
+        </button>
+      </tui-data-list>
+    </tui-textfield>
+  </label>
+
+  <!-- City -->
+  <label tuiLabel>
+    <span class="georgian-text" lang="ka">ქალაქი</span>
+    <tui-textfield tuiChevron [stringify]="stringifyCity">
+      <input tuiSelect formControlName="city" />
+      <tui-data-list *tuiTextfieldDropdown>
+        <button *ngFor="let city of cities" new tuiOption [value]="city.id">
+          {{ city.name }}
+        </button>
+      </tui-data-list>
+    </tui-textfield>
+  </label>
+
+  <!-- Address Text -->
+  <tui-textfield>
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">მისამართი</span>
+    </label>
+    <input tuiTextfield formControlName="addressText" />
+  </tui-textfield>
+
+  <!-- GPS Coordinates -->
+  <div formGroupName="addressPin" class="grid grid-cols-2 gap-4">
+    <tui-textfield>
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">განედი (Latitude)</span>
+      </label>
+      <input tuiTextfield formControlName="lat" />
+    </tui-textfield>
+    <tui-textfield>
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">გრძედი (Longitude)</span>
+      </label>
+      <input tuiTextfield formControlName="lng" />
+    </tui-textfield>
+  </div>
+
+  <!-- Description -->
+  <tui-textfield>
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">აღწერა</span>
+    </label>
+    <textarea tuiTextarea formControlName="description" placeholder="აღწერა" [rows]="5"></textarea>
+  </tui-textfield>
+
+  <!-- Action Buttons -->
+  <div class="flex justify-end gap-2 mt-6">
+    <button tuiButton appearance="secondary" type="button" (click)="onCancel()">
+      <span class="georgian-text" lang="ka">გაუქმება</span>
+    </button>
+    <button tuiButton appearance="primary" type="submit" [disabled]="facilityForm.invalid">
+      <span class="georgian-text" lang="ka">შენახვა</span>
+    </button>
+  </div>
+</form>

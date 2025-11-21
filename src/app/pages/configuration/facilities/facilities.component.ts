@@ -1,11 +1,18 @@
-import { ChangeDetectionStrategy, Component, OnInit, signal, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  signal,
+  inject,
+  Injector,
+} from '@angular/core';
 import { take } from 'rxjs';
-import { TuiDialogService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { ConfigurationService } from '../../../services/http-services/configuration.service';
 import { Facility } from '../../../shared/models/facility.model';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { FacilityFormComponent } from './facility-form/facility-form.component';
+import { TuiDialogService } from '@taiga-ui/experimental';
 
 @Component({
   selector: 'app-facilities',
@@ -16,6 +23,7 @@ import { FacilityFormComponent } from './facility-form/facility-form.component';
 })
 export class FacilitiesComponent implements OnInit {
   private readonly dialogs = inject(TuiDialogService);
+  private readonly injector = inject(Injector);
   facilities = signal<Facility[]>([]);
 
   constructor(private configurationService: ConfigurationService) {}
@@ -36,7 +44,7 @@ export class FacilitiesComponent implements OnInit {
 
   addFacility(): void {
     this.dialogs
-      .open<void>(new PolymorpheusComponent(FacilityFormComponent), {
+      .open(new PolymorpheusComponent(FacilityFormComponent, this.injector), {
         label: 'ობიექტის დამატება',
         size: 'l',
       })
