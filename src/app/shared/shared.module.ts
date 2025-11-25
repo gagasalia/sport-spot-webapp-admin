@@ -29,10 +29,12 @@ import {
   TuiBadgeNotification,
   TuiCheckbox,
   TuiChevron,
+  TuiChip,
   TuiDataListWrapper,
   TuiFade,
   TuiSelect,
   TuiSelectOption,
+  TuiSwitch,
   TuiTextarea,
   TuiTooltip,
 } from '@taiga-ui/kit';
@@ -59,9 +61,11 @@ export const SHARED_TAIGA_IMPORTS = [
   TuiFade,
   TuiSelect,
   TuiSelectOption,
+  TuiSwitch,
   TuiTextarea,
   TuiTooltip,
   TuiDialog,
+  TuiChip,
 ] as const;
 
 // Services (inject these in your components)

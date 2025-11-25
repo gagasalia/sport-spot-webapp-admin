@@ -1,4 +1,5 @@
-<form [formGroup]="facilityForm" (ngSubmit)="onSubmit()" class="space-y-4">
+<div class="max-h-[80vh] overflow-y-auto p-1">
+  <form [formGroup]="facilityForm" (ngSubmit)="onSubmit()" class="space-y-4">
   <!-- Country -->
   <label tuiLabel>
     <span class="georgian-text" lang="ka">ქვეყანა</span>
@@ -54,8 +55,85 @@
     <label tuiLabel>
       <span class="georgian-text" lang="ka">აღწერა</span>
     </label>
-    <textarea tuiTextarea formControlName="description" placeholder="აღწერა" [rows]="5"></textarea>
+    <textarea tuiTextarea formControlName="description" [rows]="5"></textarea>
   </tui-textfield>
+
+  <!-- Photo Upload -->
+  <div>
+    <label tuiLabel>
+      <span class="georgian-text mb-3" lang="ka">ფოტოები</span>
+    </label>
+    
+    <!-- Drop Zone -->
+    <div 
+      class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition-colors"
+      [class.border-blue-500]="false"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+    >
+      <tui-icon icon="@lucide.upload" class="text-4xl text-gray-400 mb-2"></tui-icon>
+      <p class="text-gray-600 mb-2 georgian-text" lang="ka">გადმოწიეთ ფოტოები აქ ან დააჭირეთ ასარჩევად</p>
+      <input 
+        type="file" 
+        multiple 
+        accept="image/*"
+        (change)="onFileSelected($event)"
+        class="hidden"
+        #fileInput
+      />
+      <button 
+        type="button" 
+        tuiButton 
+        appearance="outline" 
+        (click)="fileInput.click()"
+      >
+        <span class="georgian-text" lang="ka">ფოტოების არჩევა</span>
+      </button>
+    </div>
+
+    <!-- Photo Preview Grid -->
+    @if (photos.length > 0) {
+      <div class="grid grid-cols-3 gap-2 mt-4">
+        @for (photo of photos; track photo; let i = $index) {
+          <div class="relative group">
+            <img 
+              [src]="photo" 
+              [alt]="'ფოტო ' + (i + 1)"
+              class="w-full h-24 object-cover rounded border"
+            />
+            <button 
+              type="button"
+              (click)="removePhoto(i)"
+              class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <tui-icon icon="@lucide.x" class="text-xs"></tui-icon>
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </div>
+
+  <!-- Amenities -->
+  <div>
+    <label tuiLabel>
+      <span class="georgian-text mb-3" lang="ka">მოხერხებულობები</span>
+    </label>
+    <div formArrayName="amenities" class="grid grid-cols-2 gap-2 mt-2">
+      @for (amenity of amenities; track amenity; let i = $index) {
+        <label tuiLabel class="flex items-center gap-2">
+          <input
+            tuiCheckbox
+            type="checkbox"
+            [formControlName]="i"
+          />
+          <tui-icon [icon]="amenityIcons[amenity]" class="text-gray-600"></tui-icon>
+          <span class="georgian-text" lang="ka">{{ amenityLabels[amenity] }}</span>
+        </label>
+      }
+    </div>
+  </div>
 
   <!-- Action Buttons -->
   <div class="flex justify-end gap-2 mt-6">
@@ -67,3 +145,4 @@
     </button>
   </div>
 </form>
+</div>

@@ -1,6 +1,7 @@
 import { City } from '../enums/city.enum';
 import { Country } from '../enums/country.enum';
 import { Day } from '../enums/day.enum';
+import { Amenity } from '../enums/amenity.enum';
 
 export interface AddressPin {
   lat: number;
@@ -23,7 +24,7 @@ export interface Facility {
   addressText: string; // Street name, building number, etc.
   photos: string[]; // Array of image URLs
   description: string;
-  amenities: string[]; // e.g., ["Parking", "Lockers", "Showers", "Cafe"]
+  amenities: Amenity[]; // Facility amenities using predefined enum values
   rules: string; // Free text or HTML block
   workingHours: WorkingHours[]; // Per day schedule
   courts: string[]; // Array of Court IDs (one-to-many relationship)
