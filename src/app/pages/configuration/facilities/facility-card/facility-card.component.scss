@@ -1,1 +1,44 @@
-// No custom styles
+// Ensure proper display and let Tailwind handle all styling
+:host {
+  display: block;
+}
+
+// Override Tailwind colors with Taiga UI theme variables for proper light/dark mode support
+.card-bg {
+  background-color: var(--tui-background-base) !important;
+  border-color: var(--tui-border-normal) !important;
+}
+
+.card-header-bg {
+  background-color: var(--tui-background-neutral-1) !important;
+  border-color: var(--tui-border-normal) !important;
+}
+
+.photo-bg {
+  background-color: var(--tui-background-neutral-2) !important;
+}
+
+.title-text {
+  color: var(--tui-text-primary) !important;
+}
+
+.description-text {
+  color: var(--tui-text-secondary) !important;
+}
+
+.location-text {
+  color: var(--tui-text-secondary) !important;
+}
+
+.location-icon {
+  color: var(--tui-text-tertiary) !important;
+}
+
+// Ensure Georgian font is applied to chip text
+tui-chip {
+  font-family: var(--font-family-georgian, 'MarkGEO', sans-serif) !important;
+}
+
+.georgian-text {
+  font-family: var(--font-family-georgian, 'MarkGEO', sans-serif) !important;
+}

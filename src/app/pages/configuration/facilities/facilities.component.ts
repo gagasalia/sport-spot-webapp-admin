@@ -7,6 +7,7 @@ import {
   Injector,
 } from '@angular/core';
 import { take } from 'rxjs';
+import { TuiAlertService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { ConfigurationService } from '../../../services/http-services/configuration.service';
 import { Facility } from '../../../shared/models/facility.model';
@@ -24,6 +25,7 @@ import { TuiDialogService } from '@taiga-ui/experimental';
 })
 export class FacilitiesComponent implements OnInit {
   private readonly dialogs = inject(TuiDialogService);
+  private readonly alerts = inject(TuiAlertService);
   private readonly injector = inject(Injector);
   facilities = signal<Facility[]>([]);
 
@@ -98,6 +100,24 @@ export class FacilitiesComponent implements OnInit {
         },
         error: (error) => {
           console.error('Error loading facilities:', error);
+        },
+      });
+  }
+
+  onDeleteFacility(facility: Facility): void {
+    // Call backend to delete facility, refresh list on success and show alerts
+    this.configurationService
+      .deleteFacility(facility.id)
+      .pipe(take(1))
+      .subscribe({
+        next: () => {
+          this.loadFacilities();
+          // show success alert
+          this.alerts.open('ობიექტი წარმატებით წაიშალა', { appearance: 'success' }).subscribe();
+        },
+        error: (error) => {
+          console.error('Error deleting facility:', error);
+          this.alerts.open('წაშლის დროს მოხდა შეცდომა', { appearance: 'error' }).subscribe();
         },
       });
   }

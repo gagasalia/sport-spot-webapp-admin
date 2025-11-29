@@ -60,3 +60,35 @@ body {
   font-family: 'MarkGEO', sans-serif;
   font-weight: 400;
 }
+
+/* Ensure Taiga dialogs, confirmations and alerts use Georgian font */
+.tui-dialog,
+.tui-dialog__content,
+.tui-dialog__inner,
+.tui-popup,
+.tui-popup__content,
+.tui-alert,
+.tui-alert__content,
+.tui-alert__message,
+.tui-portal,
+.tui-portal * {
+  font-family: var(--font-family-georgian) !important;
+}
+
+/* Responsive grid for facilities list: 1 column below 768px, 2 columns >=768px, 3 columns >1366px */
+.responsive-grid {
+  /* Base: one column (Tailwind's grid classes still provide gap/rows) */
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+@media (min-width: 768px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1367px) {
+  .responsive-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

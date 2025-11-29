@@ -1,8 +1,9 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { TuiAppearance } from '@taiga-ui/core';
-import { TuiCardLarge } from '@taiga-ui/layout';
 import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
+import { TuiDialogService } from '@taiga-ui/experimental';
+import { TuiAlertService } from '@taiga-ui/core';
+import { TUI_CONFIRM } from '@taiga-ui/kit';
 import { Facility } from '../../../../shared/models/facility.model';
 import { AMENITY_LABELS, AMENITY_ICONS } from '../../../../shared/enums/amenity.enum';
 import { CommonModule } from '@angular/common';
@@ -13,24 +14,21 @@ import { ConfigurationService } from '../../../../services/http-services/configu
 @Component({
   selector: 'app-facility-card',
   standalone: true,
-  imports: [
-    ...SHARED_TAIGA_IMPORTS,
-    TuiAppearance,
-    TuiCardLarge,
-    CommonModule,
-    FormsModule,
-    RouterLink,
-  ],
+  imports: [...SHARED_TAIGA_IMPORTS, CommonModule, FormsModule, RouterLink],
   templateUrl: './facility-card.component.html',
+  styleUrls: ['./facility-card.component.scss'],
 })
 export class FacilityCardComponent {
   @Input({ required: true }) facility!: Facility;
   @Output() facilityUpdated = new EventEmitter<Facility>();
   @Output() editFacility = new EventEmitter<Facility>();
+  @Output() deleteFacility = new EventEmitter<Facility>();
 
   readonly amenityLabels = AMENITY_LABELS;
   readonly amenityIcons = AMENITY_ICONS;
 
+  private readonly dialogs = inject(TuiDialogService);
+  private readonly alerts = inject(TuiAlertService);
   constructor(private configurationService: ConfigurationService) {}
 
   get primaryPhoto(): string {
@@ -86,6 +84,56 @@ export class FacilityCardComponent {
   onEdit(event: Event): void {
     event.stopPropagation();
     this.editFacility.emit(this.facility);
+  }
+
+  onDelete(event: Event): void {
+    event.stopPropagation();
+    this.dialogs
+      .open<boolean>(TUI_CONFIRM, {
+        label: 'დადასტურება',
+        data: {
+          content: 'ნამდვილად გსურთ ობიექტის წაშლა?',
+          yes: 'წაშლა',
+          no: 'გაუქმება',
+        },
+      })
+      .pipe(take(1))
+      .subscribe((response) => {
+        if (response) {
+          this.deleteFacility.emit(this.facility);
+        }
+      });
+  }
+
+  openInGoogleMaps(event: Event): void {
+    event.stopPropagation();
+    const pin = this.facility.addressPin;
+
+    if (!pin || pin.lat == null || pin.lng == null) {
+      // Show error alert when coordinates are missing
+      this.alerts
+        .open('ობიექტის მისამართი დამატებული არაა', { appearance: 'error' })
+        .pipe(take(1))
+        .subscribe();
+      return;
+    }
+
+    const lat = Number(pin.lat);
+    const lng = Number(pin.lng);
+
+    if (Number.isNaN(lat) || Number.isNaN(lng)) {
+      this.alerts
+        .open('ობიექტის მისამართი დამატებული არაა', { appearance: 'error' })
+        .pipe(take(1))
+        .subscribe();
+      return;
+    }
+
+    // Construct Google Maps URL using the @lat,lng,zoomz pattern
+    const zoom = 17;
+    const url = `https://www.google.com/maps/@${lat},${lng},${zoom}z`;
+
+    window.open(url, '_blank');
   }
 
   onManageCourts(event: Event): void {
