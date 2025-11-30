@@ -1,0 +1,104 @@
+<div class="space-y-6 p-2">
+  <form [formGroup]="form" class="space-y-4" (ngSubmit)="onSubmit()">
+    <div>
+      <label class="block text-sm font-medium mb-2 georgian-text" lang="ka">კორტის აღწერა</label>
+      <input tuiTextfield formControlName="description" class="w-full" placeholder="" />
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-2 georgian-text" lang="ka">სპორტი</label>
+        <tui-select formControlName="sportType" [tuiTextfieldCleaner]="true">
+          {{ form.get('sportType')?.value }}
+          <tui-data-list *tuiDataList>
+            @for (sport of sportTypes; track sport) {
+            <button tuiOption [value]="sport">{{ sport }}</button>
+            }
+          </tui-data-list>
+        </tui-select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-2 georgian-text" lang="ka">ტიპი</label>
+        <tui-select formControlName="type" [tuiTextfieldCleaner]="true">
+          {{ form.get('type')?.value }}
+          <tui-data-list *tuiDataList>
+            @for (item of courtTypes; track item) {
+            <button tuiOption [value]="item">{{ item }}</button>
+            }
+          </tui-data-list>
+        </tui-select>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4" formGroupName="courtSurface">
+      <div>
+        <label class="block text-sm font-medium mb-2 georgian-text" lang="ka">საფარი</label>
+        <tui-select formControlName="material" [tuiTextfieldCleaner]="true">
+          {{ form.get('courtSurface.material')?.value }}
+          <tui-data-list *tuiDataList>
+            @for (material of surfaceMaterials; track material) {
+            <button tuiOption [value]="material">{{ material }}</button>
+            }
+          </tui-data-list>
+        </tui-select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-2 georgian-text" lang="ka">საფარის ფერი</label>
+        <input tuiTextfield formControlName="color" placeholder="მაგ. Blue" />
+      </div>
+    </div>
+
+    <div class="space-y-2">
+      <label class="block text-sm font-medium georgian-text" lang="ka">ფოტოები</label>
+      <div
+        class="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary transition"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+      >
+        <input type="file" multiple class="hidden" (change)="onFileSelected($event)" #fileInput />
+        <div class="space-y-2">
+          <p class="text-sm text-gray-600 georgian-text" lang="ka">ატვირთე ფოტოები ან გადმოათრიე</p>
+          <button tuiButton appearance="secondary" size="s" type="button" (click)="fileInput.click()">
+            <tui-icon icon="@tui.upload"></tui-icon>
+            <span class="ml-2 georgian-text" lang="ka">ფოტოს ატვირთვა</span>
+          </button>
+        </div>
+      </div>
+
+      @if (photos.length) {
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        @for (photo of photos; let i = $index; track photo) {
+        <div class="relative group">
+          <img [src]="photo" alt="Court photo" class="w-full h-32 object-cover rounded-lg" />
+          <button
+            tuiIconButton
+            appearance="flat"
+            size="s"
+            type="button"
+            class="absolute top-2 right-2 bg-white/80 hover:bg-white"
+            (click)="removePhoto(i)"
+          >
+            <tui-icon icon="@tui.close"></tui-icon>
+          </button>
+        </div>
+        }
+      </div>
+      }
+    </div>
+
+    <div class="flex items-center gap-2">
+      <input tuiSwitch type="checkbox" formControlName="activeState" />
+      <span class="georgian-text" lang="ka">გააქტიურება</span>
+    </div>
+
+    <div class="flex justify-end gap-3 pt-4">
+      <button tuiButton appearance="secondary" type="button" (click)="(context as any).completeWith(null)">
+        <span class="georgian-text" lang="ka">გაუქმება</span>
+      </button>
+      <button tuiButton appearance="primary" type="submit" [disabled]="form.invalid">
+        <span class="georgian-text" lang="ka">შენახვა</span>
+      </button>
+    </div>
+  </form>
+</div>

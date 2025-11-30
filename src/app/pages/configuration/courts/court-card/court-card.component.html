@@ -1,7 +1,4 @@
-<div
-  class="card-bg rounded-xl overflow-hidden border transition-shadow hover:shadow-lg flex flex-col h-full"
->
-  <!-- Header with Toggle and Status -->
+<div class="card-bg rounded-xl overflow-hidden border transition-shadow hover:shadow-lg flex flex-col h-full">
   <div class="card-header-bg flex items-center justify-between p-4 border-b h-[72px]">
     <div class="flex items-center gap-3">
       <input
@@ -11,7 +8,7 @@
         (ngModelChange)="onToggleState($event)"
       />
 
-      @if (facility.activeState) {
+      @if (court.activeState) {
       <tui-chip appearance="success" size="m" class="georgian-text" lang="ka">
         გამოქვეყნებული
       </tui-chip>
@@ -19,15 +16,14 @@
       <tui-chip appearance="neutral" size="m" class="georgian-text" lang="ka"> მონახაზი </tui-chip>
       }
     </div>
+
+    <div class="text-sm text-gray-500 georgian-text" lang="ka">
+      {{ court.sportType }} • {{ court.type }}
+    </div>
   </div>
 
-  <!-- Photo Section -->
   <div class="photo-bg relative h-68">
-    <img
-      [src]="primaryPhoto"
-      [alt]="facility.description || '--'"
-      class="w-full h-full object-cover"
-    />
+    <img [src]="primaryPhoto" [alt]="court.description || '--'" class="w-full h-full object-cover" />
     @if (hasMultiplePhotos) {
     <div
       class="absolute bottom-3 right-3 bg-black/70 text-white px-2 py-1 rounded-md text-xs font-medium"
@@ -37,32 +33,15 @@
     }
   </div>
 
-  <!-- Content Section -->
   <div class="p-4 flex flex-col flex-1">
     <h3 class="title-text text-lg font-bold m-0 georgian-text h-7 line-clamp-1" lang="ka">
-      {{ facility.description || '--' }}
+      {{ court.description || '--' }}
     </h3>
-    <p
-      class="description-text text-sm m-0 leading-relaxed georgian-text h-10 line-clamp-2 mt-2 mb-3"
-      lang="ka"
-    >
-      {{ facility.description || '--' }}
+    <p class="text-sm text-gray-500 mb-3">
+      {{ court.courtSurface.material }} • {{ court.courtSurface.color || '--' }}
     </p>
 
-    <div
-      class="flex gap-2 h-11 mb-4 cursor-pointer hover:opacity-80 transition-opacity"
-      (click)="openInGoogleMaps($event)"
-    >
-      <tui-icon icon="@lucide.map-pin" class="location-icon w-4 h-4 mt-0.5 shrink-0"></tui-icon>
-      <div class="location-text text-sm leading-snug georgian-text" lang="ka">
-        <div class="line-clamp-1">{{ facility.addressText || '--' }}</div>
-        <div class="line-clamp-1">{{ cityName || '--' }}, {{ countryName || '--' }}</div>
-      </div>
-    </div>
-
-    <!-- Action Buttons -->
     <div class="flex gap-2 mt-auto items-center">
-      <!-- Edit: show icon on small screens, label from sm and up -->
       <button
         tuiButton
         appearance="secondary"
@@ -75,21 +54,6 @@
         <span class="georgian-text truncate ml-2" lang="ka">რედაქტირება</span>
       </button>
 
-      <!-- Courts: primary on larger screens, icon-only on small -->
-      <button
-        tuiButton
-        appearance="primary"
-        size="m"
-        class="flex-1 flex items-center justify-center gap-1.5 text-sm sm:text-base px-3 py-2 min-w-0"
-        [routerLink]="['/courts']"
-        [queryParams]="{ facilityId: facility.id }"
-        [attr.aria-label]="'კორტები'"
-      >
-        <tui-icon icon="@lucide.layout-grid" class="w-4 h-4 shrink-0"></tui-icon>
-        <span class="georgian-text truncate ml-2" lang="ka">კორტები</span>
-      </button>
-
-      <!-- Delete: keep small fixed-size icon button -->
       <button
         tuiIconButton
         appearance="flat"

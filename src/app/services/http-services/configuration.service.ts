@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of, delay } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Facility } from '../../shared/models/facility.model';
+import { Court } from '../../shared/models/court.model';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable({
@@ -11,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class ConfigurationService {
   private apiUrl = `${environment.apiUrl}/configuration`;
   private readonly FACILITIES_STORAGE_KEY = 'sportify_facilities';
+  private readonly COURTS_STORAGE_KEY = 'sportify_courts';
 
   constructor(private http: HttpClient) {}
 
@@ -125,5 +127,62 @@ export class ConfigurationService {
     const filteredFacilities = facilities.filter((f) => f.id !== id);
     this.saveFacilitiesToStorage(filteredFacilities);
     return of(void 0).pipe(delay(300));
+  }
+
+  private getCourtsStorageKey(locationId: string): string {
+    return `${this.COURTS_STORAGE_KEY}_${locationId}`;
+  }
+
+  private getCourtsFromStorage(locationId: string): Court[] {
+    const stored = localStorage.getItem(this.getCourtsStorageKey(locationId));
+    if (!stored) return [];
+
+    return JSON.parse(stored) as Court[];
+  }
+
+  private saveCourtsToStorage(locationId: string, courts: Court[]): void {
+    localStorage.setItem(this.getCourtsStorageKey(locationId), JSON.stringify(courts));
+  }
+
+  getCourtsByFacility(locationId: string): Observable<Court[]> {
+    const courts = this.getCourtsFromStorage(locationId);
+    return of(courts).pipe(delay(400));
+  }
+
+  createCourt(locationId: string, courtData: Omit<Court, 'id' | 'locationId'>): Observable<Court> {
+    const courts = this.getCourtsFromStorage(locationId);
+    const newCourt: Court = {
+      ...courtData,
+      id: uuidv4(),
+      locationId,
+    };
+
+    courts.push(newCourt);
+    this.saveCourtsToStorage(locationId, courts);
+    return of(newCourt).pipe(delay(300));
+  }
+
+  updateCourt(
+    locationId: string,
+    courtId: string,
+    courtData: Partial<Omit<Court, 'id' | 'locationId'>>
+  ): Observable<Court> {
+    const courts = this.getCourtsFromStorage(locationId);
+    const index = courts.findIndex((c) => c.id === courtId);
+    if (index === -1) {
+      throw new Error(`Court with id ${courtId} not found`);
+    }
+
+    const updatedCourt: Court = { ...courts[index], ...courtData };
+    courts[index] = updatedCourt;
+    this.saveCourtsToStorage(locationId, courts);
+    return of(updatedCourt).pipe(delay(300));
+  }
+
+  deleteCourt(locationId: string, courtId: string): Observable<void> {
+    const courts = this.getCourtsFromStorage(locationId);
+    const filtered = courts.filter((c) => c.id !== courtId);
+    this.saveCourtsToStorage(locationId, filtered);
+    return of(void 0).pipe(delay(200));
   }
 }
