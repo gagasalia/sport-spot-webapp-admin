@@ -1,0 +1,92 @@
+<div
+  class="card-bg rounded-xl overflow-hidden border transition-shadow hover:shadow-lg flex flex-col h-full"
+>
+  <!-- Header with Toggle and Status -->
+  <div class="card-header-bg flex items-center justify-between p-4 border-b h-[72px]">
+    <div class="flex items-center gap-3">
+      <input
+        tuiSwitch
+        type="checkbox"
+        [ngModel]="isPublished"
+        (ngModelChange)="onToggleState($event)"
+      />
+
+      @if (court.activeState) {
+      <tui-chip appearance="success" size="m" lang="ka">
+        <span class="georgian-text"> გამოქვეყნებული </span>
+      </tui-chip>
+      } @else {
+      <tui-chip appearance="neutral" size="m" lang="ka">
+        <span class="georgian-text"> მონახაზი </span>
+      </tui-chip>
+      }
+    </div>
+  </div>
+
+  <!-- Content Section -->
+  <div class="p-4 flex flex-col flex-1">
+    <!-- Court Number Title -->
+    <h3 class="title-text text-lg font-bold m-0 georgian-text h-7 line-clamp-1 mb-4" lang="ka">
+      კორტი #{{ court.courtNumber }}
+    </h3>
+
+    <!-- Information Badges -->
+    <div class="flex flex-wrap gap-2 mb-4">
+      <!-- Sport Type Badge -->
+      <tui-badge appearance="primary" size="l" class="georgian-text" lang="ka">
+        <span class="px-1 py-15">
+          {{ sportTypeName }}
+        </span>
+      </tui-badge>
+
+      <!-- Location Type Badge -->
+      <tui-badge appearance="info" size="l" class="georgian-text" lang="ka">
+        <span class="px-1 py-15">
+          {{ locationTypeName }}
+        </span>
+      </tui-badge>
+
+      <!-- Surface Material Badge -->
+      <tui-badge appearance="neutral" size="l" class="georgian-text" lang="ka">
+        <span class="px-1 py-15">
+          {{ surfaceMaterialName }}
+        </span>
+      </tui-badge>
+
+      <!-- Surface Color Badge -->
+      <tui-badge appearance="neutral" size="l" class="georgian-text" lang="ka">
+        <span class="px-1 py-15">
+          {{ surfaceColorName }}
+        </span>
+      </tui-badge>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex gap-2 mt-auto items-center">
+      <!-- Edit button -->
+      <button
+        tuiButton
+        appearance="secondary"
+        size="m"
+        class="flex-1 flex items-center justify-center gap-1.5 text-sm sm:text-base px-3 py-2 min-w-0"
+        (click)="onEdit($event)"
+        [attr.aria-label]="'რედაქტირება'"
+      >
+        <tui-icon icon="@lucide.edit" class="w-4 h-4 shrink-0"></tui-icon>
+        <span class="georgian-text truncate ml-2" lang="ka">რედაქტირება</span>
+      </button>
+
+      <!-- Delete button -->
+      <button
+        tuiIconButton
+        appearance="flat"
+        size="m"
+        class="w-10 h-10 flex items-center justify-center text-red-600 hover:bg-red-50"
+        (click)="onDelete($event)"
+        [attr.aria-label]="'წაშლა'"
+      >
+        <tui-icon icon="@lucide.trash-2" class="w-4 h-4"></tui-icon>
+      </button>
+    </div>
+  </div>
+</div>

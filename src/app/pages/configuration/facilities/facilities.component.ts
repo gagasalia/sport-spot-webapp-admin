@@ -28,6 +28,7 @@ export class FacilitiesComponent implements OnInit {
   private readonly alerts = inject(TuiAlertService);
   private readonly injector = inject(Injector);
   facilities = signal<Facility[]>([]);
+  isLoading = signal<boolean>(false);
 
   constructor(private configurationService: ConfigurationService) {}
 
@@ -91,15 +92,18 @@ export class FacilitiesComponent implements OnInit {
   }
 
   private loadFacilities(): void {
+    this.isLoading.set(true);
     this.configurationService
       .getFacilities()
       .pipe(take(1))
       .subscribe({
         next: (facilities) => {
           this.facilities.set(facilities);
+          this.isLoading.set(false);
         },
         error: (error) => {
           console.error('Error loading facilities:', error);
+          this.isLoading.set(false);
         },
       });
   }

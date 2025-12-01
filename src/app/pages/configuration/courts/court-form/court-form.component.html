@@ -1,0 +1,78 @@
+<div class="p-4">
+  <form [formGroup]="courtForm" (ngSubmit)="onSubmit()" class="space-y-4">
+    <!-- Court Number -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">კორტის ნომერი <span class="text-red-500">*</span></span>
+      <tui-textfield>
+        <input tuiTextfield type="number" formControlName="courtNumber" />
+      </tui-textfield>
+    </label>
+
+    <!-- Sport Type -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">სპორტის ტიპი <span class="text-red-500">*</span></span>
+      <tui-textfield tuiChevron [stringify]="stringifySportType">
+        <input tuiSelect formControlName="sportType" class="georgian-text" lang="ka" />
+        <tui-data-list *tuiTextfieldDropdown>
+          <button *ngFor="let type of sportTypes" new tuiOption [value]="type">
+            <span class="georgian-text" lang="ka">{{ sportTypeLabels[type] }}</span>
+          </button>
+        </tui-data-list>
+      </tui-textfield>
+    </label>
+
+    <!-- Location Type (Indoor/Outdoor/Covered) -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">კორტის ტიპი <span class="text-red-500">*</span></span>
+      <tui-textfield tuiChevron [stringify]="stringifyLocationType">
+        <input tuiSelect formControlName="type" class="georgian-text" lang="ka" />
+        <tui-data-list *tuiTextfieldDropdown>
+          <button *ngFor="let locationType of locationTypes" new tuiOption [value]="locationType">
+            <span class="georgian-text" lang="ka">{{ locationTypeLabels[locationType] }}</span>
+          </button>
+        </tui-data-list>
+      </tui-textfield>
+    </label>
+
+    <!-- Court Surface -->
+    <div formGroupName="courtSurface" class="space-y-4">
+      <h3 class="text-lg font-medium georgian-text" lang="ka">საფარი</h3>
+
+      <!-- Surface Material -->
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">მატერიალი <span class="text-red-500">*</span></span>
+        <tui-textfield tuiChevron [stringify]="stringifySurfaceMaterial">
+          <input tuiSelect formControlName="material" class="georgian-text" lang="ka" />
+          <tui-data-list *tuiTextfieldDropdown>
+            <button *ngFor="let material of surfaceMaterials" new tuiOption [value]="material">
+              <span class="georgian-text" lang="ka">{{ surfaceMaterialLabels[material] }}</span>
+            </button>
+          </tui-data-list>
+        </tui-textfield>
+      </label>
+
+      <!-- Surface Color -->
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">ფერი <span class="text-red-500">*</span></span>
+        <tui-textfield tuiChevron [stringify]="stringifySurfaceColor">
+          <input tuiSelect formControlName="color" class="georgian-text" lang="ka" />
+          <tui-data-list *tuiTextfieldDropdown>
+            <button *ngFor="let color of surfaceColors" new tuiOption [value]="color">
+              <span class="georgian-text" lang="ka">{{ surfaceColorLabels[color] }}</span>
+            </button>
+          </tui-data-list>
+        </tui-textfield>
+      </label>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex justify-end gap-2 mt-6">
+      <button tuiButton appearance="secondary" type="button" (click)="onCancel()">
+        <span class="georgian-text" lang="ka">გაუქმება</span>
+      </button>
+      <button tuiButton appearance="primary" type="submit" [disabled]="!courtForm.valid">
+        <span class="georgian-text" lang="ka">შენახვა</span>
+      </button>
+    </div>
+  </form>
+</div>

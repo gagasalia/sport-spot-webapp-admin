@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, of, delay } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Facility } from '../../shared/models/facility.model';
+import { Court } from '../../shared/models/court.model';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable({
@@ -11,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class ConfigurationService {
   private apiUrl = `${environment.apiUrl}/configuration`;
   private readonly FACILITIES_STORAGE_KEY = 'sportify_facilities';
+  private readonly COURTS_STORAGE_KEY = 'sportify_courts';
 
   constructor(private http: HttpClient) {}
 
@@ -124,6 +126,66 @@ export class ConfigurationService {
     const facilities = this.getFacilitiesFromStorage();
     const filteredFacilities = facilities.filter((f) => f.id !== id);
     this.saveFacilitiesToStorage(filteredFacilities);
+    return of(void 0).pipe(delay(300));
+  }
+
+  // Court methods
+  private getCourtsFromStorage(): Court[] {
+    const stored = localStorage.getItem(this.COURTS_STORAGE_KEY);
+    if (!stored) return [];
+    return JSON.parse(stored);
+  }
+
+  private saveCourtsToStorage(courts: Court[]): void {
+    try {
+      localStorage.setItem(this.COURTS_STORAGE_KEY, JSON.stringify(courts));
+    } catch (error) {
+      console.error('Failed to save courts to localStorage:', error);
+    }
+  }
+
+  getCourts(facilityId?: string): Observable<Court[]> {
+    const courts = this.getCourtsFromStorage();
+    const filteredCourts = facilityId ? courts.filter((c) => c.facilityId === facilityId) : courts;
+    return of(filteredCourts).pipe(delay(500));
+  }
+
+  getCourtById(id: string): Observable<Court> {
+    const courts = this.getCourtsFromStorage();
+    const court = courts.find((c) => c.id === id);
+    if (!court) {
+      throw new Error(`Court with id ${id} not found`);
+    }
+    return of(court).pipe(delay(300));
+  }
+
+  createCourt(courtData: Omit<Court, 'id'>): Observable<Court> {
+    const courts = this.getCourtsFromStorage();
+    const newCourt: Court = {
+      ...courtData,
+      id: uuidv4(),
+    };
+    courts.push(newCourt);
+    this.saveCourtsToStorage(courts);
+    return of(newCourt).pipe(delay(500));
+  }
+
+  updateCourt(id: string, courtData: Partial<Court>): Observable<Court> {
+    const courts = this.getCourtsFromStorage();
+    const index = courts.findIndex((c) => c.id === id);
+    if (index === -1) {
+      throw new Error(`Court with id ${id} not found`);
+    }
+    const updatedCourt = { ...courts[index], ...courtData };
+    courts[index] = updatedCourt;
+    this.saveCourtsToStorage(courts);
+    return of(updatedCourt).pipe(delay(500));
+  }
+
+  deleteCourt(id: string): Observable<void> {
+    const courts = this.getCourtsFromStorage();
+    const filteredCourts = courts.filter((c) => c.id !== id);
+    this.saveCourtsToStorage(filteredCourts);
     return of(void 0).pipe(delay(300));
   }
 }

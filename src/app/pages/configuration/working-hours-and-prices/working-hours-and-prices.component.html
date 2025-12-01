@@ -1,0 +1,315 @@
+<div class="pt-8 p-0 sm:p-8">
+  <header class="mb-6">
+    <h1 class="text-2xl font-semibold georgian-text" lang="ka">სამუშაო საათები და ფასები</h1>
+  </header>
+
+  @if (isLoading()) {
+  <div class="flex justify-center items-center py-16">
+    <div class="text-lg georgian-text" lang="ka">იტვირთება...</div>
+  </div>
+  } @else if (scheduleForm) {
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <!-- Working Hours Column -->
+    <div class="space-y-4">
+      <div class="card-bg rounded-xl border p-6 working-hours-card">
+        <h2 class="text-lg font-semibold georgian-text mb-4" lang="ka">სამუშაო საათები</h2>
+        <form [formGroup]="scheduleForm" class="space-y-4">
+          @for (group of dayGroups; track group.key) {
+          <div class="space-y-3">
+            <h3 class="text-base font-semibold georgian-text whitespace-nowrap" lang="ka">
+              {{ group.label }}
+            </h3>
+
+            <div
+              [formGroupName]="group.key"
+              class="flex flex-wrap lg:flex-nowrap items-center gap-3"
+            >
+              <!-- Start Time -->
+              <div class="flex items-center gap-2">
+                <label tuiLabel class="mb-0!">
+                  <tui-textfield
+                    tuiChevron
+                    [stringify]="stringifyHour"
+                    [tuiTextfieldCleaner]="false"
+                    style="width: 100px"
+                  >
+                    <input tuiSelect formControlName="startHour" class="georgian-text" lang="ka" />
+                    <tui-data-list *tuiTextfieldDropdown>
+                      <button *ngFor="let hour of hours" new tuiOption [value]="hour">
+                        {{ stringifyHour(hour) }}
+                      </button>
+                    </tui-data-list>
+                  </tui-textfield>
+                </label>
+                <span class="text-base font-medium">:</span>
+                <label tuiLabel class="mb-0!">
+                  <tui-textfield
+                    tuiChevron
+                    [stringify]="stringifyMinute"
+                    [tuiTextfieldCleaner]="false"
+                    style="width: 100px"
+                  >
+                    <input
+                      tuiSelect
+                      formControlName="startMinute"
+                      class="georgian-text"
+                      lang="ka"
+                    />
+                    <tui-data-list *tuiTextfieldDropdown>
+                      <button *ngFor="let minute of minutes" new tuiOption [value]="minute">
+                        {{ stringifyMinute(minute) }}
+                      </button>
+                    </tui-data-list>
+                  </tui-textfield>
+                </label>
+              </div>
+
+              <span class="text-base font-medium hidden lg:inline">-</span>
+              <div class="w-full lg:hidden"></div>
+
+              <!-- End Time -->
+              <div class="flex items-center gap-2">
+                <label tuiLabel class="mb-0!">
+                  <tui-textfield
+                    tuiChevron
+                    [stringify]="stringifyHour"
+                    [tuiTextfieldCleaner]="false"
+                    style="width: 100px"
+                  >
+                    <input tuiSelect formControlName="endHour" class="georgian-text" lang="ka" />
+                    <tui-data-list *tuiTextfieldDropdown>
+                      <button *ngFor="let hour of hours" new tuiOption [value]="hour">
+                        {{ stringifyHour(hour) }}
+                      </button>
+                    </tui-data-list>
+                  </tui-textfield>
+                </label>
+                <span class="text-base font-medium">:</span>
+                <label tuiLabel class="mb-0!">
+                  <tui-textfield
+                    tuiChevron
+                    [stringify]="stringifyMinute"
+                    [tuiTextfieldCleaner]="false"
+                    style="width: 100px"
+                  >
+                    <input tuiSelect formControlName="endMinute" class="georgian-text" lang="ka" />
+                    <tui-data-list *tuiTextfieldDropdown>
+                      <button *ngFor="let minute of minutes" new tuiOption [value]="minute">
+                        {{ stringifyMinute(minute) }}
+                      </button>
+                    </tui-data-list>
+                  </tui-textfield>
+                </label>
+              </div>
+            </div>
+          </div>
+          }
+        </form>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-end mt-6 pt-4 border-t border-color">
+          <button
+            tuiButton
+            appearance="primary"
+            size="m"
+            (click)="onSave()"
+            [disabled]="!scheduleForm.valid"
+          >
+            <span class="georgian-text" lang="ka">შენახვა</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Holidays Column -->
+    <div>
+      <div class="card-bg rounded-xl border p-6 working-hours-card">
+        <h2 class="text-lg font-semibold georgian-text mb-4" lang="ka">დასვენების დღეები</h2>
+
+        <label tuiLabel class="georgian-text" lang="ka">
+          <span class="block mb-3">აირჩიეთ დასვენების დღეები</span>
+          <tui-textfield multi>
+            <input tuiInputDateMulti [(ngModel)]="holidays" class="georgian-text" lang="ka" />
+
+            <tui-calendar *tuiTextfieldDropdown [markerHandler]="markerHandler" />
+
+            <tui-input-chip
+              *tuiItem="let context"
+              [appearance]="'negative'"
+              [iconStart]="'@lucide.x'"
+            />
+          </tui-textfield>
+        </label>
+
+        <!-- Holiday Actions -->
+        <div class="flex justify-end mt-6 pt-4 border-t border-color">
+          <button tuiButton appearance="primary" size="m" (click)="onSaveHolidays()">
+            <span class="georgian-text" lang="ka">შენახვა</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prices Column -->
+    <div>
+      <div class="card-bg rounded-xl border p-6 working-hours-card">
+        <h2 class="text-lg font-semibold georgian-text mb-4" lang="ka">ფასები</h2>
+
+        <form [formGroup]="pricesForm" class="space-y-6">
+          <!-- General Price -->
+          <div>
+            <label tuiLabel class="georgian-text" lang="ka">
+              <span class="block mb-3">ზოგადი ფასი</span>
+              <tui-textfield>
+                <input
+                  tuiTextfield
+                  type="number"
+                  formControlName="generalPrice"
+                  class="georgian-text"
+                  lang="ka"
+                  placeholder="0"
+                />
+              </tui-textfield>
+            </label>
+          </div>
+
+          <!-- Off-Peak Hours -->
+          <div class="space-y-3">
+            <h3 class="text-base font-semibold georgian-text" lang="ka">არაპიკური საათები</h3>
+
+            <div class="space-y-3">
+              <label class="georgian-text text-sm font-medium block mb-3" lang="ka"
+                >დროის შუალედი</label
+              >
+              <div class="flex flex-wrap lg:flex-nowrap items-center gap-3">
+                <!-- Off-Peak Start Time -->
+                <div class="flex items-center gap-2">
+                  <label tuiLabel class="mb-0!">
+                    <tui-textfield
+                      tuiChevron
+                      [stringify]="stringifyHour"
+                      [tuiTextfieldCleaner]="false"
+                      style="width: 100px"
+                    >
+                      <input
+                        tuiSelect
+                        formControlName="offPeakStartHour"
+                        class="georgian-text"
+                        lang="ka"
+                      />
+                      <tui-data-list *tuiTextfieldDropdown>
+                        <button *ngFor="let hour of hours" new tuiOption [value]="hour">
+                          {{ stringifyHour(hour) }}
+                        </button>
+                      </tui-data-list>
+                    </tui-textfield>
+                  </label>
+                  <span class="text-base font-medium">:</span>
+                  <label tuiLabel class="mb-0!">
+                    <tui-textfield
+                      tuiChevron
+                      [stringify]="stringifyMinute"
+                      [tuiTextfieldCleaner]="false"
+                      style="width: 100px"
+                    >
+                      <input
+                        tuiSelect
+                        formControlName="offPeakStartMinute"
+                        class="georgian-text"
+                        lang="ka"
+                      />
+                      <tui-data-list *tuiTextfieldDropdown>
+                        <button *ngFor="let minute of minutes" new tuiOption [value]="minute">
+                          {{ stringifyMinute(minute) }}
+                        </button>
+                      </tui-data-list>
+                    </tui-textfield>
+                  </label>
+                </div>
+
+                <span class="text-base font-medium hidden lg:inline">-</span>
+                <div class="w-full lg:hidden"></div>
+
+                <!-- Off-Peak End Time -->
+                <div class="flex items-center gap-2">
+                  <label tuiLabel class="mb-0!">
+                    <tui-textfield
+                      tuiChevron
+                      [stringify]="stringifyHour"
+                      [tuiTextfieldCleaner]="false"
+                      style="width: 100px"
+                    >
+                      <input
+                        tuiSelect
+                        formControlName="offPeakEndHour"
+                        class="georgian-text"
+                        lang="ka"
+                      />
+                      <tui-data-list *tuiTextfieldDropdown>
+                        <button *ngFor="let hour of hours" new tuiOption [value]="hour">
+                          {{ stringifyHour(hour) }}
+                        </button>
+                      </tui-data-list>
+                    </tui-textfield>
+                  </label>
+                  <span class="text-base font-medium">:</span>
+                  <label tuiLabel class="mb-0!">
+                    <tui-textfield
+                      tuiChevron
+                      [stringify]="stringifyMinute"
+                      [tuiTextfieldCleaner]="false"
+                      style="width: 100px"
+                    >
+                      <input
+                        tuiSelect
+                        formControlName="offPeakEndMinute"
+                        class="georgian-text"
+                        lang="ka"
+                      />
+                      <tui-data-list *tuiTextfieldDropdown>
+                        <button *ngFor="let minute of minutes" new tuiOption [value]="minute">
+                          {{ stringifyMinute(minute) }}
+                        </button>
+                      </tui-data-list>
+                    </tui-textfield>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Off-Peak Price -->
+            <div>
+              <label tuiLabel class="georgian-text" lang="ka">
+                <span class="block mb-3">არაპიკური ფასი</span>
+                <tui-textfield>
+                  <input
+                    tuiTextfield
+                    type="number"
+                    formControlName="offPeakPrice"
+                    class="georgian-text"
+                    lang="ka"
+                    placeholder="0"
+                  />
+                </tui-textfield>
+              </label>
+            </div>
+          </div>
+        </form>
+
+        <!-- Price Actions -->
+        <div class="flex justify-end mt-6 pt-4 border-t border-color">
+          <button
+            tuiButton
+            appearance="primary"
+            size="m"
+            (click)="onSavePrices()"
+            [disabled]="!pricesForm.valid"
+          >
+            <span class="georgian-text" lang="ka">შენახვა</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+</div>

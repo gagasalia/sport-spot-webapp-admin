@@ -1,0 +1,73 @@
+<div class="pt-8 p-0 sm:p-8">
+  <header class="mb-6">
+    <div
+      class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 min-h-16"
+    >
+      <h1 class="text-2xl font-semibold georgian-text" lang="ka">კორტები</h1>
+      @if (selectedFacilityId() && courts().length > 0) {
+      <button tuiButton appearance="primary" iconStart="@tui.plus" (click)="addCourt()">
+        <span class="georgian-text" lang="ka">კორტის დამატება</span>
+      </button>
+      }
+    </div>
+  </header>
+
+  <!-- Facility Selector -->
+  @if (!isLoadingFacilities()) { @if (facilities().length === 0) {
+  <!-- No facilities available -->
+  <div class="flex flex-col items-center justify-center py-16">
+    <img src="images/no-result.png" alt="No facilities" class="w-64 h-64 mb-6 opacity-50" />
+    <p class="text-lg text-gray-500 mb-6 georgian-text" lang="ka">
+      კორტების სანახავად დაამატეთ ობიექტი
+    </p>
+    <button tuiButton appearance="primary" iconStart="@tui.plus" (click)="navigateToFacilities()">
+      <span class="georgian-text" lang="ka">დაამატე ობიექტი</span>
+    </button>
+  </div>
+  } @else {
+  <!-- Show selector for one or more facilities -->
+  <div class="mb-6">
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">აირჩიეთ ობიექტი</span>
+      <tui-textfield tuiChevron [stringify]="stringifyFacility">
+        <input tuiSelect [formControl]="facilityControl" class="georgian-text" lang="ka" />
+        <tui-data-list *tuiTextfieldDropdown>
+          <button *ngFor="let facility of facilities()" new tuiOption [value]="facility.id">
+            <span class="georgian-text" lang="ka">
+              {{ facility.description || facility.addressText || 'უსახელო ობიექტი' }}
+            </span>
+          </button>
+        </tui-data-list>
+      </tui-textfield>
+    </label>
+  </div>
+  } }
+
+  <!-- Courts Grid or Empty State -->
+  @if (selectedFacilityId()) { @if (courts().length === 0 && !isLoadingCourts()) {
+  <div class="flex flex-col items-center justify-center py-16">
+    <img src="images/no-result.png" alt="No courts" class="w-64 h-64 mb-6 opacity-50" />
+    <p class="text-lg text-gray-500 mb-6 georgian-text" lang="ka">კორტი დამატებული არ არის</p>
+    <button tuiButton appearance="primary" iconStart="@tui.plus" (click)="addCourt()">
+      <span class="georgian-text" lang="ka">კორტის დამატება</span>
+    </button>
+  </div>
+  } @else if (courts().length > 0) {
+  <div class="grid grid-cols-1 gap-6 auto-rows-fr responsive-grid">
+    @for (court of courts(); track court.id) {
+    <app-court-card
+      [court]="court"
+      (courtUpdated)="onCourtUpdated($event)"
+      (editCourt)="onEditCourt($event)"
+      (deleteCourt)="onDeleteCourt($event)"
+    ></app-court-card>
+    }
+  </div>
+  } } @else if (!selectedFacilityId() && facilities().length > 1) {
+  <!-- Show message to select a facility when there are multiple and none selected -->
+  <div class="flex flex-col items-center justify-center py-16">
+    <tui-icon icon="@lucide.building-2" class="w-32 h-32 opacity-50 mb-6"></tui-icon>
+    <p class="text-lg text-gray-500 georgian-text" lang="ka">აირჩიეთ ობიექტი კორტების სანახავად</p>
+  </div>
+  }
+</div>

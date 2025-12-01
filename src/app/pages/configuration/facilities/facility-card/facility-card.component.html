@@ -81,7 +81,8 @@
         appearance="primary"
         size="m"
         class="flex-1 flex items-center justify-center gap-1.5 text-sm sm:text-base px-3 py-2 min-w-0"
-        [routerLink]="['/configuration/facilities', facility.id, 'courts']"
+        [routerLink]="['/configuration/courts']"
+        [queryParams]="{ facilityId: facility.id }"
         [attr.aria-label]="'კორტები'"
       >
         <tui-icon icon="@lucide.layout-grid" class="w-4 h-4 shrink-0"></tui-icon>

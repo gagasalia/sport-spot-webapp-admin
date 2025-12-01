@@ -1,6 +1,8 @@
-<div class="p-8">
+<div class="pt-8 p-0 sm:p-8">
   <header class="mb-6">
-    <div class="flex justify-between items-center h-16">
+    <div
+      class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 min-h-16"
+    >
       <h1 class="text-2xl font-semibold georgian-text" lang="ka">ობიექტები</h1>
       @if (facilities().length > 0) {
       <button tuiButton appearance="primary" iconStart="@tui.plus" (click)="addFacility()">
@@ -10,7 +12,7 @@
     </div>
   </header>
 
-  @if (facilities().length === 0) {
+  @if (facilities().length === 0 && !isLoading()) {
   <div class="flex flex-col items-center justify-center py-16">
     <img src="images/no-result.png" alt="No facilities" class="w-64 h-64 mb-6 opacity-50" />
     <p class="text-lg text-gray-500 mb-6 georgian-text" lang="ka">ობიექტი დამატებული არ არის</p>
@@ -18,7 +20,7 @@
       <span class="georgian-text" lang="ka">ობიექტის დამატება</span>
     </button>
   </div>
-  } @else {
+  } @else if (facilities().length > 0) {
   <div class="grid grid-cols-1 gap-6 auto-rows-fr responsive-grid">
     @for (facility of facilities(); track facility.id) {
     <app-facility-card
