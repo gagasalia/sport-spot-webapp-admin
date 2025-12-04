@@ -27,7 +27,7 @@ export const routes: Routes = [
   },
   {
     path: '',
-    redirectTo: 'configuration/facilities',
+    redirectTo: 'configuration/academy',
     pathMatch: 'full',
   },
 ];
