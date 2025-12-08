@@ -6,7 +6,9 @@ import {
   ReactiveFormsModule,
   Validators,
   FormsModule,
+  FormControl,
 } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs';
 import { TuiAlertService, TuiCalendar } from '@taiga-ui/core';
 import { type TuiStringHandler, EMPTY_ARRAY, TuiDay } from '@taiga-ui/cdk';
@@ -14,7 +16,9 @@ import { type TuiMarkerHandler } from '@taiga-ui/core';
 import { TuiInputDateMulti } from '@taiga-ui/kit';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { ScheduleService } from '../../../services/http-services/schedule.service';
+import { ConfigurationService } from '../../../services/http-services/configuration.service';
 import { GeneralScheduleDTO, TimeRangeDTO, Weekday } from '../../../shared/models/schedule.model';
+import { Facility } from '../../../shared/models/facility.model';
 import { Day, DAY_LABELS } from '../../../shared/enums/day.enum';
 
 @Component({
@@ -36,7 +40,18 @@ export class WorkingHoursAndPricesComponent implements OnInit {
   scheduleForm!: FormGroup;
   pricesForm!: FormGroup;
   schedule = signal<GeneralScheduleDTO | null>(null);
+  facilities = signal<Facility[]>([]);
+  selectedFacilityId = signal<string | null>(null);
   isLoading = signal<boolean>(false);
+  isLoadingFacilities = signal<boolean>(false);
+
+  facilityControl = new FormControl<string | null>(null);
+
+  readonly stringifyFacility: TuiStringHandler<string> = (id) => {
+    const facility = this.facilities().find((f) => f.id === id);
+    if (!facility) return '';
+    return facility.description || facility.addressText || 'უსახელო ობიექტი';
+  };
 
   // Holidays
   holidays: TuiDay[] = [];
@@ -82,18 +97,112 @@ export class WorkingHoursAndPricesComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private scheduleService: ScheduleService,
-    private alerts: TuiAlertService
-  ) {}
-
-  ngOnInit(): void {
-    this.loadSchedule();
-    this.loadHolidays();
-    this.initializePricesForm();
-    this.loadPrices();
+    private configurationService: ConfigurationService,
+    private alerts: TuiAlertService,
+    private route: ActivatedRoute,
+    private router: Router
+  ) {
+    // Subscribe to form control changes
+    this.facilityControl.valueChanges.subscribe((facilityId) => {
+      this.onFacilityChange(facilityId);
+    });
   }
 
-  private loadHolidays(): void {
-    const stored = localStorage.getItem(this.HOLIDAYS_STORAGE_KEY);
+  ngOnInit(): void {
+    this.loadFacilities();
+    this.initializePricesForm();
+  }
+
+  private loadFacilities(): void {
+    this.isLoadingFacilities.set(true);
+    this.configurationService
+      .getFacilities()
+      .pipe(take(1))
+      .subscribe({
+        next: (facilities) => {
+          this.facilities.set(facilities);
+          this.isLoadingFacilities.set(false);
+
+          // Handle facility selection based on the query param or number of facilities
+          this.route.queryParams.pipe(take(1)).subscribe((params) => {
+            const facilityIdFromQuery = params['facilityId'];
+
+            if (facilities.length === 0) {
+              // No facilities, do nothing
+              this.selectedFacilityId.set(null);
+              this.facilityControl.setValue(null, { emitEvent: false });
+            } else if (facilities.length === 1) {
+              // Exactly 1 facility, auto-select it
+              const facility = facilities[0];
+              this.selectedFacilityId.set(facility.id);
+              this.facilityControl.setValue(facility.id, { emitEvent: false });
+              // Update query param if not already set
+              if (facilityIdFromQuery !== facility.id) {
+                this.updateQueryParam(facility.id);
+              }
+              this.loadScheduleForFacility(facility.id);
+            } else {
+              // More than 1 facility
+              if (facilityIdFromQuery) {
+                // If there's a query param, use it
+                const facility = facilities.find((f) => f.id === facilityIdFromQuery);
+                if (facility) {
+                  this.selectedFacilityId.set(facility.id);
+                  this.facilityControl.setValue(facility.id, { emitEvent: false });
+                  this.loadScheduleForFacility(facility.id);
+                } else {
+                  // Invalid facilityId in query param, clear it
+                  this.selectedFacilityId.set(null);
+                  this.facilityControl.setValue(null, { emitEvent: false });
+                  this.updateQueryParam(null);
+                }
+              } else {
+                // No query param, user needs to select
+                this.selectedFacilityId.set(null);
+                this.facilityControl.setValue(null, { emitEvent: false });
+              }
+            }
+          });
+        },
+        error: (error) => {
+          console.error('Error loading facilities:', error);
+          this.isLoadingFacilities.set(false);
+        },
+      });
+  }
+
+  onFacilityChange(facilityId: string | null): void {
+    this.selectedFacilityId.set(facilityId);
+    this.updateQueryParam(facilityId);
+    if (facilityId) {
+      this.loadScheduleForFacility(facilityId);
+    } else {
+      this.schedule.set(null);
+      this.scheduleForm = null!;
+    }
+  }
+
+  private updateQueryParam(facilityId: string | null): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { facilityId: facilityId || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  navigateToFacilities(): void {
+    this.router.navigate(['/configuration/facilities']);
+  }
+
+  private loadScheduleForFacility(facilityId: string): void {
+    this.loadSchedule();
+    this.loadHolidays(facilityId);
+    this.loadPrices(facilityId);
+  }
+
+  private loadHolidays(facilityId: string): void {
+    const stored = localStorage.getItem(`${this.HOLIDAYS_STORAGE_KEY}_${facilityId}`);
     if (stored) {
       try {
         const dates: string[] = JSON.parse(stored);
@@ -104,6 +213,8 @@ export class WorkingHoursAndPricesComponent implements OnInit {
       } catch (error) {
         console.error('Error loading holidays:', error);
       }
+    } else {
+      this.holidays = [];
     }
   }
 
@@ -118,8 +229,8 @@ export class WorkingHoursAndPricesComponent implements OnInit {
     });
   }
 
-  private loadPrices(): void {
-    const stored = localStorage.getItem(this.PRICES_STORAGE_KEY);
+  private loadPrices(facilityId: string): void {
+    const stored = localStorage.getItem(`${this.PRICES_STORAGE_KEY}_${facilityId}`);
     if (stored) {
       try {
         const prices = JSON.parse(stored);
@@ -127,6 +238,16 @@ export class WorkingHoursAndPricesComponent implements OnInit {
       } catch (error) {
         console.error('Error loading prices:', error);
       }
+    } else {
+      // Reset to default values if no data
+      this.pricesForm.reset({
+        generalPrice: 0,
+        offPeakStartHour: 0,
+        offPeakStartMinute: 0,
+        offPeakEndHour: 0,
+        offPeakEndMinute: 0,
+        offPeakPrice: 0,
+      });
     }
   }
 
@@ -267,23 +388,32 @@ export class WorkingHoursAndPricesComponent implements OnInit {
   }
 
   onSaveHolidays(): void {
+    const facilityId = this.selectedFacilityId();
+    if (!facilityId) return;
+
     // Convert TuiDay[] to date strings for local storage
     const holidayDates = this.holidays.map((day) => {
-      const date = day.toLocalNativeDate();
-      return date.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+      // Format directly from TuiDay to avoid timezone issues
+      const year = day.year;
+      const month = (day.month + 1).toString().padStart(2, '0'); // TuiDay month is 0-indexed
+      const dayNum = day.day.toString().padStart(2, '0');
+      return `${year}-${month}-${dayNum}`; // Format: YYYY-MM-DD
     });
 
-    // Save to localStorage
-    localStorage.setItem(this.HOLIDAYS_STORAGE_KEY, JSON.stringify(holidayDates));
+    // Save to localStorage with facility-specific key
+    localStorage.setItem(
+      `${this.HOLIDAYS_STORAGE_KEY}_${facilityId}`,
+      JSON.stringify(holidayDates)
+    );
 
-    console.log('Saving holidays:', holidayDates);
+    console.log('Saving holidays for facility:', facilityId, holidayDates);
     this.alerts
       .open('დასვენების დღეები წარმატებით შეინახა!', { appearance: 'success' })
       .pipe(take(1))
       .subscribe();
 
     // TODO: Implement actual API call when backend is ready
-    // this.scheduleService.saveHolidays(holidayDates).pipe(take(1)).subscribe({
+    // this.scheduleService.saveHolidays(facilityId, holidayDates).pipe(take(1)).subscribe({
     //   next: () => {
     //     this.alerts.open('დასვენების დღეები წარმატებით შეინახა!', { appearance: 'success' }).pipe(take(1)).subscribe();
     //   },
@@ -295,20 +425,23 @@ export class WorkingHoursAndPricesComponent implements OnInit {
   }
 
   onSavePrices(): void {
+    const facilityId = this.selectedFacilityId();
+    if (!facilityId) return;
+
     if (this.pricesForm.valid) {
       const pricesData = this.pricesForm.value;
 
-      // Save to localStorage
-      localStorage.setItem(this.PRICES_STORAGE_KEY, JSON.stringify(pricesData));
+      // Save to localStorage with facility-specific key
+      localStorage.setItem(`${this.PRICES_STORAGE_KEY}_${facilityId}`, JSON.stringify(pricesData));
 
-      console.log('Saving prices:', pricesData);
+      console.log('Saving prices for facility:', facilityId, pricesData);
       this.alerts
         .open('ფასები წარმატებით შეინახა!', { appearance: 'success' })
         .pipe(take(1))
         .subscribe();
 
       // TODO: Implement actual API call when backend is ready
-      // this.scheduleService.savePrices(pricesData).pipe(take(1)).subscribe({
+      // this.scheduleService.savePrices(facilityId, pricesData).pipe(take(1)).subscribe({
       //   next: () => {
       //     this.alerts.open('ფასები წარმატებით შეინახა!', { appearance: 'success' }).pipe(take(1)).subscribe();
       //   },

@@ -3,7 +3,39 @@
     <h1 class="text-2xl font-semibold georgian-text" lang="ka">სამუშაო საათები და ფასები</h1>
   </header>
 
-  @if (isLoading()) {
+  <!-- Facility Selector -->
+  @if (!isLoadingFacilities()) { @if (facilities().length === 0) {
+  <!-- No facilities available -->
+  <div class="flex flex-col items-center justify-center py-16">
+    <img src="images/no-result.png" alt="No facilities" class="w-64 h-64 mb-6 opacity-50" />
+    <p class="text-lg text-gray-500 mb-6 georgian-text" lang="ka">
+      სამუშაო საათებისა და ფასების დასაყენებლად დაამატეთ ობიექტი
+    </p>
+    <button tuiButton appearance="primary" iconStart="@tui.plus" (click)="navigateToFacilities()">
+      <span class="georgian-text" lang="ka">დაამატე ობიექტი</span>
+    </button>
+  </div>
+  } @else {
+  <!-- Show selector for one or more facilities -->
+  <div class="mb-6">
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">აირჩიეთ ობიექტი</span>
+      <tui-textfield tuiChevron [stringify]="stringifyFacility">
+        <input tuiSelect [formControl]="facilityControl" class="georgian-text" lang="ka" />
+        <tui-data-list *tuiTextfieldDropdown>
+          <button *ngFor="let facility of facilities()" new tuiOption [value]="facility.id">
+            <span class="georgian-text" lang="ka">
+              {{ facility.description || facility.addressText || 'უსახელო ობიექტი' }}
+            </span>
+          </button>
+        </tui-data-list>
+      </tui-textfield>
+    </label>
+  </div>
+  } }
+
+  <!-- Content area: Show only when facility is selected -->
+  @if (selectedFacilityId()) { @if (isLoading()) {
   <div class="flex justify-center items-center py-16">
     <div class="text-lg georgian-text" lang="ka">იტვირთება...</div>
   </div>
@@ -310,6 +342,14 @@
         </div>
       </div>
     </div>
+  </div>
+  } } @else if (!selectedFacilityId() && facilities().length > 1) {
+  <!-- Show message to select a facility when there are multiple and none selected -->
+  <div class="flex flex-col items-center justify-center py-16">
+    <tui-icon icon="@lucide.building-2" class="w-32 h-32 opacity-50 mb-6"></tui-icon>
+    <p class="text-lg text-gray-500 georgian-text" lang="ka">
+      აირჩიეთ ობიექტი სამუშაო საათებისა და ფასების სანახავად
+    </p>
   </div>
   }
 </div>
