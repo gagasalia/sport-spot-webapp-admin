@@ -92,3 +92,10 @@ body {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Mobile dialog padding (less than 768px) */
+@media (max-width: 768px) {
+  tui-dialog[new][data-appearance~='taiga'] {
+    padding: 1rem !important;
+  }
+}

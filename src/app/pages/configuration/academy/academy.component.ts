@@ -34,6 +34,7 @@ export class AcademyComponent implements OnInit {
   academy = signal<Academy | null>(null);
   isLoading = signal<boolean>(false);
   isSaving = signal<boolean>(false);
+  isSaved = signal<boolean>(false);
 
   constructor(
     private fb: FormBuilder,
@@ -46,6 +47,13 @@ export class AcademyComponent implements OnInit {
   ngOnInit(): void {
     this.initializeForm();
     this.loadAcademy();
+
+    // Track form changes to disable button when form is dirty
+    this.academyForm.valueChanges.subscribe(() => {
+      if (this.academyForm.dirty) {
+        this.isSaved.set(false);
+      }
+    });
   }
 
   private initializeForm(): void {
@@ -76,6 +84,7 @@ export class AcademyComponent implements OnInit {
           if (academy) {
             this.academy.set(academy);
             this.academyForm.patchValue(academy);
+            this.isSaved.set(true); // Academy already exists, so show facilities button
           } else {
             // Generate new ID for first time
             this.academyForm.patchValue({ id: this.generateId() });
@@ -110,6 +119,8 @@ export class AcademyComponent implements OnInit {
         next: (savedAcademy) => {
           this.academy.set(savedAcademy);
           this.isSaving.set(false);
+          this.isSaved.set(true);
+          this.academyForm.markAsPristine();
           this.alerts
             .open('აკადემია წარმატებით შეინახა!', { appearance: 'success' })
             .pipe(take(1))

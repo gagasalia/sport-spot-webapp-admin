@@ -73,20 +73,23 @@ export class FacilityFormComponent implements OnInit {
     console.log('Context data:', this.context.data);
 
     this.facilityForm = this.fb.group({
-      country: [{ value: Country.Georgia, disabled: true }],
-      city: [{ value: City.Tbilisi, disabled: true }],
+      country: [{ value: Country.Georgia, disabled: true }, Validators.required],
+      city: [{ value: City.Tbilisi, disabled: true }, Validators.required],
       addressPin: this.fb.group({
-        lat: [editingFacility?.addressPin?.lat || null],
-        lng: [editingFacility?.addressPin?.lng || null],
+        lat: [editingFacility?.addressPin?.lat || null, Validators.required],
+        lng: [editingFacility?.addressPin?.lng || null, Validators.required],
       }),
-      addressText: [editingFacility?.addressText || ''],
+      addressText: [
+        editingFacility?.addressText || '',
+        [Validators.required, Validators.minLength(5)],
+      ],
       photos: [editingFacility?.photos || []],
       description: [editingFacility?.description || ''],
       amenities: this.createAmenitiesFormArray(editingFacility?.amenities),
       workingHours: [editingFacility?.workingHours || []],
       courts: [editingFacility?.courts || []],
     });
-
+    // , [Validators.required, Validators.minLength(1)]
     // If editing, trigger change detection to show photos
     if (editingFacility?.photos?.length) {
       this.cdr.markForCheck();
@@ -175,7 +178,7 @@ export class FacilityFormComponent implements OnInit {
     if (this.facilityForm.valid) {
       const editingFacility = this.context.data?.facility;
       const formValue = {
-        ...this.facilityForm.value,
+        ...this.facilityForm.getRawValue(), // getRawValue includes disabled fields
         amenities: this.getSelectedAmenities(),
         academyId: this.academyId || 'default-academy', // Default value for now
         activeState: editingFacility?.activeState ?? false, // Preserve state if editing, otherwise start as draft
@@ -204,6 +207,13 @@ export class FacilityFormComponent implements OnInit {
           this.alerts.open(message, { appearance: 'error' }).pipe(take(1)).subscribe();
         },
       });
+    } else {
+      // Mark all fields as touched to show validation errors
+      this.facilityForm.markAllAsTouched();
+      this.alerts
+        .open('გთხოვთ შეავსოთ ყველა სავალდებულო ველი', { appearance: 'error' })
+        .pipe(take(1))
+        .subscribe();
     }
   }
 

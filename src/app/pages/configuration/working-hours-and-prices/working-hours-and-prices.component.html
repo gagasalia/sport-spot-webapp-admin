@@ -154,7 +154,6 @@
     </div>
 
     <!-- Holidays Column -->
-    <div>
       <div class="card-bg rounded-xl border p-6 working-hours-card">
         <h2 class="text-lg font-semibold georgian-text mb-4" lang="ka">დასვენების დღეები</h2>
 
@@ -180,7 +179,8 @@
           </button>
         </div>
       </div>
-    </div>
+
+
 
     <!-- Prices Column -->
     <div>
@@ -342,7 +342,34 @@
         </div>
       </div>
     </div>
+          <!-- Working Days Section - Below Holidays -->
+      <div class="card-bg rounded-xl border p-6 working-hours-card ">
+        <h2 class="text-lg font-semibold georgian-text mb-4" lang="ka">კვირის სამუშაო დღეები</h2>
+        <div class="grid grid-cols-1 min-[450px]:grid-cols-2 min-[766px]:grid-cols-3 min-[1550px]:grid-cols-4 gap-3">
+          @for (day of days; track day) {
+          <label
+            class="flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors hover:border-green-500"
+            [class.bg-green-50]="workingDays[day]"
+            [class.border-green-500]="workingDays[day]"
+            [class.dark:bg-green-900/20]="workingDays[day]"
+            style="border-color: var(--tui-border-normal)"
+            (click)="toggleWorkingDay(day)"
+          >
+            <input tuiCheckbox type="checkbox" [checked]="workingDays[day]" readonly />
+            <span class="georgian-text text-sm font-medium" lang="ka">{{ dayLabels[day] }}</span>
+          </label>
+          }
+        </div>
+
+        <!-- Action Button -->
+        <div class="flex justify-end mt-6 pt-4 border-t border-color">
+          <button tuiButton appearance="primary" size="m" (click)="onSaveWorkingDays()">
+            <span class="georgian-text" lang="ka">შენახვა</span>
+          </button>
+        </div>
+      </div>
   </div>
+
   } } @else if (!selectedFacilityId() && facilities().length > 1) {
   <!-- Show message to select a facility when there are multiple and none selected -->
   <div class="flex flex-col items-center justify-center py-16">

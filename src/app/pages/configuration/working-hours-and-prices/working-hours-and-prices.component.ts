@@ -57,6 +57,18 @@ export class WorkingHoursAndPricesComponent implements OnInit {
   holidays: TuiDay[] = [];
   private readonly HOLIDAYS_STORAGE_KEY = 'sportify_holidays';
   private readonly PRICES_STORAGE_KEY = 'sportify_prices';
+  private readonly WORKING_DAYS_STORAGE_KEY = 'sportify_working_days';
+
+  // Working days selection
+  workingDays: { [key in Day]?: boolean } = {
+    [Day.Monday]: true,
+    [Day.Tuesday]: true,
+    [Day.Wednesday]: true,
+    [Day.Thursday]: true,
+    [Day.Friday]: true,
+    [Day.Saturday]: true,
+    [Day.Sunday]: false,
+  };
 
   readonly markerHandler: TuiMarkerHandler = (day: TuiDay) =>
     this.holidays.some((holiday) => holiday.daySame(day))
@@ -199,6 +211,49 @@ export class WorkingHoursAndPricesComponent implements OnInit {
     this.loadSchedule();
     this.loadHolidays(facilityId);
     this.loadPrices(facilityId);
+    this.loadWorkingDays(facilityId);
+  }
+
+  private loadWorkingDays(facilityId: string): void {
+    const stored = localStorage.getItem(`${this.WORKING_DAYS_STORAGE_KEY}_${facilityId}`);
+    if (stored) {
+      try {
+        this.workingDays = JSON.parse(stored);
+      } catch (error) {
+        console.error('Error loading working days:', error);
+      }
+    } else {
+      // Reset to default values
+      this.workingDays = {
+        [Day.Monday]: true,
+        [Day.Tuesday]: true,
+        [Day.Wednesday]: true,
+        [Day.Thursday]: true,
+        [Day.Friday]: true,
+        [Day.Saturday]: true,
+        [Day.Sunday]: false,
+      };
+    }
+  }
+
+  onSaveWorkingDays(): void {
+    const facilityId = this.selectedFacilityId();
+    if (!facilityId) return;
+
+    localStorage.setItem(
+      `${this.WORKING_DAYS_STORAGE_KEY}_${facilityId}`,
+      JSON.stringify(this.workingDays)
+    );
+
+    console.log('Saving working days for facility:', facilityId, this.workingDays);
+    this.alerts
+      .open('სამუშაო დღეები წარმატებით შეინახა!', { appearance: 'success' })
+      .pipe(take(1))
+      .subscribe();
+  }
+
+  toggleWorkingDay(day: Day): void {
+    this.workingDays[day] = !this.workingDays[day];
   }
 
   private loadHolidays(facilityId: string): void {
