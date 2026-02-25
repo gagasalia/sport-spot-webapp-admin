@@ -1,20 +1,51 @@
-export interface Academy {
-  id: string;
+export interface Tenant {
+  _id?: string;
+  owner: string;
   name: string;
-  logo?: string;
-  color: string;
-  description?: string;
-  contactInfo: ContactInfo;
-  locations?: string[]; // Array of location IDs
+  designPalette: string;
+  description: string;
+  logo?: IMedia;
+  contactInfo?: IContactInfo;
 }
 
-export interface ContactInfo {
-  phone?: string;
+export interface CreateTenantDto {
+  owner: string;
+  name: string;
+  designPalette: string;
+  description: string;
+  logo: IMedia;
+  contactInfo: IContactInfo;
+}
+
+export interface UpdateTenantDto {
+  name: string;
+  designPalette: string;
+  description: string;
+  logo: IMedia;
+  contactInfo: IContactInfo;
+}
+
+export interface IMedia {
+  url: string;
+  type: string;
+  size: number;
+  metadata?: any;
+}
+
+export interface IContactInfo {
   email?: string;
-  socials?: SocialMedia;
+  phone?: string;
+  address?: IAddress;
+  website?: string;
+  facebook?: string;
+  twitter?: string;
+  instagram?: string;
+  linkedIn?: string;
 }
 
-export interface SocialMedia {
-  facebook?: string;
-  instagram?: string;
+export interface IAddress {
+  street?: string;
+  lng?: string;
+  lat?: string;
+  city?: string;
 }

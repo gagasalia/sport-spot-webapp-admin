@@ -4,206 +4,294 @@
   </header>
 
   @if (isLoading()) {
-  <div class="flex justify-center items-center py-16">
-    <div class="text-lg georgian-text" lang="ka">იტვირთება...</div>
-  </div>
-  } @else {
-  <div class="card-bg rounded-xl border p-6" style="border-color: var(--tui-border-normal)">
-    <form [formGroup]="academyForm" class="space-y-6">
-      <!-- Name -->
-      <div>
-        <label tuiLabel class="georgian-text" lang="ka">
-          <span class="block mb-3 georgian-text">სახელი *</span>
-          <tui-textfield>
-            <input
-              tuiTextfield
-              type="text"
-              formControlName="name"
-              class="georgian-text"
-              lang="ka"
-              placeholder="აკადემიის სახელი"
-            />
-          </tui-textfield>
-        </label>
-      </div>
-
-      <!-- Logo Upload -->
-      <div>
-        <label tuiLabel>
-          <span class="georgian-text mb-3" lang="ka">ლოგო</span>
-        </label>
-
-        <!-- Drop Zone -->
-        <div
-          class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition-colors"
-          (dragover)="onDragOver($event)"
-          (dragleave)="onDragLeave($event)"
-          (drop)="onDrop($event)"
-        >
-          <tui-icon icon="@lucide.upload" class="text-4xl text-gray-400 mb-2"></tui-icon>
-          <p class="text-gray-600 mb-2 georgian-text" lang="ka">
-            გადმოწიეთ ლოგო აქ ან დააჭირეთ ასარჩევად
-          </p>
-          <input
-            type="file"
-            accept="image/*"
-            (change)="onFileSelected($event)"
-            class="hidden"
-            #fileInput
-          />
-          <button type="button" tuiButton appearance="outline" (click)="fileInput.click()">
-            <span class="georgian-text" lang="ka">ლოგოს არჩევა</span>
-          </button>
-        </div>
-
-        <!-- Logo Preview -->
-        @if (logo) {
-        <div class="mt-4 relative inline-block">
-          <img [src]="logo" alt="ლოგო" class="w-32 h-32 object-cover rounded border" />
-          <button
-            type="button"
-            (click)="removeLogo()"
-            class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
-          >
-            <tui-icon icon="@lucide.x" class="text-xs"></tui-icon>
-          </button>
-        </div>
-        }
-      </div>
-
-      <!-- Color Picker -->
-      <div>
-        <label tuiLabel class="georgian-text" lang="ka">
-          <span class="block mb-3 georgian-text">ძირითადი ფერი *</span>
-          <tui-textfield>
-            <input tuiInputColor [formControl]="colorControl" />
-          </tui-textfield>
-        </label>
-      </div>
-
-      <!-- Description -->
-      <div>
-        <label tuiLabel class="georgian-text" lang="ka">
-          <span class="block mb-3 georgian-text">აღწერა</span>
-          <tui-textfield>
-            <textarea
-              tuiTextarea
-              formControlName="description"
-              [rows]="5"
-              class="georgian-text"
-              lang="ka"
-            ></textarea>
-          </tui-textfield>
-        </label>
-      </div>
-
-      <!-- Contact Info Section -->
-      <div formGroupName="contactInfo" class="space-y-6">
-        <h3 class="text-lg font-semibold georgian-text" lang="ka">საკონტაქტო ინფორმაცია</h3>
-
-        <!-- Phone -->
-        <div>
-          <label tuiLabel class="georgian-text" lang="ka">
-            <span class="block mb-3 georgian-text">ტელეფონი</span>
-            <tui-textfield>
-              <input
-                tuiTextfield
-                type="tel"
-                formControlName="phone"
-                class="georgian-text"
-                lang="ka"
-                placeholder="+995 555 123 456"
-              />
-            </tui-textfield>
-          </label>
-        </div>
-
-        <!-- Email -->
-        <div>
-          <label tuiLabel class="georgian-text" lang="ka">
-            <span class="block mb-3 georgian-text">ელ. ფოსტა</span>
-            <tui-textfield>
-              <input
-                tuiTextfield
-                type="email"
-                formControlName="email"
-                class="georgian-text"
-                lang="ka"
-                placeholder="info@example.com"
-              />
-            </tui-textfield>
-          </label>
-        </div>
-
-        <!-- Social Media -->
-        <div formGroupName="socials" class="space-y-4">
-          <h4 class="text-base font-semibold georgian-text" lang="ka">სოციალური ქსელები</h4>
-
-          <!-- Facebook -->
-          <div>
-            <label tuiLabel class="georgian-text" lang="ka">
-              <span class="block mb-3">Facebook</span>
-              <tui-textfield>
-                <input
-                  tuiTextfield
-                  type="url"
-                  formControlName="facebook"
-                  class="georgian-text"
-                  lang="ka"
-                  placeholder="https://facebook.com/yourpage"
-                />
-              </tui-textfield>
-            </label>
-          </div>
-
-          <!-- Instagram -->
-          <div>
-            <label tuiLabel class="georgian-text" lang="ka">
-              <span class="block mb-3">Instagram</span>
-              <tui-textfield>
-                <input
-                  tuiTextfield
-                  type="url"
-                  formControlName="instagram"
-                  class="georgian-text"
-                  lang="ka"
-                  placeholder="https://instagram.com/yourpage"
-                />
-              </tui-textfield>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="flex justify-end gap-3 pb-4" style="border-color: var(--tui-border-normal)">
-        <button
-          tuiButton
-          appearance="primary"
-          size="m"
-          type="button"
-          (click)="onSave()"
-          [disabled]="!academyForm.valid || isSaving()"
-        >
-          <span class="georgian-text" lang="ka">{{ isSaving() ? 'ინახება...' : 'შენახვა' }}</span>
-        </button>
-      </div>
-    </form>
-    <!-- Facilities Button - Show only after save and disable when form is dirty -->
-    @if (isSaved()) {
-    <div class="flex justify-end pt-4 border-t" style="border-color: var(--tui-border-normal)">
-      <button
-        tuiButton
-        appearance="secondary"
-        iconStart="@tui.map-pin"
-        type="button"
-        (click)="navigateToFacilities()"
-        [disabled]="!isSaved()"
-      >
-        <span class="georgian-text" lang="ka">ობიექტების მართვა</span>
-      </button>
+    <div class="flex justify-center items-center py-16">
+      <div class="text-lg georgian-text" lang="ka">იტვირთება...</div>
     </div>
-    }
-  </div>
+  } @else {
+    <div class="card-bg rounded-xl border p-6" style="border-color: var(--tui-border-normal)">
+      <form [formGroup]="academyForm" class="space-y-6">
+        <!-- Name -->
+        <div>
+          <label tuiLabel class="georgian-text" lang="ka">
+            <span class="block mb-3 georgian-text">სახელი *</span>
+            <tui-textfield>
+              <input
+                tuiTextfield
+                type="text"
+                formControlName="name"
+                class="georgian-text"
+                lang="ka"
+                placeholder="აკადემიის სახელი"
+              />
+            </tui-textfield>
+          </label>
+        </div>
+
+        <!-- Logo Upload -->
+        <div>
+          <label tuiLabel>
+            <span class="georgian-text mb-3" lang="ka">ლოგო</span>
+          </label>
+
+          <!-- Drop Zone -->
+          <div
+            class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition-colors"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+          >
+            <tui-icon icon="@lucide.upload" class="text-4xl text-gray-400 mb-2"></tui-icon>
+            <p class="text-gray-600 mb-2 georgian-text" lang="ka">
+              გადმოწიეთ ლოგო აქ ან დააჭირეთ ასარჩევად
+            </p>
+            <input
+              type="file"
+              accept="image/*"
+              (change)="onFileSelected($event)"
+              class="hidden"
+              #fileInput
+            />
+            <button type="button" tuiButton appearance="outline" (click)="fileInput.click()">
+              <span class="georgian-text" lang="ka">ლოგოს არჩევა</span>
+            </button>
+          </div>
+
+          <!-- Logo Preview -->
+          @if (logoUrl) {
+            <div class="mt-4 relative inline-block">
+              <img [src]="logoUrl" alt="ლოგო" class="w-32 h-32 object-cover rounded border" />
+              <button
+                type="button"
+                (click)="removeLogo()"
+                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
+              >
+                <tui-icon icon="@lucide.x" class="text-xs"></tui-icon>
+              </button>
+            </div>
+          }
+        </div>
+
+        <!-- Design Palette (Color Picker) -->
+        <div>
+          <label tuiLabel class="georgian-text" lang="ka">
+            <span class="block mb-3 georgian-text">ძირითადი ფერი</span>
+            <tui-textfield>
+              <input tuiInputColor [formControl]="designPaletteControl" />
+            </tui-textfield>
+          </label>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label tuiLabel class="georgian-text" lang="ka">
+            <span class="block mb-3 georgian-text">აღწერა *</span>
+            <tui-textfield>
+              <textarea
+                tuiTextarea
+                formControlName="description"
+                [rows]="5"
+                class="georgian-text"
+                lang="ka"
+              ></textarea>
+            </tui-textfield>
+          </label>
+        </div>
+
+        <!-- Contact Info Section -->
+        <div formGroupName="contactInfo" class="space-y-6">
+          <h3 class="text-lg font-semibold georgian-text" lang="ka">საკონტაქტო ინფორმაცია</h3>
+
+          <!-- Phone -->
+          <div>
+            <label tuiLabel class="georgian-text" lang="ka">
+              <span class="block mb-3 georgian-text">ტელეფონი</span>
+              <tui-textfield>
+                <input
+                  tuiTextfield
+                  type="tel"
+                  formControlName="phone"
+                  class="georgian-text"
+                  lang="ka"
+                  placeholder="+995 555 123 456"
+                />
+              </tui-textfield>
+            </label>
+          </div>
+
+          <!-- Email -->
+          <div>
+            <label tuiLabel class="georgian-text" lang="ka">
+              <span class="block mb-3 georgian-text">ელ. ფოსტა</span>
+              <tui-textfield>
+                <input
+                  tuiTextfield
+                  type="email"
+                  formControlName="email"
+                  class="georgian-text"
+                  lang="ka"
+                  placeholder="info@example.com"
+                />
+              </tui-textfield>
+            </label>
+          </div>
+
+          <!-- Website -->
+          <div>
+            <label tuiLabel class="georgian-text" lang="ka">
+              <span class="block mb-3 georgian-text">ვებსაიტი</span>
+              <tui-textfield>
+                <input
+                  tuiTextfield
+                  type="url"
+                  formControlName="website"
+                  class="georgian-text"
+                  lang="ka"
+                  placeholder="https://example.com"
+                />
+              </tui-textfield>
+            </label>
+          </div>
+
+          <!-- Social Media -->
+          <div class="space-y-4">
+            <h4 class="text-base font-semibold georgian-text" lang="ka">სოციალური ქსელები</h4>
+
+            <!-- Facebook -->
+            <div>
+              <label tuiLabel class="georgian-text" lang="ka">
+                <span class="block mb-3">Facebook</span>
+                <tui-textfield>
+                  <input
+                    tuiTextfield
+                    type="url"
+                    formControlName="facebook"
+                    class="georgian-text"
+                    lang="ka"
+                    placeholder="https://facebook.com/yourpage"
+                  />
+                </tui-textfield>
+              </label>
+            </div>
+
+            <!-- Instagram -->
+            <div>
+              <label tuiLabel class="georgian-text" lang="ka">
+                <span class="block mb-3">Instagram</span>
+                <tui-textfield>
+                  <input
+                    tuiTextfield
+                    type="url"
+                    formControlName="instagram"
+                    class="georgian-text"
+                    lang="ka"
+                    placeholder="https://instagram.com/yourpage"
+                  />
+                </tui-textfield>
+              </label>
+            </div>
+
+            <!-- Twitter -->
+            <div>
+              <label tuiLabel class="georgian-text" lang="ka">
+                <span class="block mb-3">Twitter</span>
+                <tui-textfield>
+                  <input
+                    tuiTextfield
+                    type="url"
+                    formControlName="twitter"
+                    class="georgian-text"
+                    lang="ka"
+                    placeholder="https://twitter.com/yourpage"
+                  />
+                </tui-textfield>
+              </label>
+            </div>
+
+            <!-- LinkedIn -->
+            <div>
+              <label tuiLabel class="georgian-text" lang="ka">
+                <span class="block mb-3">LinkedIn</span>
+                <tui-textfield>
+                  <input
+                    tuiTextfield
+                    type="url"
+                    formControlName="linkedIn"
+                    class="georgian-text"
+                    lang="ka"
+                    placeholder="https://linkedin.com/company/yourpage"
+                  />
+                </tui-textfield>
+              </label>
+            </div>
+          </div>
+
+          <!-- Address -->
+          <div formGroupName="address" class="space-y-4">
+            <h4 class="text-base font-semibold georgian-text" lang="ka">მისამართი</h4>
+
+            <div>
+              <label tuiLabel class="georgian-text" lang="ka">
+                <span class="block mb-3 georgian-text">ქუჩა</span>
+                <tui-textfield>
+                  <input
+                    tuiTextfield
+                    type="text"
+                    formControlName="street"
+                    class="georgian-text"
+                    lang="ka"
+                    placeholder="ქუჩის მისამართი"
+                  />
+                </tui-textfield>
+              </label>
+            </div>
+
+            <div>
+              <label tuiLabel class="georgian-text" lang="ka">
+                <span class="block mb-3 georgian-text">ქალაქი</span>
+                <tui-textfield>
+                  <input
+                    tuiTextfield
+                    type="text"
+                    formControlName="city"
+                    class="georgian-text"
+                    lang="ka"
+                    placeholder="ქალაქი"
+                  />
+                </tui-textfield>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex justify-end gap-3 pb-4" style="border-color: var(--tui-border-normal)">
+          <button
+            tuiButton
+            appearance="primary"
+            size="m"
+            type="button"
+            (click)="onSave()"
+            [disabled]="!academyForm.valid || isSaving()"
+          >
+            <span class="georgian-text" lang="ka">{{ isSaving() ? 'ინახება...' : 'შენახვა' }}</span>
+          </button>
+        </div>
+      </form>
+      <!-- Facilities Button - Show only after save and disable when form is dirty -->
+      @if (isSaved()) {
+        <div class="flex justify-end pt-4 border-t" style="border-color: var(--tui-border-normal)">
+          <button
+            tuiButton
+            appearance="secondary"
+            iconStart="@tui.map-pin"
+            type="button"
+            (click)="navigateToFacilities()"
+            [disabled]="!isSaved()"
+          >
+            <span class="georgian-text" lang="ka">ობიექტების მართვა</span>
+          </button>
+        </div>
+      }
+    </div>
   }
 </div>

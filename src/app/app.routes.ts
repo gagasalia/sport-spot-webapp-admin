@@ -5,7 +5,7 @@ export const routes: Routes = [
     path: 'configuration/facilities',
     loadComponent: () =>
       import('./pages/configuration/facilities/facilities.component').then(
-        (m) => m.FacilitiesComponent
+        (m) => m.FacilitiesComponent,
       ),
   },
   {
@@ -16,14 +16,28 @@ export const routes: Routes = [
   {
     path: 'configuration/working-hours',
     loadComponent: () =>
-      import(
-        './pages/configuration/working-hours-and-prices/working-hours-and-prices.component'
-      ).then((m) => m.WorkingHoursAndPricesComponent),
+      import('./pages/configuration/working-hours-and-prices/working-hours-and-prices.component').then(
+        (m) => m.WorkingHoursAndPricesComponent,
+      ),
   },
   {
     path: 'configuration/academy',
     loadComponent: () =>
       import('./pages/configuration/academy/academy.component').then((m) => m.AcademyComponent),
+  },
+  {
+    path: 'super-admin/academies-management',
+    loadComponent: () =>
+      import('./pages/super-admin/academies-management/academies-management.component').then(
+        (m) => m.AcademiesManagementComponent,
+      ),
+  },
+  {
+    path: 'super-admin/user-management',
+    loadComponent: () =>
+      import('./pages/super-admin/user-management/user-management.component').then(
+        (m) => m.UserManagementComponent,
+      ),
   },
   {
     path: '',

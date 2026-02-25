@@ -1,0 +1,121 @@
+<div class="max-h-[80vh] overflow-y-auto p-1">
+  <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="space-y-4">
+    <!-- Email -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">ელ. ფოსტა <span class="text-red-500">*</span></span>
+      <tui-textfield>
+        <input tuiTextfield type="email" formControlName="email" />
+      </tui-textfield>
+      @if (userForm.get('email')?.touched && userForm.get('email')?.hasError('email')) {
+        <span class="text-xs text-red-500 georgian-text" lang="ka"
+          >არასწორი ელ. ფოსტის ფორმატი</span
+        >
+      }
+    </label>
+
+    <!-- Password -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">
+        პაროლი
+        @if (!isEditMode) {
+          <span class="text-red-500">*</span>
+        }
+      </span>
+      <tui-textfield>
+        <input tuiTextfield type="password" formControlName="password" />
+      </tui-textfield>
+      @if (isEditMode) {
+        <span class="text-xs" style="color: var(--tui-text-secondary)">
+          დატოვეთ ცარიელი თუ არ გსურთ შეცვლა
+        </span>
+      }
+    </label>
+
+    <!-- First Name & Last Name -->
+    <div class="grid grid-cols-2 gap-4">
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">სახელი</span>
+        <tui-textfield>
+          <input tuiTextfield formControlName="firstName" />
+        </tui-textfield>
+      </label>
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">გვარი</span>
+        <tui-textfield>
+          <input tuiTextfield formControlName="lastName" />
+        </tui-textfield>
+      </label>
+    </div>
+
+    <!-- Phone -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">ტელეფონი <span class="text-red-500">*</span></span>
+      <tui-textfield>
+        <input
+          tuiTextfield
+          type="tel"
+          formControlName="phone"
+          [maskito]="phoneMask"
+          placeholder="+9955XXXXXXXX"
+        />
+      </tui-textfield>
+      @if (userForm.get('phone')?.touched && userForm.get('phone')?.hasError('required')) {
+        <span class="text-xs text-red-500 georgian-text" lang="ka"
+          >ტელეფონის ნომერი სავალდებულოა</span
+        >
+      }
+      @if (userForm.get('phone')?.touched && userForm.get('phone')?.hasError('pattern')) {
+        <span class="text-xs text-red-500 georgian-text" lang="ka"
+          >ნომერი უნდა იწყებოდეს 5-ით და იყოს 9 ციფრი</span
+        >
+      }
+    </label>
+
+    <!-- PID -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">პირადი ნომერი</span>
+      <tui-textfield>
+        <input tuiTextfield formControlName="pid" [maskito]="pidMask" placeholder="XXXXXXXXXXX" />
+      </tui-textfield>
+      @if (userForm.get('pid')?.touched && userForm.get('pid')?.hasError('pattern')) {
+        <span class="text-xs text-red-500 georgian-text" lang="ka"
+          >პირადი ნომერი უნდა იყოს 11 ციფრი</span
+        >
+      }
+    </label>
+
+    <!-- Date of Birth -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">დაბადების თარიღი</span>
+      <tui-textfield>
+        <input tuiInputDate formControlName="dateOfBirth" />
+        <tui-calendar *tuiTextfieldDropdown />
+      </tui-textfield>
+    </label>
+
+    <!-- User Type -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">როლი <span class="text-red-500">*</span></span>
+      <tui-textfield tuiChevron [stringify]="stringifyUserType">
+        <input tuiSelect formControlName="userType" class="georgian-text" lang="ka" />
+        <tui-data-list *tuiTextfieldDropdown>
+          @for (type of userTypes; track type) {
+            <button tuiOption [value]="type" new>
+              <span class="georgian-text" lang="ka">{{ userTypeLabels[type] }}</span>
+            </button>
+          }
+        </tui-data-list>
+      </tui-textfield>
+    </label>
+
+    <!-- Action Buttons -->
+    <div class="flex justify-end gap-2 mt-6">
+      <button tuiButton appearance="flat" type="button" (click)="onCancel()">
+        <span class="georgian-text" lang="ka">გაუქმება</span>
+      </button>
+      <button tuiButton appearance="primary" type="submit" [disabled]="!userForm.valid">
+        <span class="georgian-text" lang="ka">{{ isEditMode ? 'განახლება' : 'დამატება' }}</span>
+      </button>
+    </div>
+  </form>
+</div>

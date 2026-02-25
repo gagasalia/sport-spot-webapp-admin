@@ -32,17 +32,18 @@ export class FacilityCardComponent {
   constructor(private configurationService: ConfigurationService) {}
 
   get primaryPhoto(): string {
-    return this.facility.photos && this.facility.photos.length > 0
-      ? this.facility.photos[0]
-      : 'images/facility-placeholder.png';
+    if (this.facility.media?.length) return this.facility.media[0].url;
+    if (this.facility.photos?.length) return this.facility.photos[0];
+    return 'images/facility-placeholder.png';
   }
 
   get hasMultiplePhotos(): boolean {
-    return this.facility.photos && this.facility.photos.length > 1;
+    const count = this.facility.media?.length ?? this.facility.photos?.length ?? 0;
+    return count > 1;
   }
 
   get photoCount(): number {
-    return this.facility.photos ? this.facility.photos.length : 0;
+    return this.facility.media?.length ?? this.facility.photos?.length ?? 0;
   }
 
   get cityName(): string {
@@ -56,7 +57,7 @@ export class FacilityCardComponent {
   }
 
   get isPublished(): boolean {
-    return this.facility.activeState;
+    return this.facility.activeState ?? false;
   }
 
   onToggleState(checked: boolean): void {
@@ -66,7 +67,7 @@ export class FacilityCardComponent {
     this.facility.activeState = checked;
 
     this.configurationService
-      .updateFacility(this.facility.id, { activeState: checked })
+      .updateFacility(this.facility.id ?? this.facility._id ?? '', { activeState: checked })
       .pipe(take(1))
       .subscribe({
         next: (updated) => {
@@ -107,19 +108,22 @@ export class FacilityCardComponent {
 
   openInGoogleMaps(event: Event): void {
     event.stopPropagation();
+
+    // Prefer API address coordinates, fall back to legacy addressPin
+    const addrLat = this.facility.contactInfo?.address?.lat;
+    const addrLng = this.facility.contactInfo?.address?.lng;
     const pin = this.facility.addressPin;
 
-    if (!pin || pin.lat == null || pin.lng == null) {
-      // Show error alert when coordinates are missing
+    const lat = addrLat != null ? Number(addrLat) : pin?.lat != null ? Number(pin.lat) : NaN;
+    const lng = addrLng != null ? Number(addrLng) : pin?.lng != null ? Number(pin.lng) : NaN;
+
+    if (lat == null || lng == null) {
       this.alerts
         .open('ობიექტის მისამართი დამატებული არაა', { appearance: 'error' })
         .pipe(take(1))
         .subscribe();
       return;
     }
-
-    const lat = Number(pin.lat);
-    const lng = Number(pin.lng);
 
     if (Number.isNaN(lat) || Number.isNaN(lng)) {
       this.alerts

@@ -1,4 +1,5 @@
 export const environment = {
   production: false,
-  apiUrl: '', // Development API URL
+  apiUrl: 'https://q8fxvkk6e4.execute-api.eu-north-1.amazonaws.com/staging/api',
+  tenantId: '69949a1dad1b25262c8656a4',
 };

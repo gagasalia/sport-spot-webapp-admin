@@ -61,6 +61,7 @@ export class App extends TuiPortals {
   protected expanded = signal(true);
   protected isMobile = signal(false);
   protected configDropdownOpen = signal(false);
+  protected superAdminDropdownOpen = signal(false);
 
   constructor() {
     super();

@@ -1,0 +1,125 @@
+<div class="h-150 overflow-y-auto overflow-x-hidden p-1">
+  <form [formGroup]="academyForm" (ngSubmit)="onSubmit()" class="space-y-6">
+
+    <!-- Basic Info -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold georgian-text" style="color: var(--tui-text-secondary)" lang="ka">ძირითადი ინფო</h3>
+
+      <!-- Name -->
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">სახელი <span class="text-red-500">*</span></span>
+        <tui-textfield>
+          <input tuiTextfield formControlName="name" />
+        </tui-textfield>
+        @if (academyForm.get('name')?.touched && academyForm.get('name')?.hasError('required')) {
+          <span class="text-xs text-red-500 georgian-text" lang="ka">სახელი სავალდებულოა</span>
+        }
+      </label>
+
+      <!-- Owner (add mode only) -->
+      @if (!isEditMode) {
+        <label tuiLabel>
+          <span class="georgian-text" lang="ka">ადმინი <span class="text-red-500">*</span></span>
+          @if (isLoadingUsers()) {
+            <div class="text-sm georgian-text py-2" style="color: var(--tui-text-secondary)" lang="ka">იტვირთება...</div>
+          } @else {
+            <tui-textfield tuiChevron [stringify]="stringifyUser">
+              <input tuiSelect formControlName="owner" class="georgian-text" lang="ka" />
+              <tui-data-list *tuiTextfieldDropdown>
+                @for (user of adminUsers(); track user._id) {
+                  <button tuiOption [value]="user" new>
+                    <span>{{ stringifyUser(user) }}</span>
+                  </button>
+                } @empty {
+                  <div class="px-4 py-2 text-sm georgian-text" style="color: var(--tui-text-secondary)" lang="ka">
+                    ადმინები ვერ მოიძებნა
+                  </div>
+                }
+              </tui-data-list>
+            </tui-textfield>
+          }
+          @if (academyForm.get('owner')?.touched && academyForm.get('owner')?.hasError('required')) {
+            <span class="text-xs text-red-500 georgian-text" lang="ka">ადმინი სავალდებულოა</span>
+          }
+        </label>
+      }
+
+      <!-- Description -->
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">აღწერა</span>
+        <tui-textfield>
+          <textarea tuiTextarea formControlName="description" [min]="3" [max]="6"></textarea>
+        </tui-textfield>
+      </label>
+
+      <!-- Design Palette -->
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">ძირითადი ფერი</span>
+        <tui-textfield>
+          <input tuiInputColor formControlName="designPalette" />
+        </tui-textfield>
+      </label>
+    </div>
+
+    <!-- Logo -->
+    <div class="space-y-4" formGroupName="logo">
+      <h3 class="text-sm font-semibold georgian-text" style="color: var(--tui-text-secondary)" lang="ka">ლოგო</h3>
+
+      <label tuiLabel>
+        <span>URL</span>
+        <tui-textfield>
+          <input tuiTextfield formControlName="url" placeholder="https://..." />
+        </tui-textfield>
+      </label>
+    </div>
+
+    <!-- Contact Info -->
+    <div class="space-y-4" formGroupName="contactInfo">
+      <h3 class="text-sm font-semibold georgian-text" style="color: var(--tui-text-secondary)" lang="ka">საკონტაქტო ინფო</h3>
+
+      <div class="grid grid-cols-2 gap-4">
+        <label tuiLabel>
+          <span class="georgian-text" lang="ka">ელ. ფოსტა</span>
+          <tui-textfield>
+            <input tuiTextfield type="email" formControlName="email" />
+          </tui-textfield>
+        </label>
+        <label tuiLabel>
+          <span class="georgian-text" lang="ka">ტელეფონი</span>
+          <tui-textfield>
+            <input tuiTextfield type="tel" formControlName="phone" />
+          </tui-textfield>
+        </label>
+      </div>
+
+      <!-- Social Media -->
+      <h3 class="text-sm font-semibold" style="color: var(--tui-text-secondary)">სოციალური ქსელები</h3>
+
+      <div class="grid grid-cols-2 gap-4">
+        <label tuiLabel>
+          <span>Facebook</span>
+          <tui-textfield>
+            <input tuiTextfield formControlName="facebook" placeholder="https://facebook.com/..." />
+          </tui-textfield>
+        </label>
+        <label tuiLabel>
+          <span>Instagram</span>
+          <tui-textfield>
+            <input tuiTextfield formControlName="instagram" placeholder="https://instagram.com/..." />
+          </tui-textfield>
+        </label>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex justify-end gap-2 pt-2">
+      <button tuiButton appearance="flat" type="button" (click)="onCancel()">
+        <span class="georgian-text" lang="ka">გაუქმება</span>
+      </button>
+      <button tuiButton appearance="primary" type="submit" [disabled]="!academyForm.valid">
+        <span class="georgian-text" lang="ka">{{ isEditMode ? 'განახლება' : 'დამატება' }}</span>
+      </button>
+    </div>
+
+  </form>
+</div>

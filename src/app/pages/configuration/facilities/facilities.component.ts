@@ -10,6 +10,7 @@ import { take } from 'rxjs';
 import { TuiAlertService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { ConfigurationService } from '../../../services/http-services/configuration.service';
+import { FacilityService } from '../../../services/http-services/facility.service';
 import { Facility } from '../../../shared/models/facility.model';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { FacilityFormComponent } from './facility-form/facility-form.component';
@@ -29,6 +30,8 @@ export class FacilitiesComponent implements OnInit {
   private readonly injector = inject(Injector);
   facilities = signal<Facility[]>([]);
   isLoading = signal<boolean>(false);
+
+  private readonly facilityService = inject(FacilityService);
 
   constructor(private configurationService: ConfigurationService) {}
 
@@ -109,14 +112,14 @@ export class FacilitiesComponent implements OnInit {
   }
 
   onDeleteFacility(facility: Facility): void {
-    // Call backend to delete facility, refresh list on success and show alerts
-    this.configurationService
-      .deleteFacility(facility.id)
+    const facilityId = facility._id || facility.id;
+    if (!facilityId) return;
+    this.facilityService
+      .deleteFacility(facilityId)
       .pipe(take(1))
       .subscribe({
         next: () => {
-          this.loadFacilities();
-          // show success alert
+          this.facilities.update((list) => list.filter((f) => (f._id || f.id) !== facilityId));
           this.alerts.open('ობიექტი წარმატებით წაიშალა', { appearance: 'success' }).subscribe();
         },
         error: (error) => {

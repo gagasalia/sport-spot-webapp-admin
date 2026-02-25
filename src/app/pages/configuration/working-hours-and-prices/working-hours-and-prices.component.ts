@@ -146,22 +146,24 @@ export class WorkingHoursAndPricesComponent implements OnInit {
             } else if (facilities.length === 1) {
               // Exactly 1 facility, auto-select it
               const facility = facilities[0];
-              this.selectedFacilityId.set(facility.id);
-              this.facilityControl.setValue(facility.id, { emitEvent: false });
+              const fId = facility.id ?? null;
+              this.selectedFacilityId.set(fId);
+              this.facilityControl.setValue(fId, { emitEvent: false });
               // Update query param if not already set
-              if (facilityIdFromQuery !== facility.id) {
-                this.updateQueryParam(facility.id);
+              if (facilityIdFromQuery !== fId) {
+                this.updateQueryParam(fId);
               }
-              this.loadScheduleForFacility(facility.id);
+              if (fId) this.loadScheduleForFacility(fId);
             } else {
               // More than 1 facility
               if (facilityIdFromQuery) {
                 // If there's a query param, use it
                 const facility = facilities.find((f) => f.id === facilityIdFromQuery);
                 if (facility) {
-                  this.selectedFacilityId.set(facility.id);
-                  this.facilityControl.setValue(facility.id, { emitEvent: false });
-                  this.loadScheduleForFacility(facility.id);
+                  const fId = facility.id ?? null;
+                  this.selectedFacilityId.set(fId);
+                  this.facilityControl.setValue(fId, { emitEvent: false });
+                  if (fId) this.loadScheduleForFacility(fId);
                 } else {
                   // Invalid facilityId in query param, clear it
                   this.selectedFacilityId.set(null);

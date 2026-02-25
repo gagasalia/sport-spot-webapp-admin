@@ -1,73 +1,178 @@
-<div class="max-h-[80vh] overflow-y-auto p-1">
-  <form [formGroup]="facilityForm" (ngSubmit)="onSubmit()" class="space-y-4">
-    <!-- Country -->
-    <label tuiLabel>
-      <span class="georgian-text" lang="ka">ქვეყანა *</span>
-      <tui-textfield tuiChevron [stringify]="stringifyCountry">
-        <input tuiSelect formControlName="country" class="georgian-text" lang="ka" />
-        <tui-data-list *tuiTextfieldDropdown>
-          <button *ngFor="let country of countries" new tuiOption [value]="country.id">
-            {{ country.name }}
-          </button>
-        </tui-data-list>
-      </tui-textfield>
-    </label>
+<div class="h-150 overflow-y-auto overflow-x-hidden p-1">
+  <form [formGroup]="facilityForm" (ngSubmit)="onSubmit()" class="space-y-6">
 
-    <!-- City -->
-    <label tuiLabel>
-      <span class="georgian-text" lang="ka">ქალაქი *</span>
-      <tui-textfield tuiChevron [stringify]="stringifyCity">
-        <input tuiSelect formControlName="city" class="georgian-text" lang="ka" />
-        <tui-data-list *tuiTextfieldDropdown>
-          <button *ngFor="let city of cities" new tuiOption [value]="city.id">
-            {{ city.name }}
-          </button>
-        </tui-data-list>
-      </tui-textfield>
-    </label>
+    <!-- Basic Info -->
+    <div class="space-y-4">
+      <h3 class="text-sm font-semibold georgian-text" style="color: var(--tui-text-secondary)" lang="ka">ძირითადი ინფო</h3>
 
-    <!-- Address Text -->
-    <tui-textfield>
+      <!-- Name -->
       <label tuiLabel>
-        <span class="georgian-text" lang="ka">მისამართი *</span>
+        <span class="georgian-text" lang="ka">სახელი <span class="text-red-500">*</span></span>
+        <tui-textfield>
+          <input tuiTextfield formControlName="name" />
+        </tui-textfield>
+        @if (facilityForm.get('name')?.touched && facilityForm.get('name')?.hasError('required')) {
+          <span class="text-xs text-red-500 georgian-text" lang="ka">სახელი სავალდებულოა</span>
+        }
       </label>
-      <input tuiTextfield formControlName="addressText" class="georgian-text" lang="ka" />
-    </tui-textfield>
 
-    <!-- GPS Coordinates -->
-    <div formGroupName="addressPin" class="grid grid-cols-2 gap-4">
-      <tui-textfield>
-        <label tuiLabel>
-          <span class="georgian-text" lang="ka">განედი (Latitude) *</span>
-        </label>
-        <input tuiTextfield formControlName="lat" class="georgian-text" lang="ka" />
-      </tui-textfield>
-      <tui-textfield>
-        <label tuiLabel>
-          <span class="georgian-text" lang="ka">გრძედი (Longitude) *</span>
-        </label>
-        <input tuiTextfield formControlName="lng" class="georgian-text" lang="ka" />
-      </tui-textfield>
-    </div>
+      <!-- Country -->
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">ქვეყანა</span>
+        <tui-textfield tuiChevron [stringify]="stringifyCountry">
+          <input tuiSelect formControlName="country" class="georgian-text" lang="ka" />
+          <tui-data-list *tuiTextfieldDropdown>
+            @for (country of countries; track country.id) {
+              <button tuiOption [value]="country.id" new>{{ country.name }}</button>
+            }
+          </tui-data-list>
+        </tui-textfield>
+      </label>
 
-    <!-- Description -->
-    <tui-textfield>
+      <!-- City -->
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">ქალაქი</span>
+        <tui-textfield tuiChevron [stringify]="stringifyCity">
+          <input tuiSelect formControlName="city" class="georgian-text" lang="ka" />
+          <tui-data-list *tuiTextfieldDropdown>
+            @for (city of cities; track city.id) {
+              <button tuiOption [value]="city.id" new>{{ city.name }}</button>
+            }
+          </tui-data-list>
+        </tui-textfield>
+      </label>
+
+      <!-- Description -->
       <label tuiLabel>
         <span class="georgian-text" lang="ka">აღწერა</span>
+        <tui-textfield>
+          <textarea tuiTextarea formControlName="description" [min]="3" [max]="6"></textarea>
+        </tui-textfield>
       </label>
-      <textarea tuiTextarea formControlName="description" [rows]="5"></textarea>
-    </tui-textfield>
+    </div>
 
-    <!-- Photo Upload -->
+    <!-- contactInfo wrapper (address + contact fields) -->
+    <div formGroupName="contactInfo" class="space-y-6">
+
+      <!-- Address & Map -->
+      <div class="space-y-4">
+        <h3 class="text-sm font-semibold georgian-text" style="color: var(--tui-text-secondary)" lang="ka">მისამართი</h3>
+
+        <div formGroupName="address" class="space-y-3">
+          <!-- Address search (Google Places Autocomplete) -->
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">მისამართის ძებნა</span>
+            <div #autocompleteContainer class="w-full"></div>
+          </label>
+
+          <!-- Street (filled from search or manual entry) -->
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">ქუჩა / მისამართი</span>
+            <tui-textfield>
+              <input tuiTextfield formControlName="street" class="georgian-text" lang="ka" />
+            </tui-textfield>
+          </label>
+
+          <p class="text-sm georgian-text" style="color: var(--tui-text-secondary)" lang="ka">
+            რუკაზე დაჭერით განსაზღვრეთ კოორდინატები
+          </p>
+          <google-map
+            width="100%"
+            height="260px"
+            [center]="mapCenter()"
+            [zoom]="12"
+            [options]="mapOptions"
+            (mapClick)="onMapClick($event)"
+            class="rounded-lg overflow-hidden block border"
+            style="border-color: var(--tui-border-normal)"
+          >
+            @if (markerPosition()) {
+              <map-marker [position]="markerPosition()!" />
+            }
+          </google-map>
+
+          <div class="grid grid-cols-2 gap-4">
+            <label tuiLabel>
+              <span class="georgian-text" lang="ka">განედი (Latitude)</span>
+              <tui-textfield>
+                <input tuiTextfield formControlName="lat" />
+              </tui-textfield>
+            </label>
+            <label tuiLabel>
+              <span class="georgian-text" lang="ka">გრძედი (Longitude)</span>
+              <tui-textfield>
+                <input tuiTextfield formControlName="lng" />
+              </tui-textfield>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contact Info fields -->
+      <div class="space-y-4">
+        <h3 class="text-sm font-semibold georgian-text" style="color: var(--tui-text-secondary)" lang="ka">საკონტაქტო ინფო</h3>
+
+        <div class="grid grid-cols-2 gap-4">
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">ელ. ფოსტა</span>
+            <tui-textfield>
+              <input tuiTextfield type="email" formControlName="email" />
+            </tui-textfield>
+          </label>
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">ტელეფონი</span>
+            <tui-textfield>
+              <input tuiTextfield type="tel" formControlName="phone" />
+            </tui-textfield>
+          </label>
+        </div>
+
+        <label tuiLabel>
+          <span>Website</span>
+          <tui-textfield>
+            <input tuiTextfield formControlName="website" placeholder="https://..." />
+          </tui-textfield>
+        </label>
+
+        <h3 class="text-sm font-semibold" style="color: var(--tui-text-secondary)">სოციალური ქსელები</h3>
+        <div class="grid grid-cols-2 gap-4">
+          <label tuiLabel>
+            <span>Facebook</span>
+            <tui-textfield>
+              <input tuiTextfield formControlName="facebook" placeholder="https://facebook.com/..." />
+            </tui-textfield>
+          </label>
+          <label tuiLabel>
+            <span>Instagram</span>
+            <tui-textfield>
+              <input tuiTextfield formControlName="instagram" placeholder="https://instagram.com/..." />
+            </tui-textfield>
+          </label>
+          <label tuiLabel>
+            <span>Twitter / X</span>
+            <tui-textfield>
+              <input tuiTextfield formControlName="twitter" placeholder="https://twitter.com/..." />
+            </tui-textfield>
+          </label>
+          <label tuiLabel>
+            <span>LinkedIn</span>
+            <tui-textfield>
+              <input tuiTextfield formControlName="linkedIn" placeholder="https://linkedin.com/in/..." />
+            </tui-textfield>
+          </label>
+        </div>
+      </div>
+
+    </div><!-- /contactInfo -->
+
+    <!-- Media Upload -->
     <div>
       <label tuiLabel>
-        <span class="georgian-text mb-3" lang="ka">ფოტოები *</span>
+        <span class="georgian-text mb-3" lang="ka">მედია (ფოტოები)</span>
       </label>
 
-      <!-- Drop Zone -->
       <div
         class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition-colors"
-        [class.border-blue-500]="false"
         (dragover)="onDragOver($event)"
         (dragleave)="onDragLeave($event)"
         (drop)="onDrop($event)"
@@ -89,33 +194,25 @@
         </button>
       </div>
 
-      @if (photos.length === 0 && facilityForm.get('photos')?.touched &&
-      facilityForm.get('photos')?.invalid) {
-      <div class="text-red-500 text-sm mt-2 georgian-text" lang="ka">
-        სულ მცირე ერთი ფოტო აუცილებელია
-      </div>
-      }
-
-      <!-- Photo Preview Grid -->
-      @if (photos.length > 0) {
-      <div class="grid grid-cols-3 gap-2 mt-4">
-        @for (photo of photos; track photo; let i = $index) {
-        <div class="relative group">
-          <img
-            [src]="photo"
-            [alt]="'ფოტო ' + (i + 1)"
-            class="w-full h-24 object-cover rounded border"
-          />
-          <button
-            type="button"
-            (click)="removePhoto(i)"
-            class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <tui-icon icon="@lucide.x" class="text-xs"></tui-icon>
-          </button>
+      @if (mediaItems().length > 0) {
+        <div class="grid grid-cols-3 gap-2 mt-4">
+          @for (item of mediaItems(); track item; let i = $index) {
+            <div class="relative group">
+              <img
+                [src]="item.url"
+                [alt]="'ფოტო ' + (i + 1)"
+                class="w-full h-24 object-cover rounded border"
+              />
+              <button
+                type="button"
+                (click)="removeMedia(i)"
+                class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <tui-icon icon="@lucide.x" class="text-xs"></tui-icon>
+              </button>
+            </div>
+          }
         </div>
-        }
-      </div>
       }
     </div>
 
@@ -126,23 +223,24 @@
       </label>
       <div formArrayName="amenities" class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
         @for (amenity of amenities; track amenity; let i = $index) {
-        <label tuiLabel class="flex items-center gap-2">
-          <input tuiCheckbox type="checkbox" [formControlName]="i" />
-          <tui-icon [icon]="amenityIcons[amenity]" class="text-gray-600"></tui-icon>
-          <span class="georgian-text" lang="ka">{{ amenityLabels[amenity] }}</span>
-        </label>
+          <label tuiLabel class="flex items-center gap-2">
+            <input tuiCheckbox type="checkbox" [formControlName]="i" />
+            <tui-icon [icon]="amenityIcons[amenity]" class="text-gray-600"></tui-icon>
+            <span class="georgian-text" lang="ka">{{ amenityLabels[amenity] }}</span>
+          </label>
         }
       </div>
     </div>
 
     <!-- Action Buttons -->
     <div class="flex justify-end gap-2 mt-6">
-      <button tuiButton appearance="secondary" type="button" (click)="onCancel()">
+      <button tuiButton appearance="flat" type="button" (click)="onCancel()">
         <span class="georgian-text" lang="ka">გაუქმება</span>
       </button>
       <button tuiButton appearance="primary" type="submit" [disabled]="facilityForm.invalid">
         <span class="georgian-text" lang="ka">შენახვა</span>
       </button>
     </div>
+
   </form>
 </div>

@@ -1,0 +1,197 @@
+<div class="pt-8 p-0 sm:p-8">
+  <header class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-semibold georgian-text" lang="ka">იუზერები</h1>
+    <button tuiButton appearance="primary" iconStart="@tui.plus" (click)="addUser()">
+      <span class="georgian-text" lang="ka">დამატება</span>
+    </button>
+  </header>
+
+  @if (isLoading()) {
+    <div class="flex justify-center items-center py-16">
+      <div class="text-lg georgian-text" lang="ka">იტვირთება...</div>
+    </div>
+  } @else {
+    <!-- Desktop Table View -->
+    @if (!isMobile()) {
+      <div
+        class="card-bg rounded-xl border overflow-hidden"
+        style="border-color: var(--tui-border-normal)"
+      >
+        <table class="w-full text-left">
+          <thead>
+            <tr
+              class="border-b"
+              style="
+                border-color: var(--tui-border-normal);
+                background: var(--tui-background-base-alt);
+              "
+            >
+              <th class="px-4 py-3 text-sm font-semibold"></th>
+              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">სახელი</th>
+              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">ელ. ფოსტა</th>
+              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">ტელეფონი</th>
+              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">პირადი ნომერი</th>
+              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">
+                დაბადების თარიღი
+              </th>
+              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">როლი</th>
+              <th class="px-4 py-3 text-sm font-semibold"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users(); track user._id) {
+              <tr
+                class="border-b last:border-b-0 hover:bg-(--tui-background-neutral-1)"
+                style="border-color: var(--tui-border-normal)"
+              >
+                <td class="px-4 py-3">
+                  <tui-avatar size="s">{{ getInitials(user) }}</tui-avatar>
+                </td>
+                <td class="px-4 py-3 font-medium">{{ getFullName(user) }}</td>
+                <td class="px-4 py-3 text-sm">{{ user.email }}</td>
+                <td class="px-4 py-3 text-sm">{{ user.phone || '—' }}</td>
+                <td class="px-4 py-3 text-sm">{{ user.pid || '—' }}</td>
+                <td class="px-4 py-3 text-sm">
+                  {{ user.dateOfBirth ? (user.dateOfBirth | date: 'dd/MM/yyyy') : '—' }}
+                </td>
+                <td class="px-4 py-3 text-sm">
+                  @for (role of user.userType; track role) {
+                    <span
+                      class="inline-block px-2 py-0.5 rounded-full text-xs font-medium mr-1"
+                      [class]="
+                        role === 'superadmin'
+                          ? 'bg-red-100 text-red-700'
+                          : role === 'admin'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-green-100 text-green-700'
+                      "
+                    >
+                      {{ role }}
+                    </span>
+                  }
+                </td>
+                <td class="px-4 py-3 text-sm">
+                  <div class="flex items-center gap-1">
+                    <button
+                      tuiIconButton
+                      appearance="flat"
+                      iconStart="@tui.pencil"
+                      size="s"
+                      (click)="editUser(user)"
+                    ></button>
+                    <button
+                      tuiIconButton
+                      appearance="flat-destructive"
+                      iconStart="@tui.trash-2"
+                      size="s"
+                      (click)="deleteUser(user)"
+                    ></button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="px-4 py-8 text-center georgian-text" lang="ka">
+                  იუზერები ვერ მოიძებნა
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- Mobile Cards View -->
+    @if (isMobile()) {
+      <div class="flex flex-col gap-4">
+        @for (user of users(); track user._id) {
+          <div class="card-bg rounded-xl border p-4" style="border-color: var(--tui-border-normal)">
+            <div class="flex items-center gap-3 mb-3">
+              <tui-avatar size="m">{{ getInitials(user) }}</tui-avatar>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-semibold truncate">{{ getFullName(user) }}</h3>
+                <p class="text-sm truncate" style="color: var(--tui-text-secondary)">
+                  {{ user.email }}
+                </p>
+              </div>
+              <div class="flex items-center gap-1">
+                <button
+                  tuiIconButton
+                  appearance="flat"
+                  iconStart="@tui.pencil"
+                  size="s"
+                  (click)="editUser(user)"
+                ></button>
+                <button
+                  tuiIconButton
+                  appearance="flat-destructive"
+                  iconStart="@tui.trash-2"
+                  size="s"
+                  (click)="deleteUser(user)"
+                ></button>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap gap-1 mb-3">
+              @for (role of user.userType; track role) {
+                <span
+                  class="inline-block px-2 py-0.5 rounded-full text-xs font-medium"
+                  [class]="
+                    role === 'superadmin'
+                      ? 'bg-red-100 text-red-700'
+                      : role === 'admin'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-green-100 text-green-700'
+                  "
+                >
+                  {{ role }}
+                </span>
+              }
+            </div>
+
+            <div class="flex flex-col gap-1 text-sm">
+              @if (user.phone) {
+                <div class="flex items-center gap-2">
+                  <tui-icon
+                    icon="@tui.phone"
+                    class="text-xs"
+                    style="color: var(--tui-text-secondary)"
+                  />
+                  <span>{{ user.phone }}</span>
+                </div>
+              }
+              @if (user.pid) {
+                <div class="flex items-center gap-2">
+                  <tui-icon
+                    icon="@tui.id-card"
+                    class="text-xs"
+                    style="color: var(--tui-text-secondary)"
+                  />
+                  <span>{{ user.pid }}</span>
+                </div>
+              }
+              @if (user.dateOfBirth) {
+                <div class="flex items-center gap-2">
+                  <tui-icon
+                    icon="@tui.calendar"
+                    class="text-xs"
+                    style="color: var(--tui-text-secondary)"
+                  />
+                  <span>{{ user.dateOfBirth | date: 'dd/MM/yyyy' }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        } @empty {
+          <div
+            class="card-bg rounded-xl border p-6 text-center"
+            style="border-color: var(--tui-border-normal)"
+          >
+            <p class="georgian-text" lang="ka">იუზერები ვერ მოიძებნა</p>
+          </div>
+        }
+      </div>
+    }
+  }
+  <!-- end isLoading -->
+</div>

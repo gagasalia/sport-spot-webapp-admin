@@ -19,7 +19,7 @@ import { TuiAlertService } from '@taiga-ui/core';
 import { TuiInputColor } from '@taiga-ui/kit';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { AcademyService } from '../../../services/http-services/academy.service';
-import { Academy } from '../../../shared/models/academy.model';
+import { Tenant } from '../../../shared/models/academy.model';
 
 @Component({
   selector: 'app-academy',
@@ -31,7 +31,7 @@ import { Academy } from '../../../shared/models/academy.model';
 })
 export class AcademyComponent implements OnInit {
   academyForm!: FormGroup;
-  academy = signal<Academy | null>(null);
+  academy = signal<Tenant | null>(null);
   isLoading = signal<boolean>(false);
   isSaving = signal<boolean>(false);
   isSaved = signal<boolean>(false);
@@ -41,14 +41,13 @@ export class AcademyComponent implements OnInit {
     private academyService: AcademyService,
     private alerts: TuiAlertService,
     private router: Router,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
     this.initializeForm();
     this.loadAcademy();
 
-    // Track form changes to disable button when form is dirty
     this.academyForm.valueChanges.subscribe(() => {
       if (this.academyForm.dirty) {
         this.isSaved.set(false);
@@ -58,42 +57,54 @@ export class AcademyComponent implements OnInit {
 
   private initializeForm(): void {
     this.academyForm = this.fb.group({
-      id: [''],
       name: ['', Validators.required],
-      logo: [''],
-      color: ['#000000', Validators.required],
+      designPalette: [''],
       description: [''],
+      logo: this.fb.group({
+        url: [''],
+        type: [''],
+        size: [0],
+        metadata: [null],
+      }),
       contactInfo: this.fb.group({
+        email: [''],
         phone: [''],
-        email: ['', Validators.email],
-        socials: this.fb.group({
-          facebook: [''],
-          instagram: [''],
+        website: [''],
+        facebook: [''],
+        instagram: [''],
+        twitter: [''],
+        linkedIn: [''],
+        address: this.fb.group({
+          street: [''],
+          city: [''],
+          lng: [''],
+          lat: [''],
         }),
       }),
     });
   }
 
+  private readonly tenantId = '69949a1dad1b25262c8656a4';
+
   private loadAcademy(): void {
     this.isLoading.set(true);
     this.academyService
-      .getAcademy()
+      .getTenantById(this.tenantId)
       .pipe(take(1))
       .subscribe({
-        next: (academy) => {
-          if (academy) {
-            this.academy.set(academy);
-            this.academyForm.patchValue(academy);
-            this.isSaved.set(true); // Academy already exists, so show facilities button
-          } else {
-            // Generate new ID for first time
-            this.academyForm.patchValue({ id: this.generateId() });
+        next: (tenant) => {
+          if (tenant) {
+            this.academy.set(tenant);
+            this.academyForm.patchValue(tenant);
+            this.isSaved.set(true);
           }
           this.isLoading.set(false);
+          this.cdr.markForCheck();
         },
         error: (error) => {
           console.error('Error loading academy:', error);
           this.isLoading.set(false);
+          this.cdr.markForCheck();
           this.alerts
             .open('შეცდომა აკადემიის ჩატვირთვისას', { appearance: 'error' })
             .pipe(take(1))
@@ -102,39 +113,36 @@ export class AcademyComponent implements OnInit {
       });
   }
 
-  private generateId(): string {
-    return 'academy_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-  }
-
   onSave(): void {
     if (this.academyForm.valid) {
       this.isSaving.set(true);
-      const academyData = this.academyForm.value as Academy;
+      const formValue = this.academyForm.value;
 
-      const saveOperation = this.academy()
-        ? this.academyService.updateAcademy(academyData)
-        : this.academyService.saveAcademy(academyData);
-
-      saveOperation.pipe(take(1)).subscribe({
-        next: (savedAcademy) => {
-          this.academy.set(savedAcademy);
-          this.isSaving.set(false);
-          this.isSaved.set(true);
-          this.academyForm.markAsPristine();
-          this.alerts
-            .open('აკადემია წარმატებით შეინახა!', { appearance: 'success' })
-            .pipe(take(1))
-            .subscribe();
-        },
-        error: (error) => {
-          console.error('Error saving academy:', error);
-          this.isSaving.set(false);
-          this.alerts
-            .open('შეცდომა აკადემიის შენახვისას', { appearance: 'error' })
-            .pipe(take(1))
-            .subscribe();
-        },
-      });
+      this.academyService
+        .updateTenant(this.tenantId, { ...formValue, id: this.tenantId })
+        .pipe(take(1))
+        .subscribe({
+          next: (savedTenant) => {
+            this.academy.set(savedTenant);
+            this.isSaving.set(false);
+            this.isSaved.set(true);
+            this.academyForm.markAsPristine();
+            this.cdr.markForCheck();
+            this.alerts
+              .open('აკადემია წარმატებით შეინახა!', { appearance: 'success' })
+              .pipe(take(1))
+              .subscribe();
+          },
+          error: (error) => {
+            console.error('Error saving academy:', error);
+            this.isSaving.set(false);
+            this.cdr.markForCheck();
+            this.alerts
+              .open('შეცდომა აკადემიის შენახვისას', { appearance: 'error' })
+              .pipe(take(1))
+              .subscribe();
+          },
+        });
     } else {
       this.academyForm.markAllAsTouched();
       this.alerts
@@ -174,7 +182,6 @@ export class AcademyComponent implements OnInit {
   }
 
   private handleFile(file: File): void {
-    // Only accept image files
     if (!file.type.startsWith('image/')) {
       this.alerts
         .open('გთხოვთ აირჩიოთ სურათის ფაილი', { appearance: 'error' })
@@ -187,7 +194,14 @@ export class AcademyComponent implements OnInit {
     reader.onload = (e) => {
       const result = e.target?.result as string;
       if (result) {
-        this.academyForm.patchValue({ logo: result });
+        this.academyForm.patchValue({
+          logo: {
+            url: result,
+            type: file.type,
+            size: file.size,
+          },
+        });
+        this.academyForm.markAsDirty();
         this.cdr.markForCheck();
       }
     };
@@ -195,15 +209,18 @@ export class AcademyComponent implements OnInit {
   }
 
   removeLogo(): void {
-    this.academyForm.patchValue({ logo: '' });
+    this.academyForm.patchValue({
+      logo: { url: '', type: '', size: 0, metadata: null },
+    });
+    this.academyForm.markAsDirty();
     this.cdr.markForCheck();
   }
 
-  get logo(): string {
-    return this.academyForm.get('logo')?.value || '';
+  get logoUrl(): string {
+    return this.academyForm.get('logo.url')?.value || '';
   }
 
-  get colorControl(): FormControl {
-    return this.academyForm.get('color') as FormControl;
+  get designPaletteControl(): FormControl {
+    return this.academyForm.get('designPalette') as FormControl;
   }
 }

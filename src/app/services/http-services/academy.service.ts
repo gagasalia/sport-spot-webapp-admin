@@ -1,29 +1,46 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { delay } from 'rxjs/operators';
-import { Academy } from '../../shared/models/academy.model';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import { Tenant, CreateTenantDto, UpdateTenantDto } from '../../shared/models/academy.model';
+
+interface ApiResponse<T> {
+  result: {
+    data: T;
+  };
+}
 
 @Injectable({
   providedIn: 'root',
 })
 export class AcademyService {
-  private readonly STORAGE_KEY = 'sportify_academy';
+  private readonly apiUrl = `${environment.apiUrl}/tenants`;
 
-  constructor() {}
+  constructor(private http: HttpClient) {}
 
-  getAcademy(): Observable<Academy | null> {
-    const stored = localStorage.getItem(this.STORAGE_KEY);
-    const academy = stored ? JSON.parse(stored) : null;
-    return of(academy).pipe(delay(300));
+  createTenant(tenant: CreateTenantDto): Observable<Tenant> {
+    return this.http
+      .post<ApiResponse<Tenant>>(this.apiUrl, tenant)
+      .pipe(map((res) => res.result.data));
   }
 
-  saveAcademy(academy: Academy): Observable<Academy> {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(academy));
-    return of(academy).pipe(delay(300));
+  getAllTenants(): Observable<Tenant[]> {
+    return this.http.get<ApiResponse<Tenant[]>>(this.apiUrl).pipe(map((res) => res.result.data));
   }
 
-  updateAcademy(academy: Academy): Observable<Academy> {
-    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(academy));
-    return of(academy).pipe(delay(300));
+  getTenantById(id: string): Observable<Tenant> {
+    return this.http
+      .get<ApiResponse<Tenant>>(`${this.apiUrl}/${id}`)
+      .pipe(map((res) => res.result.data));
+  }
+
+  updateTenant(id: string, tenant: UpdateTenantDto): Observable<Tenant> {
+    return this.http
+      .put<ApiResponse<Tenant>>(`${this.apiUrl}/${id}`, tenant)
+      .pipe(map((res) => res.result.data));
+  }
+
+  deleteTenant(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }
