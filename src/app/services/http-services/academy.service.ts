@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Tenant, CreateTenantDto, UpdateTenantDto } from '../../shared/models/academy.model';
+import { Academy, CreateAcademyDto, UpdateAcademyDto } from '../../shared/models/academy.model';
 
 interface ApiResponse<T> {
   result: {
@@ -14,33 +14,33 @@ interface ApiResponse<T> {
   providedIn: 'root',
 })
 export class AcademyService {
-  private readonly apiUrl = `${environment.apiUrl}/tenants`;
+  private readonly apiUrl = `${environment.apiUrl}/academy`;
 
   constructor(private http: HttpClient) {}
 
-  createTenant(tenant: CreateTenantDto): Observable<Tenant> {
+  createAcademy(academy: CreateAcademyDto): Observable<Academy> {
     return this.http
-      .post<ApiResponse<Tenant>>(this.apiUrl, tenant)
+      .post<ApiResponse<Academy>>(this.apiUrl, academy)
       .pipe(map((res) => res.result.data));
   }
 
-  getAllTenants(): Observable<Tenant[]> {
-    return this.http.get<ApiResponse<Tenant[]>>(this.apiUrl).pipe(map((res) => res.result.data));
+  getAllAcademies(): Observable<Academy[]> {
+    return this.http.get<ApiResponse<Academy[]>>(this.apiUrl).pipe(map((res) => res.result.data));
   }
 
-  getTenantById(id: string): Observable<Tenant> {
+  getAcademyById(id: string): Observable<Academy> {
     return this.http
-      .get<ApiResponse<Tenant>>(`${this.apiUrl}/${id}`)
+      .get<ApiResponse<Academy>>(`${this.apiUrl}/${id}`)
       .pipe(map((res) => res.result.data));
   }
 
-  updateTenant(id: string, tenant: UpdateTenantDto): Observable<Tenant> {
+  updateAcademy(id: string, academy: UpdateAcademyDto): Observable<Academy> {
     return this.http
-      .put<ApiResponse<Tenant>>(`${this.apiUrl}/${id}`, tenant)
+      .put<ApiResponse<Academy>>(`${this.apiUrl}/${id}`, academy)
       .pipe(map((res) => res.result.data));
   }
 
-  deleteTenant(id: string): Observable<void> {
+  deleteAcademy(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 }

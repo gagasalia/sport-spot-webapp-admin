@@ -42,7 +42,7 @@ export interface IContactInfo {
 
 export interface CreateFacilityDto {
   owner?: string;
-  tenantId?: string;
+  academyId?: string;
   name: string;
   description: string;
   amenities: string[];

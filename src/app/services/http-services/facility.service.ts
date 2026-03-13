@@ -12,9 +12,9 @@ export class FacilityService {
 
   constructor(private http: HttpClient) {}
 
-  /** GET /facilities/tenant/{tenantId} – list all facilities for a tenant */
-  getFacilitiesByTenant(tenantId: string): Observable<Facility[]> {
-    return this.http.get<Facility[]>(`${this.apiUrl}/tenant/${tenantId}`);
+  /** GET /facilities/academy/{academyId} – list all facilities for an academy */
+  getFacilitiesByAcademy(academyId: string): Observable<Facility[]> {
+    return this.http.get<Facility[]>(`${this.apiUrl}/academy/${academyId}`);
   }
 
   /** GET /facilities/{id} – get single facility by id */

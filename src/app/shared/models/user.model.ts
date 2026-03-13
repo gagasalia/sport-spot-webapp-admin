@@ -13,7 +13,7 @@ export interface User {
   pid?: string;
   phone: string;
   dateOfBirth?: string;
-  tenants?: string[];
+  academies?: string[];
 }
 
 export interface CreateUserDto {
@@ -25,7 +25,7 @@ export interface CreateUserDto {
   pid?: string;
   phone: string;
   dateOfBirth?: string;
-  tenants?: string[];
+  academies?: string[];
 }
 
 export interface UpdateUserDto {
@@ -37,5 +37,5 @@ export interface UpdateUserDto {
   pid?: string;
   phone?: string;
   dateOfBirth?: string;
-  tenants?: string[];
+  academies?: string[];
 }

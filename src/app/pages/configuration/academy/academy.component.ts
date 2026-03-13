@@ -19,7 +19,7 @@ import { TuiAlertService } from '@taiga-ui/core';
 import { TuiInputColor } from '@taiga-ui/kit';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { AcademyService } from '../../../services/http-services/academy.service';
-import { Tenant } from '../../../shared/models/academy.model';
+import { Academy } from '../../../shared/models/academy.model';
 
 @Component({
   selector: 'app-academy',
@@ -31,7 +31,7 @@ import { Tenant } from '../../../shared/models/academy.model';
 })
 export class AcademyComponent implements OnInit {
   academyForm!: FormGroup;
-  academy = signal<Tenant | null>(null);
+  academy = signal<Academy | null>(null);
   isLoading = signal<boolean>(false);
   isSaving = signal<boolean>(false);
   isSaved = signal<boolean>(false);
@@ -84,18 +84,18 @@ export class AcademyComponent implements OnInit {
     });
   }
 
-  private readonly tenantId = '69949a1dad1b25262c8656a4';
+  private readonly academyId = '69949a1dad1b25262c8656a4';
 
   private loadAcademy(): void {
     this.isLoading.set(true);
     this.academyService
-      .getTenantById(this.tenantId)
+      .getAcademyById(this.academyId)
       .pipe(take(1))
       .subscribe({
-        next: (tenant) => {
-          if (tenant) {
-            this.academy.set(tenant);
-            this.academyForm.patchValue(tenant);
+        next: (academy) => {
+          if (academy) {
+            this.academy.set(academy);
+            this.academyForm.patchValue(academy);
             this.isSaved.set(true);
           }
           this.isLoading.set(false);
@@ -119,11 +119,11 @@ export class AcademyComponent implements OnInit {
       const formValue = this.academyForm.value;
 
       this.academyService
-        .updateTenant(this.tenantId, { ...formValue, id: this.tenantId })
+        .updateAcademy(this.academyId, { ...formValue, id: this.academyId })
         .pipe(take(1))
         .subscribe({
-          next: (savedTenant) => {
-            this.academy.set(savedTenant);
+          next: (savedAcademy) => {
+            this.academy.set(savedAcademy);
             this.isSaving.set(false);
             this.isSaved.set(true);
             this.academyForm.markAsPristine();

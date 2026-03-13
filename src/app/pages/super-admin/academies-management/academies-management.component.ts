@@ -16,7 +16,7 @@ import { TuiDialogService } from '@taiga-ui/experimental';
 import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit/components/confirm';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { AcademyService } from '../../../services/http-services/academy.service';
-import { Tenant } from '../../../shared/models/academy.model';
+import { Academy } from '../../../shared/models/academy.model';
 import { AcademyFormComponent } from './academy-form/academy-form.component';
 import { WA_WINDOW } from '@ng-web-apis/common';
 
@@ -35,7 +35,7 @@ export class AcademiesManagementComponent implements OnInit {
   private readonly window = inject(WA_WINDOW);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly tenants = signal<Tenant[]>([]);
+  protected readonly academies = signal<Academy[]>([]);
   protected readonly isLoading = signal(true);
   protected readonly isMobile = signal(this.window.innerWidth <= 768);
 
@@ -45,17 +45,17 @@ export class AcademiesManagementComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadTenants();
+    this.loadAcademies();
   }
 
-  private loadTenants(): void {
+  private loadAcademies(): void {
     this.isLoading.set(true);
     this.academyService
-      .getAllTenants()
+      .getAllAcademies()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (tenants) => {
-          this.tenants.set(tenants);
+        next: (academies) => {
+          this.academies.set(academies);
           this.isLoading.set(false);
         },
         error: () => {
@@ -66,7 +66,7 @@ export class AcademiesManagementComponent implements OnInit {
 
   protected addAcademy(): void {
     this.dialogs
-      .open<Tenant | null>(new PolymorpheusComponent(AcademyFormComponent, this.injector), {
+      .open<Academy | null>(new PolymorpheusComponent(AcademyFormComponent, this.injector), {
         label: 'აკადემიის დამატება',
         size: 'l',
         dismissible: true,
@@ -76,37 +76,37 @@ export class AcademiesManagementComponent implements OnInit {
       .pipe(take(1))
       .subscribe((result) => {
         if (result) {
-          this.loadTenants();
+          this.loadAcademies();
         }
       });
   }
 
-  protected editAcademy(tenant: Tenant): void {
+  protected editAcademy(academy: Academy): void {
     this.dialogs
-      .open<Tenant | null>(new PolymorpheusComponent(AcademyFormComponent, this.injector), {
+      .open<Academy | null>(new PolymorpheusComponent(AcademyFormComponent, this.injector), {
         label: 'აკადემიის რედაქტირება',
         size: 'l',
         dismissible: true,
         closable: true,
-        data: { tenant },
+        data: { academy },
       })
       .pipe(take(1))
       .subscribe((result) => {
         if (result) {
-          this.loadTenants();
+          this.loadAcademies();
         }
       });
   }
 
-  protected deleteAcademy(tenant: Tenant): void {
-    if (!tenant._id) return;
+  protected deleteAcademy(academy: Academy): void {
+    if (!academy._id) return;
 
     this.dialogs
       .open<boolean>(TUI_CONFIRM, {
         label: 'აკადემიის წაშლა',
         size: 's',
         data: {
-          content: `ნამდვილად გსურთ "${tenant.name}" - ის წაშლა?`,
+          content: `ნამდვილად გსურთ "${academy.name}" - ის წაშლა?`,
           yes: 'წაშლა',
           no: 'გაუქმება',
         } as TuiConfirmData,
@@ -114,11 +114,11 @@ export class AcademiesManagementComponent implements OnInit {
       .pipe(
         take(1),
         filter(Boolean),
-        switchMap(() => this.academyService.deleteTenant(tenant._id!)),
+        switchMap(() => this.academyService.deleteAcademy(academy._id!)),
       )
       .subscribe({
         next: () => {
-          this.tenants.update((list) => list.filter((t) => t._id !== tenant._id));
+          this.academies.update((list) => list.filter((a) => a._id !== academy._id));
           this.alerts
             .open('აკადემია წარმატებით წაიშალა!', { appearance: 'success' })
             .pipe(take(1))

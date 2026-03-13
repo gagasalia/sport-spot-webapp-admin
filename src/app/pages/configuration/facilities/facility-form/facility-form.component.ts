@@ -266,7 +266,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
     const v = this.facilityForm.getRawValue();
 
     const dto: CreateFacilityDto = {
-      owner: environment.tenantId,
+      owner: environment.academyId,
       name: v.name,
       description: v.description || '',
       amenities: this.getSelectedAmenities(),

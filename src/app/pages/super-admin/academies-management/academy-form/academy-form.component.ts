@@ -10,7 +10,7 @@ import { TuiInputColor } from '@taiga-ui/kit/components/input-color';
 import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
 import { AcademyService } from '../../../../services/http-services/academy.service';
 import { UserManagementService } from '../../../../services/http-services/user-management.service';
-import { Tenant } from '../../../../shared/models/academy.model';
+import { Academy } from '../../../../shared/models/academy.model';
 import { User, UserType } from '../../../../shared/models/user.model';
 
 @Component({
@@ -32,8 +32,8 @@ export class AcademyFormComponent implements OnInit {
   };
 
   private readonly context = inject(POLYMORPHEUS_CONTEXT) as TuiDialogContext<
-    Tenant | null,
-    { tenant?: Tenant }
+    Academy | null,
+    { academy?: Academy }
   >;
   private readonly fb = inject(FormBuilder);
   private readonly academyService = inject(AcademyService);
@@ -41,25 +41,25 @@ export class AcademyFormComponent implements OnInit {
   private readonly alerts = inject(TuiAlertService);
 
   protected get isEditMode(): boolean {
-    return !!this.context.data?.tenant;
+    return !!this.context.data?.academy;
   }
 
   ngOnInit(): void {
-    const t = this.context.data?.tenant;
+    const a = this.context.data?.academy;
 
     this.academyForm = this.fb.group({
-      name: [t?.name || '', Validators.required],
+      name: [a?.name || '', Validators.required],
       owner: [null, this.isEditMode ? [] : [Validators.required]],
-      description: [t?.description || ''],
-      designPalette: [t?.designPalette || ''],
+      description: [a?.description || ''],
+      designPalette: [a?.designPalette || ''],
       logo: this.fb.group({
-        url: [t?.logo?.url || ''],
+        url: [a?.logo?.url || ''],
       }),
       contactInfo: this.fb.group({
-        email: [t?.contactInfo?.email || ''],
-        phone: [t?.contactInfo?.phone || ''],
-        facebook: [t?.contactInfo?.facebook || ''],
-        instagram: [t?.contactInfo?.instagram || ''],
+        email: [a?.contactInfo?.email || ''],
+        phone: [a?.contactInfo?.phone || ''],
+        facebook: [a?.contactInfo?.facebook || ''],
+        instagram: [a?.contactInfo?.instagram || ''],
       }),
     });
 
@@ -84,7 +84,7 @@ export class AcademyFormComponent implements OnInit {
     if (this.academyForm.invalid) return;
 
     const v = this.academyForm.value;
-    const t = this.context.data?.tenant;
+    const a = this.context.data?.academy;
 
     const contactInfo = {
       email: v.contactInfo.email || undefined,
@@ -99,11 +99,11 @@ export class AcademyFormComponent implements OnInit {
       size: 0,
     };
 
-    if (t?._id) {
+    if (a?._id) {
       const updateDto = { name: v.name, description: v.description, designPalette: v.designPalette, logo, contactInfo };
 
       this.academyService
-        .updateTenant(t._id, updateDto)
+        .updateAcademy(a._id, updateDto)
         .pipe(take(1))
         .subscribe({
           next: (saved) => {
@@ -118,7 +118,7 @@ export class AcademyFormComponent implements OnInit {
       const createDto = { name: v.name, owner: v.owner._id, description: v.description, designPalette: v.designPalette, logo, contactInfo };
 
       this.academyService
-        .createTenant(createDto as any)
+        .createAcademy(createDto as any)
         .pipe(take(1))
         .subscribe({
           next: (saved) => {

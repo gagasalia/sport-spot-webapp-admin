@@ -1,4 +1,4 @@
-export interface Tenant {
+export interface Academy {
   _id?: string;
   owner: string;
   name: string;
@@ -8,7 +8,7 @@ export interface Tenant {
   contactInfo?: IContactInfo;
 }
 
-export interface CreateTenantDto {
+export interface CreateAcademyDto {
   owner: string;
   name: string;
   designPalette: string;
@@ -17,7 +17,7 @@ export interface CreateTenantDto {
   contactInfo: IContactInfo;
 }
 
-export interface UpdateTenantDto {
+export interface UpdateAcademyDto {
   name: string;
   designPalette: string;
   description: string;
