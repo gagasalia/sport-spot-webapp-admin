@@ -1,5 +1,5 @@
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:3000',
-  academyId: '69949a1dad1b25262c8656a4',
+  academyId: '69bd4c9766281f08cca1d301',
 };

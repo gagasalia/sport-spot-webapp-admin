@@ -40,8 +40,7 @@ const mockExistingAcademy: Academy = {
   name: 'Existing Academy',
   admins: [{ _id: 'admin-id-1', firstName: 'Admin', lastName: 'One', email: 'admin@example.com' }],
   status: AcademyStatus.PUBLISHED,
-  designPalette: '',
-  description: '',
+  color: '',
 };
 
 const mockSavedAcademy: Academy = {
@@ -49,8 +48,7 @@ const mockSavedAcademy: Academy = {
   name: 'New Academy',
   admins: ['admin-id-1'],
   status: AcademyStatus.UNPUBLISHED,
-  designPalette: '',
-  description: '',
+  color: '',
 };
 
 // ─── Context factory ──────────────────────────────────────────────────────────
@@ -337,7 +335,7 @@ describe('AcademyFormComponent', () => {
       expect(academyServiceSpy.createAcademy).not.toHaveBeenCalled();
     }));
 
-    it('should call createAcademy with an admins array of IDs and the status', fakeAsync(() => {
+    it('should call createAcademy with name and admins array of IDs', fakeAsync(() => {
       academyServiceSpy.createAcademy.and.returnValue(of(mockSavedAcademy));
 
       fixture.detectChanges();
@@ -355,11 +353,10 @@ describe('AcademyFormComponent', () => {
       expect(academyServiceSpy.createAcademy).toHaveBeenCalledWith({
         name: 'New Academy',
         admins: ['admin-id-1'],
-        status: AcademyStatus.UNPUBLISHED,
       });
     }));
 
-    it('should submit with PUBLISHED status when the status control is set to PUBLISHED', fakeAsync(() => {
+    it('should not include status in the create payload (status is managed server-side)', fakeAsync(() => {
       academyServiceSpy.createAcademy.and.returnValue(of(mockSavedAcademy));
 
       fixture.detectChanges();
@@ -375,7 +372,7 @@ describe('AcademyFormComponent', () => {
       tick();
 
       const callArg = academyServiceSpy.createAcademy.calls.mostRecent().args[0];
-      expect(callArg.status).toBe(AcademyStatus.PUBLISHED);
+      expect((callArg as any).status).toBeUndefined();
     }));
 
     it('should submit admins as an array of ID strings (not User objects)', fakeAsync(() => {
@@ -393,7 +390,7 @@ describe('AcademyFormComponent', () => {
       component.onSubmit();
       tick();
 
-      const callArg = academyServiceSpy.createAcademy.calls.mostRecent().args[0];
+      const callArg = academyServiceSpy.createAcademy.calls.mostRecent().args[0] as any;
       expect(callArg.admins).toEqual(['admin-id-1', 'superadmin-id-1']);
     }));
 
@@ -477,7 +474,7 @@ describe('AcademyFormComponent', () => {
       expect(academyServiceSpy.updateAcademy).not.toHaveBeenCalled();
     }));
 
-    it('should call updateAcademy with the academy ID, admins array of IDs, and status', fakeAsync(() => {
+    it('should call updateAcademy with the academy ID and only the name', fakeAsync(() => {
       const updatedAcademy = { ...mockExistingAcademy, name: 'Updated Academy' };
       academyServiceSpy.updateAcademy.and.returnValue(of(updatedAcademy));
 
@@ -495,12 +492,10 @@ describe('AcademyFormComponent', () => {
 
       expect(academyServiceSpy.updateAcademy).toHaveBeenCalledWith('academy-id-1', {
         name: 'Updated Academy',
-        admins: ['admin-id-1'],
-        status: AcademyStatus.PUBLISHED,
       });
     }));
 
-    it('should submit admins as an array of ID strings during update', fakeAsync(() => {
+    it('should not include admins in the update payload (admins are not sent during update)', fakeAsync(() => {
       const updatedAcademy = { ...mockExistingAcademy };
       academyServiceSpy.updateAcademy.and.returnValue(of(updatedAcademy));
 
@@ -516,11 +511,11 @@ describe('AcademyFormComponent', () => {
       component.onSubmit();
       tick();
 
-      const callArg = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
-      expect(callArg.admins).toEqual(['admin-id-1', 'superadmin-id-1']);
+      const callArg = academyServiceSpy.updateAcademy.calls.mostRecent().args[1] as any;
+      expect(callArg.admins).toBeUndefined();
     }));
 
-    it('should update status to UNPUBLISHED during update', fakeAsync(() => {
+    it('should not include status in the update payload (status is not sent during update)', fakeAsync(() => {
       const unpublishedAcademy = { ...mockExistingAcademy, status: AcademyStatus.UNPUBLISHED };
       academyServiceSpy.updateAcademy.and.returnValue(of(unpublishedAcademy));
 
@@ -536,8 +531,8 @@ describe('AcademyFormComponent', () => {
       component.onSubmit();
       tick();
 
-      const callArg = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
-      expect(callArg.status).toBe(AcademyStatus.UNPUBLISHED);
+      const callArg = academyServiceSpy.updateAcademy.calls.mostRecent().args[1] as any;
+      expect(callArg.status).toBeUndefined();
     }));
 
     it('should call context.completeWith with the updated academy on success', fakeAsync(() => {

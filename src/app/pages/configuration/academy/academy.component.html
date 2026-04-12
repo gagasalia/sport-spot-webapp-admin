@@ -71,34 +71,50 @@
           }
         </div>
 
-        <!-- Design Palette (Color Picker) -->
+        <!-- Color Picker -->
         <div>
           <label tuiLabel class="georgian-text" lang="ka">
             <span class="block mb-3 georgian-text">ძირითადი ფერი</span>
             <tui-textfield>
-              <input tuiInputColor [formControl]="designPaletteControl" />
+              <input tuiInputColor [formControl]="colorControl" />
             </tui-textfield>
           </label>
         </div>
 
-        <!-- Description -->
+        <!-- Description Georgian -->
         <div>
           <label tuiLabel class="georgian-text" lang="ka">
-            <span class="block mb-3 georgian-text">აღწერა *</span>
+            <span class="block mb-3 georgian-text">აღწერა (ქართულად)</span>
             <tui-textfield>
               <textarea
                 tuiTextarea
-                formControlName="description"
+                formControlName="descriptionGeorgian"
                 [rows]="5"
                 class="georgian-text"
                 lang="ka"
+                placeholder="აკადემიის აღწერა ქართულად"
+              ></textarea>
+            </tui-textfield>
+          </label>
+        </div>
+
+        <!-- Description English -->
+        <div>
+          <label tuiLabel>
+            <span class="block mb-3">Description (English)</span>
+            <tui-textfield>
+              <textarea
+                tuiTextarea
+                formControlName="descriptionEnglish"
+                [rows]="5"
+                placeholder="Academy description in English"
               ></textarea>
             </tui-textfield>
           </label>
         </div>
 
         <!-- Contact Info Section -->
-        <div formGroupName="contactInfo" class="space-y-6">
+        <div class="space-y-6">
           <h3 class="text-lg font-semibold georgian-text" lang="ka">საკონტაქტო ინფორმაცია</h3>
 
           <!-- Phone -->
@@ -130,23 +146,6 @@
                   class="georgian-text"
                   lang="ka"
                   placeholder="info@example.com"
-                />
-              </tui-textfield>
-            </label>
-          </div>
-
-          <!-- Website -->
-          <div>
-            <label tuiLabel class="georgian-text" lang="ka">
-              <span class="block mb-3 georgian-text">ვებსაიტი</span>
-              <tui-textfield>
-                <input
-                  tuiTextfield
-                  type="url"
-                  formControlName="website"
-                  class="georgian-text"
-                  lang="ka"
-                  placeholder="https://example.com"
                 />
               </tui-textfield>
             </label>
@@ -185,77 +184,6 @@
                     class="georgian-text"
                     lang="ka"
                     placeholder="https://instagram.com/yourpage"
-                  />
-                </tui-textfield>
-              </label>
-            </div>
-
-            <!-- Twitter -->
-            <div>
-              <label tuiLabel class="georgian-text" lang="ka">
-                <span class="block mb-3">Twitter</span>
-                <tui-textfield>
-                  <input
-                    tuiTextfield
-                    type="url"
-                    formControlName="twitter"
-                    class="georgian-text"
-                    lang="ka"
-                    placeholder="https://twitter.com/yourpage"
-                  />
-                </tui-textfield>
-              </label>
-            </div>
-
-            <!-- LinkedIn -->
-            <div>
-              <label tuiLabel class="georgian-text" lang="ka">
-                <span class="block mb-3">LinkedIn</span>
-                <tui-textfield>
-                  <input
-                    tuiTextfield
-                    type="url"
-                    formControlName="linkedIn"
-                    class="georgian-text"
-                    lang="ka"
-                    placeholder="https://linkedin.com/company/yourpage"
-                  />
-                </tui-textfield>
-              </label>
-            </div>
-          </div>
-
-          <!-- Address -->
-          <div formGroupName="address" class="space-y-4">
-            <h4 class="text-base font-semibold georgian-text" lang="ka">მისამართი</h4>
-
-            <div>
-              <label tuiLabel class="georgian-text" lang="ka">
-                <span class="block mb-3 georgian-text">ქუჩა</span>
-                <tui-textfield>
-                  <input
-                    tuiTextfield
-                    type="text"
-                    formControlName="street"
-                    class="georgian-text"
-                    lang="ka"
-                    placeholder="ქუჩის მისამართი"
-                  />
-                </tui-textfield>
-              </label>
-            </div>
-
-            <div>
-              <label tuiLabel class="georgian-text" lang="ka">
-                <span class="block mb-3 georgian-text">ქალაქი</span>
-                <tui-textfield>
-                  <input
-                    tuiTextfield
-                    type="text"
-                    formControlName="city"
-                    class="georgian-text"
-                    lang="ka"
-                    placeholder="ქალაქი"
                   />
                 </tui-textfield>
               </label>

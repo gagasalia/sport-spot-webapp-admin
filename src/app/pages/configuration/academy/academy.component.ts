@@ -20,6 +20,7 @@ import { TuiInputColor } from '@taiga-ui/kit';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { AcademyService } from '../../../services/http-services/academy.service';
 import { Academy } from '../../../shared/models/academy.model';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-academy',
@@ -58,33 +59,23 @@ export class AcademyComponent implements OnInit {
   private initializeForm(): void {
     this.academyForm = this.fb.group({
       name: ['', Validators.required],
-      designPalette: [''],
-      description: [''],
+      color: [''],
+      descriptionGeorgian: [''],
+      descriptionEnglish: [''],
+      phone: [''],
+      email: [''],
+      instagram: [''],
+      facebook: [''],
       logo: this.fb.group({
         url: [''],
         type: [''],
         size: [0],
         metadata: [null],
       }),
-      contactInfo: this.fb.group({
-        email: [''],
-        phone: [''],
-        website: [''],
-        facebook: [''],
-        instagram: [''],
-        twitter: [''],
-        linkedIn: [''],
-        address: this.fb.group({
-          street: [''],
-          city: [''],
-          lng: [''],
-          lat: [''],
-        }),
-      }),
     });
   }
 
-  private readonly academyId = '69949a1dad1b25262c8656a4';
+  private readonly academyId = environment.academyId;
 
   private loadAcademy(): void {
     this.isLoading.set(true);
@@ -119,7 +110,7 @@ export class AcademyComponent implements OnInit {
       const formValue = this.academyForm.value;
 
       this.academyService
-        .updateAcademy(this.academyId, { ...formValue, id: this.academyId })
+        .updateAcademy(this.academyId, formValue)
         .pipe(take(1))
         .subscribe({
           next: (savedAcademy) => {
@@ -220,7 +211,7 @@ export class AcademyComponent implements OnInit {
     return this.academyForm.get('logo.url')?.value || '';
   }
 
-  get designPaletteControl(): FormControl {
-    return this.academyForm.get('designPalette') as FormControl;
+  get colorControl(): FormControl {
+    return this.academyForm.get('color') as FormControl;
   }
 }

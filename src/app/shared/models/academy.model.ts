@@ -8,22 +8,31 @@ export interface Academy {
   admins: any[];
   name: string;
   status: AcademyStatus;
-  designPalette: string;
-  description: string;
+  color?: string;
+  descriptionGeorgian?: string;
+  descriptionEnglish?: string;
   logo?: IMedia;
-  contactInfo?: IContactInfo;
+  phone?: string;
+  email?: string;
+  instagram?: string;
+  facebook?: string;
 }
 
 export interface CreateAcademyDto {
   admins: string[];
   name: string;
-  status?: string;
 }
 
 export interface UpdateAcademyDto {
-  name: string;
-  admins?: string[];
-  status?: string;
+  name?: string;
+  color?: string;
+  descriptionGeorgian?: string;
+  descriptionEnglish?: string;
+  phone?: string;
+  email?: string;
+  instagram?: string;
+  facebook?: string;
+  logo?: IMedia;
 }
 
 export interface IMedia {
@@ -31,22 +40,4 @@ export interface IMedia {
   type: string;
   size: number;
   metadata?: any;
-}
-
-export interface IContactInfo {
-  email?: string;
-  phone?: string;
-  address?: IAddress;
-  website?: string;
-  facebook?: string;
-  twitter?: string;
-  instagram?: string;
-  linkedIn?: string;
-}
-
-export interface IAddress {
-  street?: string;
-  lng?: string;
-  lat?: string;
-  city?: string;
 }

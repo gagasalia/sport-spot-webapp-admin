@@ -110,8 +110,6 @@ export class AcademyFormComponent implements OnInit {
       this.academyService
         .updateAcademy(a._id, {
           name: v.name,
-          admins: v.admins.map((u: User) => u._id),
-          status: v.status,
         })
         .pipe(take(1))
         .subscribe({
@@ -134,7 +132,6 @@ export class AcademyFormComponent implements OnInit {
         .createAcademy({
           name: v.name,
           admins: v.admins.map((u: User) => u._id),
-          status: v.status,
         })
         .pipe(take(1))
         .subscribe({
