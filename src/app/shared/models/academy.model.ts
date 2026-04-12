@@ -1,7 +1,13 @@
+export enum AcademyStatus {
+  PUBLISHED = 'published',
+  UNPUBLISHED = 'unpublished',
+}
+
 export interface Academy {
   _id?: string;
-  owner: string;
+  admins: any[];
   name: string;
+  status: AcademyStatus;
   designPalette: string;
   description: string;
   logo?: IMedia;
@@ -9,20 +15,15 @@ export interface Academy {
 }
 
 export interface CreateAcademyDto {
-  owner: string;
+  admins: string[];
   name: string;
-  designPalette: string;
-  description: string;
-  logo: IMedia;
-  contactInfo: IContactInfo;
+  status?: string;
 }
 
 export interface UpdateAcademyDto {
   name: string;
-  designPalette: string;
-  description: string;
-  logo: IMedia;
-  contactInfo: IContactInfo;
+  admins?: string[];
+  status?: string;
 }
 
 export interface IMedia {

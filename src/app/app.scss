@@ -21,10 +21,22 @@
 
 // Georgian text styling
 .georgian-text {
-  font-family: 'MarkGEO', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    'MarkGEO',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
 }
 
 // Also apply to TabBar items on mobile
 [tuiTabBar] .georgian-text {
-  font-family: 'MarkGEO', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    'MarkGEO',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
 }

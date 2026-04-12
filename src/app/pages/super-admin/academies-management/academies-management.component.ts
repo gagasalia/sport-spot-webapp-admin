@@ -98,6 +98,10 @@ export class AcademiesManagementComponent implements OnInit {
       });
   }
 
+  protected formatAdmins(admins: any[]): string {
+    return admins.map((a) => [a.firstName, a.lastName].filter(Boolean).join(' ')).join(', ');
+  }
+
   protected deleteAcademy(academy: Academy): void {
     if (!academy._id) return;
 

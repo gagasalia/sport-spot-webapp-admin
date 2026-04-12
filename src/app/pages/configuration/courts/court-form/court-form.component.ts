@@ -66,7 +66,7 @@ export class CourtFormComponent implements OnInit {
     private fb: FormBuilder,
     private cdr: ChangeDetectorRef,
     private configurationService: ConfigurationService,
-    private alerts: TuiAlertService
+    private alerts: TuiAlertService,
   ) {}
 
   ngOnInit(): void {

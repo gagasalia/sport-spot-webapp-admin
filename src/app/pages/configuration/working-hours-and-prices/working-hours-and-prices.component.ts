@@ -112,7 +112,7 @@ export class WorkingHoursAndPricesComponent implements OnInit {
     private configurationService: ConfigurationService,
     private alerts: TuiAlertService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
   ) {
     // Subscribe to form control changes
     this.facilityControl.valueChanges.subscribe((facilityId) => {
@@ -244,7 +244,7 @@ export class WorkingHoursAndPricesComponent implements OnInit {
 
     localStorage.setItem(
       `${this.WORKING_DAYS_STORAGE_KEY}_${facilityId}`,
-      JSON.stringify(this.workingDays)
+      JSON.stringify(this.workingDays),
     );
 
     console.log('Saving working days for facility:', facilityId, this.workingDays);
@@ -460,7 +460,7 @@ export class WorkingHoursAndPricesComponent implements OnInit {
     // Save to localStorage with facility-specific key
     localStorage.setItem(
       `${this.HOLIDAYS_STORAGE_KEY}_${facilityId}`,
-      JSON.stringify(holidayDates)
+      JSON.stringify(holidayDates),
     );
 
     console.log('Saving holidays for facility:', facilityId, holidayDates);

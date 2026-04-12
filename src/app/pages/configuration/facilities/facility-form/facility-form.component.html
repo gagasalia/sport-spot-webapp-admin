@@ -1,9 +1,14 @@
 <div class="h-150 overflow-y-auto overflow-x-hidden p-1">
   <form [formGroup]="facilityForm" (ngSubmit)="onSubmit()" class="space-y-6">
-
     <!-- Basic Info -->
     <div class="space-y-4">
-      <h3 class="text-sm font-semibold georgian-text" style="color: var(--tui-text-secondary)" lang="ka">ძირითადი ინფო</h3>
+      <h3
+        class="text-sm font-semibold georgian-text"
+        style="color: var(--tui-text-secondary)"
+        lang="ka"
+      >
+        ძირითადი ინფო
+      </h3>
 
       <!-- Name -->
       <label tuiLabel>
@@ -53,10 +58,15 @@
 
     <!-- contactInfo wrapper (address + contact fields) -->
     <div formGroupName="contactInfo" class="space-y-6">
-
       <!-- Address & Map -->
       <div class="space-y-4">
-        <h3 class="text-sm font-semibold georgian-text" style="color: var(--tui-text-secondary)" lang="ka">მისამართი</h3>
+        <h3
+          class="text-sm font-semibold georgian-text"
+          style="color: var(--tui-text-secondary)"
+          lang="ka"
+        >
+          მისამართი
+        </h3>
 
         <div formGroupName="address" class="space-y-3">
           <!-- Address search (Google Places Autocomplete) -->
@@ -110,7 +120,13 @@
 
       <!-- Contact Info fields -->
       <div class="space-y-4">
-        <h3 class="text-sm font-semibold georgian-text" style="color: var(--tui-text-secondary)" lang="ka">საკონტაქტო ინფო</h3>
+        <h3
+          class="text-sm font-semibold georgian-text"
+          style="color: var(--tui-text-secondary)"
+          lang="ka"
+        >
+          საკონტაქტო ინფო
+        </h3>
 
         <div class="grid grid-cols-2 gap-4">
           <label tuiLabel>
@@ -134,18 +150,28 @@
           </tui-textfield>
         </label>
 
-        <h3 class="text-sm font-semibold" style="color: var(--tui-text-secondary)">სოციალური ქსელები</h3>
+        <h3 class="text-sm font-semibold" style="color: var(--tui-text-secondary)">
+          სოციალური ქსელები
+        </h3>
         <div class="grid grid-cols-2 gap-4">
           <label tuiLabel>
             <span>Facebook</span>
             <tui-textfield>
-              <input tuiTextfield formControlName="facebook" placeholder="https://facebook.com/..." />
+              <input
+                tuiTextfield
+                formControlName="facebook"
+                placeholder="https://facebook.com/..."
+              />
             </tui-textfield>
           </label>
           <label tuiLabel>
             <span>Instagram</span>
             <tui-textfield>
-              <input tuiTextfield formControlName="instagram" placeholder="https://instagram.com/..." />
+              <input
+                tuiTextfield
+                formControlName="instagram"
+                placeholder="https://instagram.com/..."
+              />
             </tui-textfield>
           </label>
           <label tuiLabel>
@@ -157,13 +183,17 @@
           <label tuiLabel>
             <span>LinkedIn</span>
             <tui-textfield>
-              <input tuiTextfield formControlName="linkedIn" placeholder="https://linkedin.com/in/..." />
+              <input
+                tuiTextfield
+                formControlName="linkedIn"
+                placeholder="https://linkedin.com/in/..."
+              />
             </tui-textfield>
           </label>
         </div>
       </div>
-
-    </div><!-- /contactInfo -->
+    </div>
+    <!-- /contactInfo -->
 
     <!-- Media Upload -->
     <div>
@@ -241,6 +271,5 @@
         <span class="georgian-text" lang="ka">შენახვა</span>
       </button>
     </div>
-
   </form>
 </div>

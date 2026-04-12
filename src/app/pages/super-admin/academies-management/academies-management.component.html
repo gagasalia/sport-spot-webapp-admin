@@ -26,13 +26,9 @@
                 background: var(--tui-background-base-alt);
               "
             >
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">ლოგო</th>
               <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">სახელი</th>
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">აღწერა</th>
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">ელ. ფოსტა</th>
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">ტელეფონი</th>
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">ქალაქი</th>
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">ფერი</th>
+              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">ადმინ(ებ)ი</th>
+              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">სტატუსი</th>
               <th class="px-4 py-3 text-sm font-semibold"></th>
             </tr>
           </thead>
@@ -42,27 +38,23 @@
                 class="border-b last:border-b-0 hover:bg-(--tui-background-neutral-1)"
                 style="border-color: var(--tui-border-normal)"
               >
-                <td class="px-4 py-3">
-                  @if (academy.logo?.url) {
-                    <tui-avatar [src]="academy.logo!.url" size="s" />
-                  } @else {
-                    <tui-avatar size="s">{{ academy.name.charAt(0) }}</tui-avatar>
-                  }
-                </td>
                 <td class="px-4 py-3 font-medium">{{ academy.name }}</td>
-                <td class="px-4 py-3 text-sm max-w-xs truncate">{{ academy.description }}</td>
-                <td class="px-4 py-3 text-sm">{{ academy.contactInfo?.email || '—' }}</td>
-                <td class="px-4 py-3 text-sm">{{ academy.contactInfo?.phone || '—' }}</td>
-                <td class="px-4 py-3 text-sm">{{ academy.contactInfo?.address?.city || '—' }}</td>
-                <td class="px-4 py-3">
-                  @if (academy.designPalette) {
-                    <div
-                      class="w-6 h-6 rounded-full border"
-                      [style.background-color]="academy.designPalette"
-                      style="border-color: var(--tui-border-normal)"
-                    ></div>
+                <td class="px-4 py-3 text-sm">
+                  @if (academy.admins.length) {
+                    {{ formatAdmins(academy.admins) }}
                   } @else {
                     <span>—</span>
+                  }
+                </td>
+                <td class="px-4 py-3 text-sm">
+                  @if (academy.status === 'published') {
+                    <tui-badge appearance="success">
+                      <span class="georgian-text" lang="ka">გამოქვეყნებული</span>
+                    </tui-badge>
+                  } @else {
+                    <tui-badge appearance="neutral">
+                      <span class="georgian-text" lang="ka">გამოუქვეყნებელი</span>
+                    </tui-badge>
                   }
                 </td>
                 <td class="px-4 py-3 text-sm">
@@ -86,7 +78,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="8" class="px-4 py-8 text-center georgian-text" lang="ka">
+                <td colspan="4" class="px-4 py-8 text-center georgian-text" lang="ka">
                   აკადემიები ვერ მოიძებნა
                 </td>
               </tr>
@@ -101,28 +93,9 @@
       <div class="flex flex-col gap-4">
         @for (academy of academies(); track academy._id) {
           <div class="card-bg rounded-xl border p-4" style="border-color: var(--tui-border-normal)">
-            <div class="flex items-center gap-3 mb-3">
-              @if (academy.logo?.url) {
-                <tui-avatar [src]="academy.logo!.url" size="m" />
-              } @else {
-                <tui-avatar size="m">{{ academy.name.charAt(0) }}</tui-avatar>
-              }
-              <div class="flex-1 min-w-0">
-                <h3 class="font-semibold truncate">{{ academy.name }}</h3>
-                @if (academy.contactInfo?.address?.city) {
-                  <p class="text-sm" style="color: var(--tui-text-secondary)">
-                    {{ academy.contactInfo?.address?.city }}
-                  </p>
-                }
-              </div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-semibold truncate">{{ academy.name }}</h3>
               <div class="flex items-center gap-1 shrink-0">
-                @if (academy.designPalette) {
-                  <div
-                    class="w-6 h-6 rounded-full border"
-                    [style.background-color]="academy.designPalette"
-                    style="border-color: var(--tui-border-normal)"
-                  ></div>
-                }
                 <button
                   tuiIconButton
                   appearance="flat"
@@ -140,33 +113,29 @@
               </div>
             </div>
 
-            @if (academy.description) {
-              <p class="text-sm mb-3 line-clamp-2" style="color: var(--tui-text-secondary)">
-                {{ academy.description }}
-              </p>
-            }
-
-            <div class="flex flex-col gap-1 text-sm">
-              @if (academy.contactInfo?.email) {
-                <div class="flex items-center gap-2">
-                  <tui-icon
-                    icon="@tui.mail"
-                    class="text-xs"
+            <div class="flex flex-col gap-2 text-sm">
+              @if (academy.admins.length) {
+                <div>
+                  <span
+                    class="georgian-text font-medium"
                     style="color: var(--tui-text-secondary)"
-                  />
-                  <span>{{ academy.contactInfo?.email }}</span>
+                    lang="ka"
+                    >ადმინ(ებ)ი:
+                  </span>
+                  <span>{{ formatAdmins(academy.admins) }}</span>
                 </div>
               }
-              @if (academy.contactInfo?.phone) {
-                <div class="flex items-center gap-2">
-                  <tui-icon
-                    icon="@tui.phone"
-                    class="text-xs"
-                    style="color: var(--tui-text-secondary)"
-                  />
-                  <span>{{ academy.contactInfo?.phone }}</span>
-                </div>
-              }
+              <div>
+                @if (academy.status === 'published') {
+                  <tui-badge appearance="success">
+                    <span class="georgian-text" lang="ka">გამოქვეყნებული</span>
+                  </tui-badge>
+                } @else {
+                  <tui-badge appearance="neutral">
+                    <span class="georgian-text" lang="ka">გამოუქვეყნებელი</span>
+                  </tui-badge>
+                }
+              </div>
             </div>
           </div>
         } @empty {

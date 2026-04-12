@@ -6,6 +6,83 @@
     </button>
   </header>
 
+  <!-- Filters -->
+  <div class="card-bg rounded-xl border p-4 mb-6" style="border-color: var(--tui-border-normal)">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">სახელი</span>
+        <tui-textfield>
+          <input
+            tuiTextfield
+            type="text"
+            [ngModel]="filterName()"
+            (ngModelChange)="filterName.set($event)"
+          />
+        </tui-textfield>
+      </label>
+
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">ელ. ფოსტა</span>
+        <tui-textfield>
+          <input
+            tuiTextfield
+            type="text"
+            [ngModel]="filterEmail()"
+            (ngModelChange)="filterEmail.set($event)"
+          />
+        </tui-textfield>
+      </label>
+
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">ტელეფონი</span>
+        <tui-textfield>
+          <input
+            tuiTextfield
+            type="text"
+            [ngModel]="filterPhone()"
+            (ngModelChange)="filterPhone.set($event)"
+          />
+        </tui-textfield>
+      </label>
+
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">პირადი ნომერი</span>
+        <tui-textfield>
+          <input
+            tuiTextfield
+            type="text"
+            [ngModel]="filterPid()"
+            (ngModelChange)="filterPid.set($event)"
+          />
+        </tui-textfield>
+      </label>
+
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">როლი</span>
+        <tui-textfield tuiChevron>
+          <input
+            tuiSelect
+            [ngModel]="filterRole()"
+            (ngModelChange)="filterRole.set($event)"
+            class="georgian-text"
+            lang="ka"
+          />
+          <tui-data-list *tuiTextfieldDropdown>
+            @for (role of roleOptions; track role) {
+              <button tuiOption [value]="role" new>{{ role }}</button>
+            }
+          </tui-data-list>
+        </tui-textfield>
+      </label>
+
+      <div class="flex items-end">
+        <button tuiButton appearance="flat" (click)="clearFilters()" class="w-full">
+          <span class="georgian-text" lang="ka">გასუფთავება</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   @if (isLoading()) {
     <div class="flex justify-center items-center py-16">
       <div class="text-lg georgian-text" lang="ka">იტვირთება...</div>

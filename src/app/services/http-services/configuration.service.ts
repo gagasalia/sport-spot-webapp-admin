@@ -50,7 +50,7 @@ export class ConfigurationService {
             localStorage.setItem(photoKey, JSON.stringify(facility.photos));
           } catch (e) {
             console.warn(
-              `Could not store photos for facility ${facility.id}. Photos will not persist.`
+              `Could not store photos for facility ${facility.id}. Photos will not persist.`,
             );
             // Remove the photo key if it exists
             localStorage.removeItem(photoKey);

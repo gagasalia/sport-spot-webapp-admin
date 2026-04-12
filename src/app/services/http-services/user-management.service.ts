@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpContext } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { User, CreateUserDto, UpdateUserDto } from '../../shared/models/user.model';
+import { User, CreateUserDto, UpdateUserDto, FilterUsersDto } from '../../shared/models/user.model';
 
 interface ApiResponse<T> {
   result: {
@@ -24,9 +24,9 @@ export class UserManagementService {
       .pipe(map((res) => res.result.data));
   }
 
-  findAllUsers(userType: string = 'admin'): Observable<User[]> {
+  findAllUsers(filters: FilterUsersDto = {}, context?: HttpContext): Observable<User[]> {
     return this.http
-      .post<ApiResponse<User[]>>(`${this.apiUrl}/um/find`, { userType })
+      .post<ApiResponse<User[]>>(`${this.apiUrl}/um/find`, filters, { context })
       .pipe(map((res) => res.result.data));
   }
 

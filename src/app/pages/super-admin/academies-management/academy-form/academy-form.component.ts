@@ -1,22 +1,33 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+  AbstractControl,
+  ValidationErrors,
+} from '@angular/forms';
 import { take } from 'rxjs';
 import { type TuiStringHandler } from '@taiga-ui/cdk';
 import { TuiAlertService } from '@taiga-ui/core';
 import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 import { TuiDialogContext } from '@taiga-ui/experimental';
-import { TuiInputColor } from '@taiga-ui/kit/components/input-color';
+import { TuiMultiSelect } from '@taiga-ui/kit';
 import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
 import { AcademyService } from '../../../../services/http-services/academy.service';
 import { UserManagementService } from '../../../../services/http-services/user-management.service';
-import { Academy } from '../../../../shared/models/academy.model';
+import { Academy, AcademyStatus } from '../../../../shared/models/academy.model';
 import { User, UserType } from '../../../../shared/models/user.model';
+
+function arrayRequiredValidator(control: AbstractControl): ValidationErrors | null {
+  return Array.isArray(control.value) && control.value.length > 0 ? null : { required: true };
+}
 
 @Component({
   selector: 'app-academy-form',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, ReactiveFormsModule, CommonModule, TuiInputColor],
+  imports: [...SHARED_TAIGA_IMPORTS, ...TuiMultiSelect, ReactiveFormsModule, CommonModule],
   templateUrl: './academy-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -26,9 +37,22 @@ export class AcademyFormComponent implements OnInit {
   protected readonly adminUsers = signal<User[]>([]);
   protected readonly isLoadingUsers = signal(true);
 
+  protected readonly statusOptions = [AcademyStatus.PUBLISHED, AcademyStatus.UNPUBLISHED];
+
   readonly stringifyUser: TuiStringHandler<User> = (user) => {
     const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
     return name ? `${name} (${user.email})` : user.email;
+  };
+
+  readonly stringifyStatus: TuiStringHandler<AcademyStatus> = (status) => {
+    switch (status) {
+      case AcademyStatus.PUBLISHED:
+        return 'გამოქვეყნებული';
+      case AcademyStatus.UNPUBLISHED:
+        return 'გამოუქვეყნებელი';
+      default:
+        return status;
+    }
   };
 
   private readonly context = inject(POLYMORPHEUS_CONTEXT) as TuiDialogContext<
@@ -49,22 +73,12 @@ export class AcademyFormComponent implements OnInit {
 
     this.academyForm = this.fb.group({
       name: [a?.name || '', Validators.required],
-      owner: [null, this.isEditMode ? [] : [Validators.required]],
-      description: [a?.description || ''],
-      designPalette: [a?.designPalette || ''],
-      logo: this.fb.group({
-        url: [a?.logo?.url || ''],
-      }),
-      contactInfo: this.fb.group({
-        email: [a?.contactInfo?.email || ''],
-        phone: [a?.contactInfo?.phone || ''],
-        facebook: [a?.contactInfo?.facebook || ''],
-        instagram: [a?.contactInfo?.instagram || ''],
-      }),
+      admins: [[], [arrayRequiredValidator]],
+      status: [a?.status || AcademyStatus.UNPUBLISHED, Validators.required],
     });
 
     this.userService
-      .findAllUsers('admin')
+      .findAllUsers({ userType: [UserType.ADMIN, UserType.SUPERADMIN] })
       .pipe(take(1))
       .subscribe({
         next: (users) => {
@@ -73,6 +87,12 @@ export class AcademyFormComponent implements OnInit {
           );
           this.adminUsers.set(filtered);
           this.isLoadingUsers.set(false);
+
+          if (a?.admins?.length) {
+            const adminIds = a.admins.map((admin: any) => admin._id || admin);
+            const matched = filtered.filter((u) => adminIds.includes(u._id));
+            this.academyForm.get('admins')?.setValue(matched);
+          }
         },
         error: () => {
           this.isLoadingUsers.set(false);
@@ -86,47 +106,50 @@ export class AcademyFormComponent implements OnInit {
     const v = this.academyForm.value;
     const a = this.context.data?.academy;
 
-    const contactInfo = {
-      email: v.contactInfo.email || undefined,
-      phone: v.contactInfo.phone || undefined,
-      facebook: v.contactInfo.facebook || undefined,
-      instagram: v.contactInfo.instagram || undefined,
-    };
-
-    const logo = {
-      url: v.logo.url || '',
-      type: '',
-      size: 0,
-    };
-
     if (a?._id) {
-      const updateDto = { name: v.name, description: v.description, designPalette: v.designPalette, logo, contactInfo };
-
       this.academyService
-        .updateAcademy(a._id, updateDto)
+        .updateAcademy(a._id, {
+          name: v.name,
+          admins: v.admins.map((u: User) => u._id),
+          status: v.status,
+        })
         .pipe(take(1))
         .subscribe({
           next: (saved) => {
-            this.alerts.open('აკადემია წარმატებით განახლდა!', { appearance: 'success' }).pipe(take(1)).subscribe();
+            this.alerts
+              .open('აკადემია წარმატებით განახლდა!', { appearance: 'success' })
+              .pipe(take(1))
+              .subscribe();
             (this.context as any).completeWith(saved);
           },
           error: () => {
-            this.alerts.open('შეცდომა აკადემიის განახლებისას.', { appearance: 'error' }).pipe(take(1)).subscribe();
+            this.alerts
+              .open('შეცდომა აკადემიის განახლებისას.', { appearance: 'error' })
+              .pipe(take(1))
+              .subscribe();
           },
         });
     } else {
-      const createDto = { name: v.name, owner: v.owner._id, description: v.description, designPalette: v.designPalette, logo, contactInfo };
-
       this.academyService
-        .createAcademy(createDto as any)
+        .createAcademy({
+          name: v.name,
+          admins: v.admins.map((u: User) => u._id),
+          status: v.status,
+        })
         .pipe(take(1))
         .subscribe({
           next: (saved) => {
-            this.alerts.open('აკადემია წარმატებით დაემატა!', { appearance: 'success' }).pipe(take(1)).subscribe();
+            this.alerts
+              .open('აკადემია წარმატებით დაემატა!', { appearance: 'success' })
+              .pipe(take(1))
+              .subscribe();
             (this.context as any).completeWith(saved);
           },
           error: () => {
-            this.alerts.open('შეცდომა აკადემიის დამატებისას.', { appearance: 'error' }).pipe(take(1)).subscribe();
+            this.alerts
+              .open('შეცდომა აკადემიის დამატებისას.', { appearance: 'error' })
+              .pipe(take(1))
+              .subscribe();
           },
         });
     }

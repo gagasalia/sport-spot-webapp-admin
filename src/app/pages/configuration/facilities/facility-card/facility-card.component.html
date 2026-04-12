@@ -12,11 +12,13 @@
       />
 
       @if (facility.activeState) {
-      <tui-chip appearance="success" size="m" class="georgian-text" lang="ka">
-        გამოქვეყნებული
-      </tui-chip>
+        <tui-chip appearance="success" size="m" class="georgian-text" lang="ka">
+          გამოქვეყნებული
+        </tui-chip>
       } @else {
-      <tui-chip appearance="neutral" size="m" class="georgian-text" lang="ka"> მონახაზი </tui-chip>
+        <tui-chip appearance="neutral" size="m" class="georgian-text" lang="ka">
+          მონახაზი
+        </tui-chip>
       }
     </div>
   </div>
@@ -29,11 +31,11 @@
       class="w-full h-full object-cover"
     />
     @if (hasMultiplePhotos) {
-    <div
-      class="absolute bottom-3 right-3 bg-black/70 text-white px-2 py-1 rounded-md text-xs font-medium"
-    >
-      1 / {{ photoCount }}
-    </div>
+      <div
+        class="absolute bottom-3 right-3 bg-black/70 text-white px-2 py-1 rounded-md text-xs font-medium"
+      >
+        1 / {{ photoCount }}
+      </div>
     }
   </div>
 

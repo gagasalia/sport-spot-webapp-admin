@@ -16,6 +16,7 @@ import {
   TuiAlertService,
   TuiButton,
   TuiDataList,
+  TuiDropdown,
   TuiIcon,
   TuiLabel,
   TuiOption,
@@ -49,6 +50,7 @@ export const SHARED_TAIGA_IMPORTS = [
   TuiOption,
   TuiTextfieldComponent,
   ...TuiTextfield, // Spread the textfield array
+  ...TuiDropdown,
   // Layout
   TuiHeader,
   // Kit

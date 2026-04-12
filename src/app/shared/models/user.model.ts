@@ -39,3 +39,13 @@ export interface UpdateUserDto {
   dateOfBirth?: string;
   academies?: string[];
 }
+
+export interface FilterUsersDto {
+  name?: string;
+  email?: string;
+  phone?: string;
+  pid?: string;
+  userType?: UserType[];
+  page?: number;
+  limit?: number;
+}
