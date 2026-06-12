@@ -1,0 +1,106 @@
+<div class="p-1 space-y-4">
+  <!-- Slot summary -->
+  <div class="rounded-lg p-3" style="background: var(--tui-background-neutral-1)">
+    <div class="flex justify-between items-center">
+      <span class="georgian-text font-medium" lang="ka">{{ data.courtLabel }}</span>
+      <span class="text-sm" style="color: var(--tui-text-secondary)">
+        {{ data.date }} · {{ data.start }}–{{ data.end }}
+      </span>
+    </div>
+    @if (priceGel() != null && mode() === 'booking') {
+      <div class="text-sm mt-1" style="color: var(--tui-text-secondary)">
+        {{ priceGel() }} GEL
+      </div>
+    }
+  </div>
+
+  <!-- Mode toggle: booking | block -->
+  <div class="flex gap-2">
+    <button
+      tuiButton
+      size="s"
+      type="button"
+      [appearance]="mode() === 'booking' ? 'primary' : 'flat'"
+      (click)="setMode('booking')"
+    >
+      <span class="georgian-text" lang="ka">ჯავშანი</span>
+    </button>
+    <button
+      tuiButton
+      size="s"
+      type="button"
+      [appearance]="mode() === 'block' ? 'primary' : 'flat'"
+      (click)="setMode('block')"
+    >
+      <span class="georgian-text" lang="ka">დაბლოკვა</span>
+    </button>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-4">
+    @if (mode() === 'booking') {
+      <!-- Customer name (required) -->
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">სახელი <span class="text-red-500">*</span></span>
+        <tui-textfield>
+          <input tuiTextfield formControlName="customerName" class="georgian-text" lang="ka" />
+        </tui-textfield>
+        @if (form.get('customerName')?.touched && form.get('customerName')?.hasError('required')) {
+          <span class="text-xs text-red-500 georgian-text" lang="ka">სახელი სავალდებულოა</span>
+        }
+      </label>
+
+      <!-- Customer phone (optional, Georgian mask) -->
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">ტელეფონი</span>
+        <tui-textfield>
+          <input
+            tuiTextfield
+            type="tel"
+            formControlName="customerPhone"
+            [maskito]="phoneMask"
+            placeholder="+9955XXXXXXXX"
+          />
+        </tui-textfield>
+        @if (form.get('customerPhone')?.touched && form.get('customerPhone')?.hasError('pattern')) {
+          <span class="text-xs text-red-500 georgian-text" lang="ka"
+            >ნომერი უნდა იწყებოდეს 5-ით და იყოს 9 ციფრი</span
+          >
+        }
+      </label>
+    } @else {
+      <!-- Block: optional multi-slot end -->
+      @if (data.laterSlots.length > 0) {
+        <label tuiLabel>
+          <span class="georgian-text" lang="ka">დასასრული (არასავალდებულო)</span>
+          <tui-textfield tuiChevron [stringify]="stringifyEndSlot">
+            <input tuiSelect formControlName="blockEnd" class="georgian-text" lang="ka" />
+            <tui-data-list *tuiTextfieldDropdown>
+              @for (slot of data.laterSlots; track slot.start) {
+                <button tuiOption [value]="slot.start">{{ slot.start }} – {{ slot.end }}</button>
+              }
+            </tui-data-list>
+          </tui-textfield>
+        </label>
+      }
+    }
+
+    <!-- Note (both modes) -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">შენიშვნა</span>
+      <tui-textfield>
+        <textarea tuiTextarea formControlName="note" class="georgian-text" lang="ka"></textarea>
+      </tui-textfield>
+    </label>
+
+    <div class="flex justify-end gap-2 mt-6">
+      <button tuiButton appearance="flat" type="button" (click)="cancel()">
+        <span class="georgian-text" lang="ka">გაუქმება</span>
+      </button>
+      <button tuiButton appearance="primary" type="submit" [disabled]="submitting()">
+        <span class="georgian-text" lang="ka">{{
+          mode() === 'booking' ? 'დაჯავშნა' : 'დაბლოკვა'
+        }}</span>
+      </button>
+    </div>
+  </form>
+</div>

@@ -42,6 +42,13 @@ export const routes: Routes = [
           import('./pages/configuration/academy/academy.component').then((m) => m.AcademyComponent),
       },
       {
+        path: 'reservations',
+        loadComponent: () =>
+          import('./pages/reservations/reservations.component').then(
+            (m) => m.ReservationsComponent,
+          ),
+      },
+      {
         path: 'super-admin/academies-management',
         canActivate: [superAdminGuard],
         loadComponent: () =>

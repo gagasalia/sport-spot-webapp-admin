@@ -1,0 +1,505 @@
+<div class="pt-8 p-0 sm:p-8">
+  <header class="mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 min-h-16">
+      <h1 class="text-2xl font-semibold georgian-text" lang="ka">ჯავშნები</h1>
+    </div>
+  </header>
+
+  <!-- Facility selector (identical pattern to the courts page) -->
+  @if (facilities().length === 0) {
+    <div class="flex flex-col items-center justify-center py-16">
+      <img src="images/no-result.png" alt="No facilities" class="w-64 h-64 mb-6 opacity-50" />
+      <p class="text-lg text-gray-500 mb-6 georgian-text" lang="ka">
+        ჯავშნების სანახავად დაამატეთ ობიექტი
+      </p>
+      <button tuiButton appearance="primary" iconStart="@tui.plus" (click)="navigateToFacilities()">
+        <span class="georgian-text" lang="ka">დაამატე ობიექტი</span>
+      </button>
+    </div>
+  } @else {
+    <div class="mb-6">
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">აირჩიეთ ობიექტი</span>
+        <tui-textfield tuiChevron [stringify]="stringifyFacility">
+          <input tuiSelect [formControl]="facilityControl" class="georgian-text" lang="ka" />
+          <tui-data-list *tuiTextfieldDropdown>
+            @for (facility of facilities(); track facility._id ?? facility.id) {
+              <button new tuiOption [value]="facility._id ?? facility.id">
+                <span class="georgian-text" lang="ka">
+                  {{ facility.name || facility.description || 'უსახელო ობიექტი' }}
+                </span>
+              </button>
+            }
+          </tui-data-list>
+        </tui-textfield>
+      </label>
+    </div>
+  }
+
+  @if (selectedFacilityId()) {
+    @if (activeCourts().length === 0 && !isLoading()) {
+      <!-- Facility has no active courts -->
+      <div class="flex flex-col items-center justify-center py-16">
+        <tui-icon icon="@tui.table-cells-merge" class="w-32 h-32 opacity-50 mb-6"></tui-icon>
+        <p class="text-lg text-gray-500 georgian-text" lang="ka">
+          ამ ობიექტს აქტიური კორტი არ აქვს
+        </p>
+      </div>
+    } @else {
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-4 border-b" style="border-color: var(--tui-border-normal)">
+        <button
+          tuiButton
+          size="s"
+          type="button"
+          [appearance]="tab() === 'day' ? 'primary' : 'flat'"
+          (click)="setTab('day')"
+        >
+          <span class="georgian-text" lang="ka">დღე</span>
+        </button>
+        <button
+          tuiButton
+          size="s"
+          type="button"
+          [appearance]="tab() === 'week' ? 'primary' : 'flat'"
+          (click)="setTab('week')"
+        >
+          <span class="georgian-text" lang="ka">კვირა</span>
+        </button>
+        <button
+          tuiButton
+          size="s"
+          type="button"
+          [appearance]="tab() === 'list' ? 'primary' : 'flat'"
+          (click)="setTab('list')"
+        >
+          <span class="georgian-text" lang="ka">სია</span>
+        </button>
+      </div>
+
+      <!-- Error -->
+      @if (hasError()) {
+        <div
+          class="rounded-lg p-4 mb-4 georgian-text"
+          lang="ka"
+          style="background: var(--tui-status-negative-pale); color: var(--tui-status-negative)"
+        >
+          მონაცემების ჩატვირთვა ვერ მოხერხდა. სცადეთ თავიდან.
+        </div>
+      }
+
+      <!-- ════════════════════════ DAY VIEW ════════════════════════ -->
+      @if (tab() === 'day') {
+        <div class="flex flex-wrap items-end gap-3 mb-4">
+          <button tuiIconButton iconStart="@tui.chevron-left" type="button" (click)="prevDay()" size="s">
+            Prev
+          </button>
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">თარიღი</span>
+            <tui-textfield>
+              <input tuiInputDate [formControl]="dateControl" />
+              <tui-calendar *tuiTextfieldDropdown />
+            </tui-textfield>
+          </label>
+          <button tuiIconButton iconStart="@tui.chevron-right" type="button" (click)="nextDay()" size="s">
+            Next
+          </button>
+          <button tuiButton appearance="flat" size="s" type="button" (click)="today()">
+            <span class="georgian-text" lang="ka">დღეს</span>
+          </button>
+
+          <!-- Mobile court switcher (single-column day view) -->
+          @if (isMobile()) {
+            <label tuiLabel class="ml-auto">
+              <span class="georgian-text" lang="ka">კორტი</span>
+              <tui-textfield tuiChevron [stringify]="stringifyCourt">
+                <input
+                  tuiSelect
+                  [ngModel]="selectedCourtId()"
+                  (ngModelChange)="onCourtSwitch($event)"
+                />
+                <tui-data-list *tuiTextfieldDropdown>
+                  @for (court of activeCourts(); track court.id) {
+                    <button tuiOption [value]="court.id">{{ court.label }}</button>
+                  }
+                </tui-data-list>
+              </tui-textfield>
+            </label>
+          }
+        </div>
+
+        @if (isLoading()) {
+          <!-- Loading skeleton -->
+          <div class="space-y-2 animate-pulse">
+            @for (n of [1, 2, 3, 4, 5, 6]; track n) {
+              <div class="h-10 rounded" style="background: var(--tui-background-neutral-1)"></div>
+            }
+          </div>
+        } @else if (dayGrid().rows.length === 0) {
+          <!-- Closed / empty day -->
+          <div class="flex flex-col items-center justify-center py-16">
+            <tui-icon icon="@lucide.calendar-off" class="w-24 h-24 opacity-50 mb-4"></tui-icon>
+            <p class="text-lg text-gray-500 georgian-text" lang="ka">ამ დღეს სლოტები არ არის</p>
+          </div>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-sm">
+              <thead>
+                <tr>
+                  <th class="p-2 text-left sticky left-0 z-10" style="background: var(--tui-background-base)">
+                    <span class="georgian-text" lang="ka">დრო</span>
+                  </th>
+                  @for (court of dayGrid().courts; track court.id) {
+                    <th class="p-2 text-center georgian-text" lang="ka">{{ court.label }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of dayGrid().rows; track row.start) {
+                  <tr>
+                    <td
+                      class="p-2 whitespace-nowrap font-medium sticky left-0 z-10"
+                      style="background: var(--tui-background-base); color: var(--tui-text-secondary)"
+                    >
+                      {{ row.start }}
+                    </td>
+                    @for (cell of row.cells; track cell.courtId) {
+                      <td class="p-1 align-top">
+                        @switch (cell.kind) {
+                          @case ('free') {
+                            <button
+                              type="button"
+                              class="w-full rounded-md p-2 text-center transition hover:opacity-80"
+                              style="background: var(--tui-status-positive-pale); color: var(--tui-status-positive)"
+                              (click)="onCellClick(cell)"
+                            >
+                              <span class="text-xs">+</span>
+                              @if (cellPriceGel(cell) != null) {
+                                <span class="block text-[10px]">{{ cellPriceGel(cell) }} GEL</span>
+                              }
+                            </button>
+                          }
+                          @case ('closed') {
+                            <div
+                              class="w-full rounded-md p-2 text-center opacity-40 cursor-not-allowed"
+                              style="background: var(--tui-background-neutral-1)"
+                              aria-disabled="true"
+                            >
+                              <span class="text-xs">—</span>
+                            </div>
+                          }
+                          @case ('block') {
+                            <button
+                              type="button"
+                              class="w-full rounded-md p-2 text-left"
+                              style="background: var(--tui-background-neutral-2); color: var(--tui-text-secondary)"
+                              (click)="onCellClick(cell)"
+                            >
+                              <span class="block text-xs truncate georgian-text" lang="ka">
+                                {{ cellLabel(cell) }}
+                              </span>
+                            </button>
+                          }
+                          @case ('booking') {
+                            <div
+                              class="w-full rounded-md p-2 text-left cursor-pointer"
+                              style="background: var(--tui-status-info-pale)"
+                              (click)="onCellClick(cell)"
+                            >
+                              <span class="block text-xs font-medium truncate">{{ cellLabel(cell) }}</span>
+                              <div class="flex items-center gap-1 mt-1">
+                                <tui-chip
+                                  size="xs"
+                                  [appearance]="isPaid(cell) ? 'positive' : 'warning'"
+                                >
+                                  <span class="georgian-text" lang="ka">
+                                    {{ isPaid(cell) ? 'გადახდილია' : 'ადგილზე' }}
+                                  </span>
+                                </tui-chip>
+                                @if (!isPaid(cell) && cell.booking) {
+                                  <button
+                                    tuiIconButton
+                                    size="xs"
+                                    appearance="flat"
+                                    iconStart="@tui.check"
+                                    type="button"
+                                    (click)="markPaid(cell.booking, $event)"
+                                  >
+                                    Paid
+                                  </button>
+                                }
+                              </div>
+                            </div>
+                          }
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
+      <!-- ════════════════════════ WEEK VIEW ════════════════════════ -->
+      @if (tab() === 'week') {
+        <div class="flex flex-wrap items-end gap-3 mb-4">
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">კორტი</span>
+            <tui-textfield tuiChevron [stringify]="stringifyCourt">
+              <input tuiSelect [ngModel]="selectedCourtId()" (ngModelChange)="onCourtSwitch($event)" />
+              <tui-data-list *tuiTextfieldDropdown>
+                @for (court of activeCourts(); track court.id) {
+                  <button tuiOption [value]="court.id">{{ court.label }}</button>
+                }
+              </tui-data-list>
+            </tui-textfield>
+          </label>
+          <button tuiButton appearance="flat" size="s" type="button" (click)="prevDay()">
+            <span class="georgian-text" lang="ka">წინა</span>
+          </button>
+          <button tuiButton appearance="flat" size="s" type="button" (click)="nextDay()">
+            <span class="georgian-text" lang="ka">შემდეგი</span>
+          </button>
+        </div>
+
+        @if (isLoading()) {
+          <div class="space-y-2 animate-pulse">
+            @for (n of [1, 2, 3, 4, 5]; track n) {
+              <div class="h-10 rounded" style="background: var(--tui-background-neutral-1)"></div>
+            }
+          </div>
+        } @else if (weekGrid().rows.length === 0) {
+          <div class="flex flex-col items-center justify-center py-16">
+            <tui-icon icon="@lucide.calendar-off" class="w-24 h-24 opacity-50 mb-4"></tui-icon>
+            <p class="text-lg text-gray-500 georgian-text" lang="ka">სლოტები არ არის</p>
+          </div>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-sm">
+              <thead>
+                <tr>
+                  <th class="p-2 text-left">
+                    <span class="georgian-text" lang="ka">დრო</span>
+                  </th>
+                  @for (date of weekGrid().days; track date) {
+                    <th class="p-2 text-center text-xs">{{ date }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of weekGrid().rows; track row.start) {
+                  <tr>
+                    <td class="p-2 whitespace-nowrap font-medium" style="color: var(--tui-text-secondary)">
+                      {{ row.start }}
+                    </td>
+                    @for (cell of row.cells; track cell.date) {
+                      <td class="p-1 align-top">
+                        @switch (cell.kind) {
+                          @case ('free') {
+                            <button
+                              type="button"
+                              class="w-full rounded-md p-2 text-center text-xs transition hover:opacity-80"
+                              style="background: var(--tui-status-positive-pale); color: var(--tui-status-positive)"
+                              (click)="onCellClick(cell, cell.date)"
+                            >
+                              +
+                            </button>
+                          }
+                          @case ('closed') {
+                            <div
+                              class="w-full rounded-md p-2 text-center text-xs opacity-40 cursor-not-allowed"
+                              style="background: var(--tui-background-neutral-1)"
+                              aria-disabled="true"
+                            >
+                              —
+                            </div>
+                          }
+                          @case ('block') {
+                            <div
+                              class="w-full rounded-md p-2 text-xs truncate georgian-text cursor-pointer"
+                              lang="ka"
+                              style="background: var(--tui-background-neutral-2); color: var(--tui-text-secondary)"
+                              (click)="onCellClick(cell, cell.date)"
+                            >
+                              {{ cellLabel(cell) }}
+                            </div>
+                          }
+                          @case ('booking') {
+                            <div
+                              class="w-full rounded-md p-2 text-xs truncate cursor-pointer"
+                              style="background: var(--tui-status-info-pale)"
+                              (click)="onCellClick(cell, cell.date)"
+                            >
+                              {{ cellLabel(cell) }}
+                            </div>
+                          }
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      }
+
+      <!-- ════════════════════════ LIST VIEW ════════════════════════ -->
+      @if (tab() === 'list') {
+        <div class="flex flex-wrap items-end gap-3 mb-4">
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">დან</span>
+            <tui-textfield>
+              <input tuiInputDate [formControl]="listFrom" />
+              <tui-calendar *tuiTextfieldDropdown />
+            </tui-textfield>
+          </label>
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">მდე</span>
+            <tui-textfield>
+              <input tuiInputDate [formControl]="listTo" />
+              <tui-calendar *tuiTextfieldDropdown />
+            </tui-textfield>
+          </label>
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">კორტი</span>
+            <tui-textfield tuiChevron [stringify]="stringifyCourt">
+              <input tuiSelect [formControl]="listCourt" />
+              <tui-data-list *tuiTextfieldDropdown>
+                <button tuiOption [value]="null">
+                  <span class="georgian-text" lang="ka">ყველა</span>
+                </button>
+                @for (court of activeCourts(); track court.id) {
+                  <button tuiOption [value]="court.id">{{ court.label }}</button>
+                }
+              </tui-data-list>
+            </tui-textfield>
+          </label>
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">სტატუსი</span>
+            <tui-textfield tuiChevron [stringify]="stringifyStatus">
+              <input tuiSelect [formControl]="listStatus" />
+              <tui-data-list *tuiTextfieldDropdown>
+                <button tuiOption [value]="null">
+                  <span class="georgian-text" lang="ka">ყველა</span>
+                </button>
+                @for (status of statusOptions; track status) {
+                  <button tuiOption [value]="status">
+                    <span class="georgian-text" lang="ka">{{ statusLabels[status] }}</span>
+                  </button>
+                }
+              </tui-data-list>
+            </tui-textfield>
+          </label>
+          <button tuiButton appearance="primary" size="s" type="button" (click)="applyListFilters()">
+            <span class="georgian-text" lang="ka">ფილტრი</span>
+          </button>
+        </div>
+
+        @if (isLoading()) {
+          <div class="space-y-2 animate-pulse">
+            @for (n of [1, 2, 3, 4, 5]; track n) {
+              <div class="h-12 rounded" style="background: var(--tui-background-neutral-1)"></div>
+            }
+          </div>
+        } @else if (listBookings().length === 0) {
+          <div class="flex flex-col items-center justify-center py-16">
+            <img src="images/no-result.png" alt="No bookings" class="w-48 h-48 mb-4 opacity-50" />
+            <p class="text-lg text-gray-500 georgian-text" lang="ka">ჯავშნები არ მოიძებნა</p>
+          </div>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-sm">
+              <thead>
+                <tr class="text-left" style="color: var(--tui-text-secondary)">
+                  <th class="p-2 georgian-text" lang="ka">თარიღი</th>
+                  <th class="p-2 georgian-text" lang="ka">დრო</th>
+                  <th class="p-2 georgian-text" lang="ka">კორტი</th>
+                  <th class="p-2 georgian-text" lang="ka">მომხმარებელი</th>
+                  <th class="p-2 georgian-text" lang="ka">ფასი</th>
+                  <th class="p-2 georgian-text" lang="ka">სტატუსი</th>
+                  <th class="p-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (b of listBookings(); track b._id) {
+                  <tr class="border-t" style="border-color: var(--tui-border-normal)">
+                    <td class="p-2 whitespace-nowrap">{{ b.date }}</td>
+                    <td class="p-2 whitespace-nowrap">{{ b.start }}–{{ b.end }}</td>
+                    <td class="p-2">{{ courtLabelById(b.court) }}</td>
+                    <td class="p-2">
+                      @if (b.type === 'block') {
+                        <span class="georgian-text" lang="ka">დაბლოკილი</span>
+                      } @else {
+                        {{ b.customerName || '—' }}
+                      }
+                    </td>
+                    <td class="p-2 whitespace-nowrap">
+                      @if (bookingPriceGel(b) != null) {
+                        {{ bookingPriceGel(b) }} GEL
+                      } @else {
+                        —
+                      }
+                    </td>
+                    <td class="p-2">
+                      <tui-chip size="xs" [appearance]="statusChipAppearance(b.status)">
+                        <span class="georgian-text" lang="ka">{{ statusLabels[b.status] }}</span>
+                      </tui-chip>
+                    </td>
+                    <td class="p-2 text-right">
+                      @if (b.status === 'confirmed') {
+                        <button
+                          tuiButton
+                          size="xs"
+                          appearance="flat"
+                          type="button"
+                          (click)="cancelFromList(b)"
+                        >
+                          <span class="georgian-text" lang="ka">გაუქმება</span>
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="flex items-center justify-end gap-3 mt-4">
+            <button
+              tuiButton
+              size="s"
+              appearance="flat"
+              type="button"
+              [disabled]="listPage() === 1"
+              (click)="prevListPage()"
+            >
+              <span class="georgian-text" lang="ka">წინა</span>
+            </button>
+            <span class="text-sm" style="color: var(--tui-text-secondary)">
+              {{ listPage() }}
+            </span>
+            <button
+              tuiButton
+              size="s"
+              appearance="flat"
+              type="button"
+              [disabled]="listPage() * listLimit >= listTotal()"
+              (click)="nextListPage()"
+            >
+              <span class="georgian-text" lang="ka">შემდეგი</span>
+            </button>
+          </div>
+        }
+      }
+    }
+  } @else if (facilities().length > 1) {
+    <div class="flex flex-col items-center justify-center py-16">
+      <tui-icon icon="@lucide.building-2" class="w-32 h-32 opacity-50 mb-6"></tui-icon>
+      <p class="text-lg text-gray-500 georgian-text" lang="ka">აირჩიეთ ობიექტი ჯავშნების სანახავად</p>
+    </div>
+  }
+</div>

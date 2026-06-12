@@ -48,6 +48,17 @@
         </button>
       </tui-aside-group>
 
+      <tui-aside-group>
+        <a
+          automation-id="reservations"
+          iconStart="@lucide.calendar-check"
+          tuiAsideItem
+          routerLink="/reservations"
+        >
+          <span lang="ka" class="georgian-text">ჯავშნები</span>
+        </a>
+      </tui-aside-group>
+
       @if (isSuperAdmin()) {
         <tui-aside-group>
           <button
@@ -106,6 +117,9 @@
     >
       <span lang="ka" class="georgian-text">კონფიგურაცია</span>
     </button>
+    <a icon="@lucide.calendar-check" tuiTabBarItem routerLink="/reservations">
+      <span lang="ka" class="georgian-text">ჯავშნები</span>
+    </a>
     @if (isSuperAdmin()) {
       <button
         icon="@lucide.shield"
