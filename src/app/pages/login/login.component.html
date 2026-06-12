@@ -1,0 +1,64 @@
+<div class="min-h-[calc(100vh-48px)] flex items-center justify-center p-4">
+  <div class="w-full max-w-md rounded-2xl border p-8" style="border-color: var(--tui-border-normal)">
+    <div class="mb-6 flex flex-col items-center gap-2">
+      <img src="logos/download.svg" alt="Sport Spot" class="h-10" />
+      <h1 class="text-xl font-semibold georgian-text" lang="ka">ავტორიზაცია</h1>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4">
+      <!-- Email -->
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">ელ. ფოსტა <span class="text-red-500">*</span></span>
+        <tui-textfield>
+          <input tuiTextfield type="email" formControlName="email" autocomplete="email" />
+        </tui-textfield>
+        @if (loginForm.get('email')?.touched && loginForm.get('email')?.hasError('required')) {
+          <span class="text-xs text-red-500 georgian-text" lang="ka">ელ. ფოსტა სავალდებულოა</span>
+        }
+        @if (loginForm.get('email')?.touched && loginForm.get('email')?.hasError('email')) {
+          <span class="text-xs text-red-500 georgian-text" lang="ka"
+            >არასწორი ელ. ფოსტის ფორმატი</span
+          >
+        }
+      </label>
+
+      <!-- Password -->
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">პაროლი <span class="text-red-500">*</span></span>
+        <tui-textfield>
+          <input
+            tuiTextfield
+            type="password"
+            formControlName="password"
+            autocomplete="current-password"
+          />
+        </tui-textfield>
+        @if (loginForm.get('password')?.touched && loginForm.get('password')?.hasError('required')) {
+          <span class="text-xs text-red-500 georgian-text" lang="ka">პაროლი სავალდებულოა</span>
+        }
+      </label>
+
+      <!-- Server error (e.g. 401 wrong credentials) -->
+      @if (loginError()) {
+        <div
+          class="rounded-lg p-3 text-sm text-red-500 georgian-text"
+          lang="ka"
+          style="background: var(--tui-status-negative-pale)"
+          data-testid="login-error"
+        >
+          {{ loginError() }}
+        </div>
+      }
+
+      <button
+        tuiButton
+        appearance="primary"
+        type="submit"
+        class="w-full"
+        [disabled]="isSubmitting()"
+      >
+        <span class="georgian-text" lang="ka">{{ isSubmitting() ? 'იტვირთება...' : 'შესვლა' }}</span>
+      </button>
+    </form>
+  </div>
+</div>

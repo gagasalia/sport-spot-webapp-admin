@@ -23,7 +23,7 @@ import { TuiInputColor } from '@taiga-ui/kit';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { AcademyService } from '../../../services/http-services/academy.service';
 import { Academy } from '../../../shared/models/academy.model';
-import { environment } from '../../../../environments/environment';
+import { TenantService } from '../../../shared/services/tenant.service';
 
 @Component({
   selector: 'app-academy',
@@ -41,6 +41,7 @@ export class AcademyComponent implements OnInit {
   isSaved = signal<boolean>(false);
 
   private readonly destroyRef = inject(DestroyRef);
+  private readonly tenant = inject(TenantService);
 
   constructor(
     private fb: FormBuilder,
@@ -82,12 +83,14 @@ export class AcademyComponent implements OnInit {
     });
   }
 
-  private readonly academyId = environment.academyId;
+  private get academyId(): string | null {
+    return this.tenant.academyId();
+  }
 
   private loadAcademy(): void {
     this.isLoading.set(true);
-    this.academyService
-      .getAcademyById(this.academyId)
+    this.tenant
+      .resolveAcademy()
       .pipe(take(1))
       .subscribe({
         next: (academy) => {
@@ -113,11 +116,23 @@ export class AcademyComponent implements OnInit {
 
   onSave(): void {
     if (this.academyForm.valid) {
+      const academyId = this.academyId;
+      // Never dispatch an update with an empty id: without a resolved tenant the
+      // request would target the wrong (or no) academy. Block and surface a
+      // Georgian error instead.
+      if (!academyId) {
+        this.alerts
+          .open('აკადემია ვერ მოიძებნა', { appearance: 'error' })
+          .pipe(take(1))
+          .subscribe();
+        return;
+      }
+
       this.isSaving.set(true);
       const formValue = this.academyForm.value;
 
       this.academyService
-        .updateAcademy(this.academyId, formValue)
+        .updateAcademy(academyId, formValue)
         .pipe(take(1))
         .subscribe({
           next: (savedAcademy) => {

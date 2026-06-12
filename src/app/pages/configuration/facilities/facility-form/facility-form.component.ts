@@ -22,7 +22,7 @@ import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
 import { FacilityService } from '../../../../services/http-services/facility.service';
 import { Facility, IMedia, CreateFacilityDto } from '../../../../shared/models/facility.model';
 import { Amenity, AMENITY_LABELS, AMENITY_ICONS } from '../../../../shared/enums/amenity.enum';
-import { environment } from '../../../../../environments/environment';
+import { TenantService } from '../../../../shared/services/tenant.service';
 
 interface CountryItem {
   readonly id: string;
@@ -75,6 +75,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
   >;
 
   private readonly ngZone = inject(NgZone);
+  private readonly tenant = inject(TenantService);
 
   constructor(
     private fb: FormBuilder,
@@ -262,11 +263,22 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
       return;
     }
 
+    const owner = this.tenant.academyId();
+    // The owner (academy id) is mandatory: a facility with an empty owner would
+    // be orphaned. Block the submit and surface a Georgian error instead.
+    if (!owner) {
+      this.alerts
+        .open('აკადემია ვერ მოიძებნა', { appearance: 'error' })
+        .pipe(take(1))
+        .subscribe();
+      return;
+    }
+
     const editingFacility = this.context.data?.facility;
     const v = this.facilityForm.getRawValue();
 
     const dto: CreateFacilityDto = {
-      owner: environment.academyId,
+      owner,
       name: v.name,
       description: v.description || '',
       amenities: this.getSelectedAmenities(),

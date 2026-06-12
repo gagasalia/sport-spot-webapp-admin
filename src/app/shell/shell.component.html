@@ -1,0 +1,187 @@
+<header tuiNavigationHeader>
+  <img src="logos/download.svg" alt="Sport Spot Logo" style="height: 40px" />
+
+  <hr />
+
+  <!-- Dark Mode Toggle -->
+  <button
+    [iconStart]="darkMode() ? '@tui.sun' : '@tui.moon'"
+    tuiIconButton
+    type="button"
+    (click)="toggleDarkMode()"
+    [title]="darkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+  ></button>
+
+  <button iconStart="@tui.bell" tuiIconButton type="button">
+    Notifications
+    <tui-badge-notification />
+  </button>
+  <button iconStart="@tui.ellipsis" tuiIconButton type="button">More</button>
+</header>
+<div [style.display]="'flex'">
+  <!-- Desktop Sidebar -->
+  @if (!isMobile()) {
+    <aside [style.height]="'calc(100vh - 48px)'" [tuiNavigationAside]="expanded()">
+      <tui-aside-group>
+        <button
+          automation-id="setting"
+          iconStart="@tui.settings"
+          tuiAsideItem
+          tuiChevron
+          type="button"
+        >
+          <span lang="ka" class="georgian-text">კონფიგურაცია</span>
+          <ng-template>
+            <a iconStart="@lucide.landmark" tuiAsideItem routerLink="/configuration/academy">
+              <span lang="ka" class="georgian-text">აკადემია</span>
+            </a>
+            <a iconStart="@tui.map-pin" tuiAsideItem routerLink="/configuration/facilities">
+              <span lang="ka" class="georgian-text">ობიექტები</span>
+            </a>
+            <a iconStart="@tui.table-cells-merge" tuiAsideItem routerLink="/configuration/courts">
+              <span lang="ka" class="georgian-text">კორტები</span>
+            </a>
+            <a iconStart="@lucide.clock" tuiAsideItem routerLink="/configuration/working-hours">
+              <span lang="ka" class="georgian-text">საათები და ფასები</span>
+            </a>
+          </ng-template>
+        </button>
+      </tui-aside-group>
+
+      @if (isSuperAdmin()) {
+        <tui-aside-group>
+          <button
+            automation-id="super-admin"
+            iconStart="@lucide.shield"
+            tuiAsideItem
+            tuiChevron
+            type="button"
+          >
+            <span lang="ka" class="georgian-text">Super Admin</span>
+            <ng-template>
+              <a
+                iconStart="@lucide.building-2"
+                tuiAsideItem
+                routerLink="/super-admin/academies-management"
+              >
+                <span lang="ka" class="georgian-text">აკადემიების მართვა</span>
+              </a>
+              <a iconStart="@lucide.users" tuiAsideItem routerLink="/super-admin/user-management">
+                <span lang="ka" class="georgian-text">იუზერები</span>
+              </a>
+            </ng-template>
+          </button>
+        </tui-aside-group>
+      }
+      <footer>
+        <button
+          tuiAsideItem
+          type="button"
+          [iconStart]="expanded() ? '@tui.chevron-left' : '@tui.chevron-right'"
+          (click)="handleToggle()"
+        >
+          <span lang="ka" class="georgian-text">{{ expanded() ? 'დახურვა' : 'გაფართოება' }}</span>
+        </button>
+      </footer>
+    </aside>
+  }
+  <main tuiNavigationMain>
+    <div class="w-full flex justify-center">
+      <div class="w-full max-w-[1920px] mx-auto">
+        <router-outlet />
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Mobile TabBar -->
+@if (isMobile()) {
+  <nav tuiTabBar ngProjectAs="tuiOverContent">
+    <button
+      icon="@tui.settings"
+      tuiTabBarItem
+      type="button"
+      [tuiDropdown]="configDropdown"
+      [(tuiDropdownOpen)]="configDropdownOpen"
+    >
+      <span lang="ka" class="georgian-text">კონფიგურაცია</span>
+    </button>
+    @if (isSuperAdmin()) {
+      <button
+        icon="@lucide.shield"
+        tuiTabBarItem
+        type="button"
+        [tuiDropdown]="superAdminDropdown"
+        [(tuiDropdownOpen)]="superAdminDropdownOpen"
+      >
+        <span lang="ka" class="georgian-text">Super Admin</span>
+      </button>
+    }
+  </nav>
+
+  <!-- Configuration Dropdown Template -->
+  <ng-template #configDropdown>
+    <tui-data-list role="menu">
+      <a
+        iconStart="@lucide.landmark"
+        tuiOption
+        role="menuitem"
+        routerLink="/configuration/academy"
+        (click)="configDropdownOpen.set(false)"
+      >
+        <span lang="ka" class="georgian-text">აკადემია</span>
+      </a>
+      <a
+        iconStart="@tui.map-pin"
+        tuiOption
+        role="menuitem"
+        routerLink="/configuration/facilities"
+        (click)="configDropdownOpen.set(false)"
+      >
+        <span lang="ka" class="georgian-text">ობიექტები</span>
+      </a>
+      <a
+        iconStart="@tui.table-cells-merge"
+        tuiOption
+        role="menuitem"
+        routerLink="/configuration/courts"
+        (click)="configDropdownOpen.set(false)"
+      >
+        <span lang="ka" class="georgian-text">კორტები</span>
+      </a>
+      <a
+        iconStart="@lucide.clock"
+        tuiOption
+        role="menuitem"
+        routerLink="/configuration/working-hours"
+        (click)="configDropdownOpen.set(false)"
+      >
+        <span lang="ka" class="georgian-text">საათები და ფასები</span>
+      </a>
+    </tui-data-list>
+  </ng-template>
+
+  <!-- Super Admin Dropdown Template -->
+  <ng-template #superAdminDropdown>
+    <tui-data-list role="menu">
+      <a
+        iconStart="@lucide.building-2"
+        tuiOption
+        role="menuitem"
+        routerLink="/super-admin/academies-management"
+        (click)="superAdminDropdownOpen.set(false)"
+      >
+        <span lang="ka" class="georgian-text">აკადემიების მართვა</span>
+      </a>
+      <a
+        iconStart="@lucide.users"
+        tuiOption
+        role="menuitem"
+        routerLink="/super-admin/user-management"
+        (click)="superAdminDropdownOpen.set(false)"
+      >
+        <span lang="ka" class="georgian-text">იუზერები</span>
+      </a>
+    </tui-data-list>
+  </ng-template>
+}

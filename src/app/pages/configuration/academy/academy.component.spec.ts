@@ -9,6 +9,7 @@ import { TuiAlertService } from '@taiga-ui/core';
 
 import { AcademyComponent } from './academy.component';
 import { AcademyService } from '../../../services/http-services/academy.service';
+import { TenantService } from '../../../shared/services/tenant.service';
 import { Academy, AcademyStatus } from '../../../shared/models/academy.model';
 
 // ─── Test data ────────────────────────────────────────────────────────────────
@@ -33,20 +34,27 @@ describe('AcademyComponent', () => {
   let component: AcademyComponent;
   let fixture: ComponentFixture<AcademyComponent>;
   let academyServiceSpy: jasmine.SpyObj<AcademyService>;
+  let tenantServiceSpy: jasmine.SpyObj<TenantService>;
   let alertServiceSpy: jasmine.SpyObj<TuiAlertService>;
   let routerSpy: jasmine.SpyObj<Router>;
+
+  function makeTenantSpy(academyData?: Academy) {
+    const spy = jasmine.createSpyObj<TenantService>('TenantService', ['resolveAcademy', 'clear'], {
+      academyId: (() => (academyData ?? mockAcademy)._id ?? null) as any,
+    });
+    spy.resolveAcademy.and.returnValue(of(academyData ?? mockAcademy));
+    return spy;
+  }
 
   async function createComponent(academyData?: Academy) {
     academyServiceSpy = jasmine.createSpyObj('AcademyService', [
       'getAcademyById',
       'updateAcademy',
     ]);
+    tenantServiceSpy = makeTenantSpy(academyData);
     alertServiceSpy = jasmine.createSpyObj('TuiAlertService', ['open']);
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
 
-    academyServiceSpy.getAcademyById.and.returnValue(
-      of(academyData ?? mockAcademy),
-    );
     alertServiceSpy.open.and.returnValue(of(undefined) as any);
 
     await TestBed.configureTestingModule({
@@ -54,6 +62,7 @@ describe('AcademyComponent', () => {
       providers: [
         provideAnimations(),
         { provide: AcademyService, useValue: academyServiceSpy },
+        { provide: TenantService, useValue: tenantServiceSpy },
         { provide: TuiAlertService, useValue: alertServiceSpy },
         { provide: Router, useValue: routerSpy },
       ],
@@ -188,7 +197,7 @@ describe('AcademyComponent', () => {
       // Defer the academy load so the form keeps its initial (un-patched) values:
       // detectChanges runs ngOnInit (which builds academyForm) but the Subject never
       // emits, so loadAcademy's patchValue does not run.
-      academyServiceSpy.getAcademyById.and.returnValue(new Subject<Academy>());
+      tenantServiceSpy.resolveAcademy.and.returnValue(new Subject<Academy>());
       fixture.detectChanges();
     });
 
@@ -430,6 +439,42 @@ describe('AcademyComponent', () => {
     }));
   });
 
+  // ─── onSave: missing tenant academyId ─────────────────────────────────────
+
+  describe('onSave — missing academyId (unresolved tenant)', () => {
+    beforeEach(async () => {
+      await createComponent(mockAcademy);
+      // Tenant resolved but with no academy id (e.g. operator without an academy).
+      Object.defineProperty(tenantServiceSpy, 'academyId', {
+        value: () => null,
+        writable: true,
+        configurable: true,
+      });
+      fixture.detectChanges();
+    });
+
+    it('should NOT call updateAcademy when the academy id is missing', fakeAsync(() => {
+      tick();
+      academyServiceSpy.updateAcademy.and.returnValue(of(mockAcademy));
+
+      component.onSave();
+      tick();
+
+      expect(academyServiceSpy.updateAcademy).not.toHaveBeenCalled();
+    }));
+
+    it('should show a Georgian error alert when the academy id is missing', fakeAsync(() => {
+      tick();
+
+      component.onSave();
+      tick();
+
+      expect(alertServiceSpy.open).toHaveBeenCalledWith('აკადემია ვერ მოიძებნა', {
+        appearance: 'error',
+      });
+    }));
+  });
+
   // ─── onSave: error path ───────────────────────────────────────────────────
 
   describe('onSave — service error', () => {
@@ -465,12 +510,12 @@ describe('AcademyComponent', () => {
   // ─── Academy load ─────────────────────────────────────────────────────────
 
   describe('academy loading on init', () => {
-    it('should call getAcademyById on init', fakeAsync(async () => {
+    it('should resolve the tenant academy on init', fakeAsync(async () => {
       await createComponent();
       fixture.detectChanges();
       tick();
 
-      expect(academyServiceSpy.getAcademyById).toHaveBeenCalled();
+      expect(tenantServiceSpy.resolveAcademy).toHaveBeenCalled();
     }));
 
     it('should set isLoading to false after a successful load', fakeAsync(async () => {
@@ -482,32 +527,8 @@ describe('AcademyComponent', () => {
     }));
 
     it('should set isLoading to false even when loading fails', fakeAsync(async () => {
-      academyServiceSpy = jasmine.createSpyObj('AcademyService', [
-        'getAcademyById',
-        'updateAcademy',
-      ]);
-      alertServiceSpy = jasmine.createSpyObj('TuiAlertService', ['open']);
-      routerSpy = jasmine.createSpyObj('Router', ['navigate']);
-      academyServiceSpy.getAcademyById.and.returnValue(throwError(() => new Error('load error')));
-      alertServiceSpy.open.and.returnValue(of(undefined) as any);
-
-      await TestBed.configureTestingModule({
-        imports: [AcademyComponent],
-        providers: [
-          provideAnimations(),
-          { provide: AcademyService, useValue: academyServiceSpy },
-          { provide: TuiAlertService, useValue: alertServiceSpy },
-          { provide: Router, useValue: routerSpy },
-        ],
-        schemas: [NO_ERRORS_SCHEMA],
-      })
-        .overrideComponent(AcademyComponent, {
-          set: { imports: [ReactiveFormsModule], schemas: [NO_ERRORS_SCHEMA] },
-        })
-        .compileComponents();
-
-      fixture = TestBed.createComponent(AcademyComponent);
-      component = fixture.componentInstance;
+      await createComponent();
+      tenantServiceSpy.resolveAcademy.and.returnValue(throwError(() => new Error('load error')));
 
       fixture.detectChanges();
       tick();
@@ -516,32 +537,8 @@ describe('AcademyComponent', () => {
     }));
 
     it('should show an error alert when loading fails', fakeAsync(async () => {
-      academyServiceSpy = jasmine.createSpyObj('AcademyService', [
-        'getAcademyById',
-        'updateAcademy',
-      ]);
-      alertServiceSpy = jasmine.createSpyObj('TuiAlertService', ['open']);
-      routerSpy = jasmine.createSpyObj('Router', ['navigate']);
-      academyServiceSpy.getAcademyById.and.returnValue(throwError(() => new Error('load error')));
-      alertServiceSpy.open.and.returnValue(of(undefined) as any);
-
-      await TestBed.configureTestingModule({
-        imports: [AcademyComponent],
-        providers: [
-          provideAnimations(),
-          { provide: AcademyService, useValue: academyServiceSpy },
-          { provide: TuiAlertService, useValue: alertServiceSpy },
-          { provide: Router, useValue: routerSpy },
-        ],
-        schemas: [NO_ERRORS_SCHEMA],
-      })
-        .overrideComponent(AcademyComponent, {
-          set: { imports: [ReactiveFormsModule], schemas: [NO_ERRORS_SCHEMA] },
-        })
-        .compileComponents();
-
-      fixture = TestBed.createComponent(AcademyComponent);
-      component = fixture.componentInstance;
+      await createComponent();
+      tenantServiceSpy.resolveAcademy.and.returnValue(throwError(() => new Error('load error')));
 
       fixture.detectChanges();
       tick();
