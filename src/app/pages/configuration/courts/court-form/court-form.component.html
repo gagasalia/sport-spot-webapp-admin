@@ -25,7 +25,7 @@
     <label tuiLabel>
       <span class="georgian-text" lang="ka">კორტის ტიპი <span class="text-red-500">*</span></span>
       <tui-textfield tuiChevron [stringify]="stringifyLocationType">
-        <input tuiSelect formControlName="type" class="georgian-text" lang="ka" />
+        <input tuiSelect formControlName="locationType" class="georgian-text" lang="ka" />
         <tui-data-list *tuiTextfieldDropdown>
           <button *ngFor="let locationType of locationTypes" new tuiOption [value]="locationType">
             <span class="georgian-text" lang="ka">{{ locationTypeLabels[locationType] }}</span>
@@ -35,7 +35,7 @@
     </label>
 
     <!-- Court Surface -->
-    <div formGroupName="courtSurface" class="space-y-4">
+    <div formGroupName="surface" class="space-y-4">
       <h3 class="text-lg font-medium georgian-text" lang="ka">საფარი</h3>
 
       <!-- Surface Material -->

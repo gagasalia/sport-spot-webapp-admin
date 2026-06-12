@@ -1,123 +1,114 @@
-import { Injectable } from '@angular/core';
-import { Observable, of, delay } from 'rxjs';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable, map } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import { ApiResponse } from '../../shared/models/api-response.model';
 import {
-  GeneralScheduleDTO,
-  WeeklyHoursDTO,
+  FacilityScheduleDTO,
   HolidayDTO,
-  Weekday,
+  PricingDTO,
+  UpdateScheduleDTO,
+  WeeklyHoursDTO,
 } from '../../shared/models/schedule.model';
-import { v4 as uuidv4 } from 'uuid';
 
+/**
+ * Real HTTP service for the per-facility schedule resource
+ * (`/facilities/:facilityId/schedule`). Replaces the old global localStorage
+ * store (`sportify_general_schedule` + `sportify_*_<facilityId>` keys) — the
+ * working-hours page now loads/saves hours, holidays and pricing **per selected
+ * facility**, fixing the global-schedule scoping bug.
+ *
+ * Prices cross the wire as integer **tetri** (1 GEL = 100 tetri). Conversion to
+ * GEL happens here so the UI works purely in decimal GEL.
+ */
 @Injectable({
   providedIn: 'root',
 })
 export class ScheduleService {
-  private readonly SCHEDULE_STORAGE_KEY = 'sportify_general_schedule';
+  private readonly http = inject(HttpClient);
+  private readonly apiUrl = `${environment.apiUrl}/facilities`;
 
-  constructor() {}
-
-  private getScheduleFromStorage(): GeneralScheduleDTO | null {
-    const stored = localStorage.getItem(this.SCHEDULE_STORAGE_KEY);
-    if (!stored) return null;
-    return JSON.parse(stored);
+  private scheduleUrl(facilityId: string): string {
+    return `${this.apiUrl}/${facilityId}/schedule`;
   }
 
-  private saveScheduleToStorage(schedule: GeneralScheduleDTO): void {
-    try {
-      localStorage.setItem(this.SCHEDULE_STORAGE_KEY, JSON.stringify(schedule));
-    } catch (error) {
-      console.error('Failed to save schedule to localStorage:', error);
-    }
+  // ── tetri ↔ GEL conversion (the price representation edge) ──────────────────
+
+  /** GEL decimal → integer tetri (rounded). e.g. 25.5 → 2550. */
+  static gelToTetri(gel: number): number {
+    return Math.round((Number(gel) || 0) * 100);
   }
 
-  private getDefaultSchedule(): GeneralScheduleDTO {
-    // Create default weekly hours (9:00 - 22:00 for all days)
-    const defaultTimeRange = [{ start: '09:00', end: '22:00' }];
-    const weeklyHours: WeeklyHoursDTO = {
-      0: [...defaultTimeRange], // Monday
-      1: [...defaultTimeRange], // Tuesday
-      2: [...defaultTimeRange], // Wednesday
-      3: [...defaultTimeRange], // Thursday
-      4: [...defaultTimeRange], // Friday
-      5: [...defaultTimeRange], // Saturday
-      6: [...defaultTimeRange], // Sunday
-    };
-
-    return {
-      id: uuidv4(),
-      timezone: 'Asia/Tbilisi',
-      weeklyHours,
-      holidays: [],
-    };
+  /** Integer tetri → GEL decimal. e.g. 2550 → 25.5. */
+  static tetriToGel(tetri: number): number {
+    return (Number(tetri) || 0) / 100;
   }
 
-  getGeneralSchedule(): Observable<GeneralScheduleDTO> {
-    let schedule = this.getScheduleFromStorage();
+  // ── reads ───────────────────────────────────────────────────────────────────
 
-    // If no schedule exists, create and save default
-    if (!schedule) {
-      schedule = this.getDefaultSchedule();
-      this.saveScheduleToStorage(schedule);
-    }
-
-    return of(schedule).pipe(delay(300));
+  /**
+   * GET /facilities/:facilityId/schedule — returns the doc, or the server's
+   * default shape (09:00–22:00 all days, zeroed pricing) if none exists.
+   */
+  getSchedule(facilityId: string): Observable<FacilityScheduleDTO> {
+    return this.http
+      .get<ApiResponse<FacilityScheduleDTO>>(this.scheduleUrl(facilityId))
+      .pipe(map((res) => res.result.data));
   }
 
-  updateGeneralSchedule(schedule: Partial<GeneralScheduleDTO>): Observable<GeneralScheduleDTO> {
-    let currentSchedule = this.getScheduleFromStorage();
+  // ── writes ────────────────────────────────────────────────────────────────
 
-    if (!currentSchedule) {
-      currentSchedule = this.getDefaultSchedule();
-    }
-
-    const updatedSchedule = {
-      ...currentSchedule,
-      ...schedule,
-      id: currentSchedule.id, // Preserve ID
-    };
-
-    this.saveScheduleToStorage(updatedSchedule);
-    return of(updatedSchedule).pipe(delay(300));
+  /** PUT /facilities/:facilityId/schedule — upsert weekly hours (+ optional meta). */
+  updateWeeklyHours(
+    facilityId: string,
+    weeklyHours: WeeklyHoursDTO,
+    meta?: { timezone?: string; slotDurationMinutes?: number },
+  ): Observable<FacilityScheduleDTO> {
+    const body: UpdateScheduleDTO = { weeklyHours, ...meta };
+    return this.http
+      .put<ApiResponse<FacilityScheduleDTO>>(this.scheduleUrl(facilityId), body)
+      .pipe(map((res) => res.result.data));
   }
 
-  updateWeeklyHours(weeklyHours: WeeklyHoursDTO): Observable<GeneralScheduleDTO> {
-    return this.updateGeneralSchedule({ weeklyHours });
+  /** PATCH /facilities/:facilityId/schedule/pricing — pricing only (tetri on wire). */
+  updatePricing(facilityId: string, pricing: PricingDTO): Observable<FacilityScheduleDTO> {
+    return this.http
+      .patch<ApiResponse<FacilityScheduleDTO>>(`${this.scheduleUrl(facilityId)}/pricing`, pricing)
+      .pipe(map((res) => res.result.data));
   }
 
-  addHoliday(holiday: HolidayDTO): Observable<GeneralScheduleDTO> {
-    const schedule = this.getScheduleFromStorage();
-    if (!schedule) {
-      throw new Error('Schedule not found');
-    }
-
-    const updatedHolidays = [...schedule.holidays, holiday];
-    return this.updateGeneralSchedule({ holidays: updatedHolidays });
+  /** POST /facilities/:facilityId/schedule/holidays — add a holiday subdocument. */
+  addHoliday(facilityId: string, holiday: HolidayDTO): Observable<FacilityScheduleDTO> {
+    return this.http
+      .post<ApiResponse<FacilityScheduleDTO>>(`${this.scheduleUrl(facilityId)}/holidays`, holiday)
+      .pipe(map((res) => res.result.data));
   }
 
-  updateHoliday(index: number, holiday: HolidayDTO): Observable<GeneralScheduleDTO> {
-    const schedule = this.getScheduleFromStorage();
-    if (!schedule) {
-      throw new Error('Schedule not found');
-    }
-
-    const updatedHolidays = [...schedule.holidays];
-    updatedHolidays[index] = holiday;
-    return this.updateGeneralSchedule({ holidays: updatedHolidays });
+  /**
+   * PUT /facilities/:facilityId/schedule/holidays/:holidayId — address by server _id.
+   *
+   * @remarks Unused until the holiday-editing UI ships (planned with per-day hours
+   * editing); do not remove.
+   */
+  updateHoliday(
+    facilityId: string,
+    holidayId: string,
+    holiday: HolidayDTO,
+  ): Observable<FacilityScheduleDTO> {
+    return this.http
+      .put<ApiResponse<FacilityScheduleDTO>>(
+        `${this.scheduleUrl(facilityId)}/holidays/${holidayId}`,
+        holiday,
+      )
+      .pipe(map((res) => res.result.data));
   }
 
-  deleteHoliday(index: number): Observable<GeneralScheduleDTO> {
-    const schedule = this.getScheduleFromStorage();
-    if (!schedule) {
-      throw new Error('Schedule not found');
-    }
-
-    const updatedHolidays = schedule.holidays.filter((_, i) => i !== index);
-    return this.updateGeneralSchedule({ holidays: updatedHolidays });
-  }
-
-  resetToDefault(): Observable<GeneralScheduleDTO> {
-    const defaultSchedule = this.getDefaultSchedule();
-    this.saveScheduleToStorage(defaultSchedule);
-    return of(defaultSchedule).pipe(delay(300));
+  /** DELETE /facilities/:facilityId/schedule/holidays/:holidayId — address by server _id. */
+  deleteHoliday(facilityId: string, holidayId: string): Observable<FacilityScheduleDTO> {
+    return this.http
+      .delete<ApiResponse<FacilityScheduleDTO>>(
+        `${this.scheduleUrl(facilityId)}/holidays/${holidayId}`,
+      )
+      .pipe(map((res) => res.result.data));
   }
 }

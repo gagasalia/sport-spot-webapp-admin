@@ -13,8 +13,8 @@ import { TuiAlertService } from '@taiga-ui/core';
 import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 import { TuiDialogContext } from '@taiga-ui/experimental';
 import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
-import { ConfigurationService } from '../../../../services/http-services/configuration.service';
-import { Court } from '../../../../shared/models/court.model';
+import { CourtService } from '../../../../services/http-services/court.service';
+import { Court, CreateCourtDto } from '../../../../shared/models/court.model';
 import {
   SportType,
   CourtLocationType,
@@ -58,67 +58,70 @@ export class CourtFormComponent implements OnInit {
     this.surfaceColorLabels[id] || '';
 
   private readonly context = inject(POLYMORPHEUS_CONTEXT) as TuiDialogContext<
-    any,
+    Court | null,
     { court?: Court; facilityId: string }
   >;
 
-  constructor(
-    private fb: FormBuilder,
-    private cdr: ChangeDetectorRef,
-    private configurationService: ConfigurationService,
-    private alerts: TuiAlertService,
-  ) {}
+  private readonly fb = inject(FormBuilder);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly courtService = inject(CourtService);
+  private readonly alerts = inject(TuiAlertService);
 
   ngOnInit(): void {
     const editingCourt = this.context.data?.court;
+    const location = editingCourt?.locationType ?? editingCourt?.type;
+    const surface = editingCourt?.surface ?? editingCourt?.courtSurface;
 
     this.courtForm = this.fb.group({
       courtNumber: [editingCourt?.courtNumber || null, [Validators.required, Validators.min(1)]],
       sportType: [editingCourt?.sportType || SportType.Padel, Validators.required],
-      type: [editingCourt?.type || CourtLocationType.Outdoor, Validators.required],
-      courtSurface: this.fb.group({
-        material: [
-          editingCourt?.courtSurface?.material || SurfaceMaterial.Synthetic,
-          Validators.required,
-        ],
-        color: [editingCourt?.courtSurface?.color || SurfaceColor.Blue, Validators.required],
+      locationType: [location || CourtLocationType.Outdoor, Validators.required],
+      surface: this.fb.group({
+        material: [surface?.material || SurfaceMaterial.Synthetic, Validators.required],
+        color: [surface?.color || SurfaceColor.Blue, Validators.required],
       }),
     });
   }
 
   onSubmit(): void {
-    if (this.courtForm.valid) {
-      const editingCourt = this.context.data?.court;
-      const facilityId = this.context.data?.facilityId;
+    if (!this.courtForm.valid) return;
 
-      const formValue = {
-        ...this.courtForm.value,
-        facilityId,
-        activeState: editingCourt?.activeState ?? false,
-      };
+    const editingCourt = this.context.data?.court;
+    const facilityId =
+      this.context.data?.facilityId ?? editingCourt?.facility ?? editingCourt?.facilityId;
+    if (!facilityId) return;
 
-      const saveOperation = editingCourt
-        ? this.configurationService.updateCourt(editingCourt.id, formValue)
-        : this.configurationService.createCourt(formValue);
+    const v = this.courtForm.value;
+    const dto: CreateCourtDto = {
+      courtNumber: v.courtNumber,
+      sportType: v.sportType,
+      locationType: v.locationType,
+      surface: { material: v.surface.material, color: v.surface.color },
+      activeState: editingCourt?.activeState ?? false,
+    };
 
-      saveOperation.pipe(take(1)).subscribe({
-        next: (savedCourt) => {
-          const message = editingCourt ? 'კორტი წარმატებით განახლდა!' : 'კორტი წარმატებით დაემატა!';
-          this.alerts.open(message, { appearance: 'success' }).pipe(take(1)).subscribe();
-          (this.context as any).completeWith(savedCourt);
-        },
-        error: (error) => {
-          console.error('Error saving court:', error);
-          const message = editingCourt
-            ? 'შეცდომა კორტის განახლებისას.'
-            : 'შეცდომა კორტის დამატებისას.';
-          this.alerts.open(message, { appearance: 'error' }).pipe(take(1)).subscribe();
-        },
-      });
-    }
+    const editingId = editingCourt?._id ?? editingCourt?.id;
+    const saveOperation = editingId
+      ? this.courtService.updateCourt(facilityId, editingId, dto)
+      : this.courtService.createCourt(facilityId, dto);
+
+    saveOperation.pipe(take(1)).subscribe({
+      next: (savedCourt) => {
+        const message = editingCourt ? 'კორტი წარმატებით განახლდა!' : 'კორტი წარმატებით დაემატა!';
+        this.alerts.open(message, { appearance: 'success' }).pipe(take(1)).subscribe();
+        this.context.completeWith(savedCourt);
+      },
+      error: (error) => {
+        console.error('Error saving court:', error);
+        const message = editingCourt
+          ? 'შეცდომა კორტის განახლებისას.'
+          : 'შეცდომა კორტის დამატებისას.';
+        this.alerts.open(message, { appearance: 'error' }).pipe(take(1)).subscribe();
+      },
+    });
   }
 
   onCancel(): void {
-    (this.context as any).completeWith(null);
+    this.context.completeWith(null);
   }
 }

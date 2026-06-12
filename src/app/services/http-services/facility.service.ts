@@ -43,11 +43,15 @@ export class FacilityService {
 
   /** DELETE /facilities/{id} – delete a facility */
   deleteFacility(id: string): Observable<void> {
+    // The DELETE response envelope body is intentionally ignored — callers only
+    // care that it succeeded, so we type it as void and discard the payload.
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  /** PATCH /facilities/{facilityId}/court/{courtId} – add a court to a facility */
-  addCourtToFacility(facilityId: string, courtId: string): Observable<unknown> {
-    return this.http.patch(`${this.apiUrl}/${facilityId}/court/${courtId}`, {});
+  /** PATCH /facilities/{id}/status { activeState } – publish/unpublish a facility */
+  setFacilityStatus(id: string, activeState: boolean): Observable<Facility> {
+    return this.http
+      .patch<ApiResponse<Facility>>(`${this.apiUrl}/${id}/status`, { activeState })
+      .pipe(map((res) => res.result.data));
   }
 }

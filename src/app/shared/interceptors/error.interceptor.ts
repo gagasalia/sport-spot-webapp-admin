@@ -1,4 +1,4 @@
-import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { HttpContextToken, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { TuiAlertService } from '@taiga-ui/core';
@@ -6,6 +6,14 @@ import { catchError, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../services/auth.service';
 import { TenantService } from '../services/tenant.service';
+
+/**
+ * Per-request opt-out of the generic Georgian error toast. Set it on a request
+ * whose caller surfaces its own error messaging (e.g. {@link MediaService}'s
+ * presign 503 → its own clean alert) to avoid double-toasting. 401 handling is
+ * unaffected — session teardown + redirect still run regardless of this flag.
+ */
+export const SKIP_ERROR_TOAST = new HttpContextToken<boolean>(() => false);
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const alerts = inject(TuiAlertService);
@@ -30,8 +38,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       // Generic failure: surface a Georgian error alert (login errors excluded —
-      // the login component renders an inline message instead of double-toasting).
-      if (!isLoginRequest) {
+      // the login component renders an inline message instead of double-toasting;
+      // SKIP_ERROR_TOAST opts a request out so its caller can show its own alert).
+      if (!isLoginRequest && !req.context.get(SKIP_ERROR_TOAST)) {
         alerts
           .open('მოხდა შეცდომა, გთხოვთ სცადოთ მოგვიანებით.', {
             appearance: 'error',

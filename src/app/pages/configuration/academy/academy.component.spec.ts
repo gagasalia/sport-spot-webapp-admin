@@ -9,6 +9,7 @@ import { TuiAlertService } from '@taiga-ui/core';
 
 import { AcademyComponent } from './academy.component';
 import { AcademyService } from '../../../services/http-services/academy.service';
+import { MediaService } from '../../../services/http-services/media.service';
 import { TenantService } from '../../../shared/services/tenant.service';
 import { Academy, AcademyStatus } from '../../../shared/models/academy.model';
 
@@ -62,6 +63,7 @@ describe('AcademyComponent', () => {
       providers: [
         provideAnimations(),
         { provide: AcademyService, useValue: academyServiceSpy },
+        { provide: MediaService, useValue: jasmine.createSpyObj('MediaService', ['upload']) },
         { provide: TenantService, useValue: tenantServiceSpy },
         { provide: TuiAlertService, useValue: alertServiceSpy },
         { provide: Router, useValue: routerSpy },

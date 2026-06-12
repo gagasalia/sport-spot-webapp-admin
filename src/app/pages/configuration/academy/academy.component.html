@@ -51,8 +51,16 @@
               class="hidden"
               #fileInput
             />
-            <button type="button" tuiButton appearance="outline" (click)="fileInput.click()">
-              <span class="georgian-text" lang="ka">ლოგოს არჩევა</span>
+            <button
+              type="button"
+              tuiButton
+              appearance="outline"
+              (click)="fileInput.click()"
+              [disabled]="isUploadingLogo()"
+            >
+              <span class="georgian-text" lang="ka">{{
+                isUploadingLogo() ? 'იტვირთება...' : 'ლოგოს არჩევა'
+              }}</span>
             </button>
           </div>
 

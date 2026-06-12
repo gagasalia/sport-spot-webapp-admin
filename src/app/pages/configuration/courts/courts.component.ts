@@ -13,7 +13,9 @@ import { take } from 'rxjs';
 import { TuiAlertService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { type TuiStringHandler } from '@taiga-ui/cdk';
-import { ConfigurationService } from '../../../services/http-services/configuration.service';
+import { CourtService } from '../../../services/http-services/court.service';
+import { FacilityService } from '../../../services/http-services/facility.service';
+import { TenantService } from '../../../shared/services/tenant.service';
 import { Court } from '../../../shared/models/court.model';
 import { Facility } from '../../../shared/models/facility.model';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
@@ -35,6 +37,9 @@ export class CourtsComponent implements OnInit {
   private readonly injector = inject(Injector);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly courtService = inject(CourtService);
+  private readonly facilityService = inject(FacilityService);
+  private readonly tenant = inject(TenantService);
 
   courts = signal<Court[]>([]);
   facilities = signal<Facility[]>([]);
@@ -44,14 +49,18 @@ export class CourtsComponent implements OnInit {
 
   facilityControl = new FormControl<string | null>(null);
 
+  /** Resolve a facility's id from either API (`_id`) or legacy (`id`) shape. */
+  private facilityId(f: Facility): string | null {
+    return f._id ?? f.id ?? null;
+  }
+
   readonly stringifyFacility: TuiStringHandler<string> = (id) => {
-    const facility = this.facilities().find((f) => f.id === id);
+    const facility = this.facilities().find((f) => this.facilityId(f) === id);
     if (!facility) return '';
-    return facility.description || facility.addressText || 'უსახელო ობიექტი';
+    return facility.name || facility.description || 'უსახელო ობიექტი';
   };
 
-  constructor(private configurationService: ConfigurationService) {
-    // Subscribe to form control changes
+  constructor() {
     this.facilityControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((facilityId) => {
       this.onFacilityChange(facilityId);
     });
@@ -62,62 +71,62 @@ export class CourtsComponent implements OnInit {
   }
 
   private loadFacilities(): void {
+    const academyId = this.tenant.academyId();
+    if (!academyId) {
+      this.facilities.set([]);
+      this.selectedFacilityId.set(null);
+      return;
+    }
+
     this.isLoadingFacilities.set(true);
-    this.configurationService
-      .getFacilities()
+    this.facilityService
+      .getFacilitiesByAcademy(academyId)
       .pipe(take(1))
       .subscribe({
         next: (facilities) => {
           this.facilities.set(facilities);
           this.isLoadingFacilities.set(false);
-          // Handle facility selection based on the query param or number of facilities
-          this.route.queryParams.pipe(take(1)).subscribe((params) => {
-            const facilityIdFromQuery = params['facilityId'];
-
-            if (facilities.length === 0) {
-              // No facilities, do nothing
-              this.selectedFacilityId.set(null);
-              this.facilityControl.setValue(null, { emitEvent: false });
-            } else if (facilities.length === 1) {
-              // Exactly 1 facility, auto-select it
-              const facility = facilities[0];
-              const fId = facility.id ?? null;
-              this.selectedFacilityId.set(fId);
-              this.facilityControl.setValue(fId, { emitEvent: false });
-              // Update query param if not already set
-              if (facilityIdFromQuery !== fId) {
-                this.updateQueryParam(fId);
-              }
-              if (fId) this.loadCourts(fId);
-            } else {
-              // More than 1 facility
-              if (facilityIdFromQuery) {
-                // If there's a query param, use it
-                const facility = facilities.find((f) => f.id === facilityIdFromQuery);
-                if (facility) {
-                  const fId = facility.id ?? null;
-                  this.selectedFacilityId.set(fId);
-                  this.facilityControl.setValue(fId, { emitEvent: false });
-                  if (fId) this.loadCourts(fId);
-                } else {
-                  // Invalid facilityId in query param, clear it
-                  this.selectedFacilityId.set(null);
-                  this.facilityControl.setValue(null, { emitEvent: false });
-                  this.updateQueryParam(null);
-                }
-              } else {
-                // No query param, user needs to select
-                this.selectedFacilityId.set(null);
-                this.facilityControl.setValue(null, { emitEvent: false });
-              }
-            }
-          });
+          this.resolveSelection(facilities);
         },
         error: (error) => {
           console.error('Error loading facilities:', error);
           this.isLoadingFacilities.set(false);
         },
       });
+  }
+
+  private resolveSelection(facilities: Facility[]): void {
+    this.route.queryParams.pipe(take(1)).subscribe((params) => {
+      const facilityIdFromQuery = params['facilityId'];
+
+      if (facilities.length === 0) {
+        this.selectedFacilityId.set(null);
+        this.facilityControl.setValue(null, { emitEvent: false });
+      } else if (facilities.length === 1) {
+        const fId = this.facilityId(facilities[0]);
+        this.selectedFacilityId.set(fId);
+        this.facilityControl.setValue(fId, { emitEvent: false });
+        if (facilityIdFromQuery !== fId) {
+          this.updateQueryParam(fId);
+        }
+        if (fId) this.loadCourts(fId);
+      } else if (facilityIdFromQuery) {
+        const facility = facilities.find((f) => this.facilityId(f) === facilityIdFromQuery);
+        if (facility) {
+          const fId = this.facilityId(facility);
+          this.selectedFacilityId.set(fId);
+          this.facilityControl.setValue(fId, { emitEvent: false });
+          if (fId) this.loadCourts(fId);
+        } else {
+          this.selectedFacilityId.set(null);
+          this.facilityControl.setValue(null, { emitEvent: false });
+          this.updateQueryParam(null);
+        }
+      } else {
+        this.selectedFacilityId.set(null);
+        this.facilityControl.setValue(null, { emitEvent: false });
+      }
+    });
   }
 
   onFacilityChange(facilityId: string | null): void {
@@ -141,7 +150,7 @@ export class CourtsComponent implements OnInit {
 
   private loadCourts(facilityId: string): void {
     this.isLoadingCourts.set(true);
-    this.configurationService
+    this.courtService
       .getCourts(facilityId)
       .pipe(take(1))
       .subscribe({
@@ -183,7 +192,8 @@ export class CourtsComponent implements OnInit {
 
   onCourtUpdated(updatedCourt: Court): void {
     const currentCourts = this.courts();
-    const index = currentCourts.findIndex((c) => c.id === updatedCourt.id);
+    const updatedId = updatedCourt._id ?? updatedCourt.id;
+    const index = currentCourts.findIndex((c) => (c._id ?? c.id) === updatedId);
     if (index !== -1) {
       const updatedCourts = [...currentCourts];
       updatedCourts[index] = updatedCourt;
@@ -192,6 +202,7 @@ export class CourtsComponent implements OnInit {
   }
 
   onEditCourt(court: Court): void {
+    const facilityId = court.facility ?? court.facilityId ?? this.selectedFacilityId();
     this.dialogs
       .open(new PolymorpheusComponent(CourtFormComponent, this.injector), {
         label: 'რედაქტირება',
@@ -200,7 +211,7 @@ export class CourtsComponent implements OnInit {
         closable: true,
         data: {
           court,
-          facilityId: court.facilityId,
+          facilityId,
           style: {
             height: '80vh',
             'max-height': '600px',
@@ -210,17 +221,21 @@ export class CourtsComponent implements OnInit {
       })
       .pipe(take(1))
       .subscribe(() => {
-        this.loadCourts(court.facilityId);
+        if (facilityId) this.loadCourts(facilityId);
       });
   }
 
   onDeleteCourt(court: Court): void {
-    this.configurationService
-      .deleteCourt(court.id)
+    const facilityId = court.facility ?? court.facilityId ?? this.selectedFacilityId();
+    const courtId = court._id ?? court.id;
+    if (!facilityId || !courtId) return;
+
+    this.courtService
+      .deleteCourt(facilityId, courtId)
       .pipe(take(1))
       .subscribe({
         next: () => {
-          this.loadCourts(court.facilityId);
+          this.loadCourts(facilityId);
           this.alerts.open('კორტი წარმატებით წაიშალა', { appearance: 'success' }).subscribe();
         },
         error: (error) => {
@@ -236,6 +251,8 @@ export class CourtsComponent implements OnInit {
 
   get selectedFacility(): Facility | undefined {
     const facilityId = this.selectedFacilityId();
-    return facilityId ? this.facilities().find((f) => f.id === facilityId) : undefined;
+    return facilityId
+      ? this.facilities().find((f) => this.facilityId(f) === facilityId)
+      : undefined;
   }
 }

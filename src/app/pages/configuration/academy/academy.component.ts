@@ -22,6 +22,10 @@ import { TuiAlertService } from '@taiga-ui/core';
 import { TuiInputColor } from '@taiga-ui/kit';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { AcademyService } from '../../../services/http-services/academy.service';
+import {
+  MediaService,
+  MediaUnconfiguredError,
+} from '../../../services/http-services/media.service';
 import { Academy } from '../../../shared/models/academy.model';
 import { TenantService } from '../../../shared/services/tenant.service';
 
@@ -42,6 +46,9 @@ export class AcademyComponent implements OnInit {
 
   private readonly destroyRef = inject(DestroyRef);
   private readonly tenant = inject(TenantService);
+  private readonly mediaService = inject(MediaService);
+
+  isUploadingLogo = signal<boolean>(false);
 
   constructor(
     private fb: FormBuilder,
@@ -203,22 +210,38 @@ export class AcademyComponent implements OnInit {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const result = e.target?.result as string;
-      if (result) {
-        this.academyForm.patchValue({
-          logo: {
-            url: result,
-            type: file.type,
-            size: file.size,
-          },
-        });
-        this.academyForm.markAsDirty();
-        this.cdr.markForCheck();
-      }
-    };
-    reader.readAsDataURL(file);
+    this.isUploadingLogo.set(true);
+    this.mediaService
+      .upload(file, 'academy-logo')
+      .pipe(take(1))
+      .subscribe({
+        next: (media) => {
+          this.academyForm.patchValue({
+            logo: { url: media.url, type: media.type, size: media.size, metadata: null },
+          });
+          this.academyForm.markAsDirty();
+          this.isUploadingLogo.set(false);
+          this.cdr.markForCheck();
+        },
+        error: (error) => {
+          this.isUploadingLogo.set(false);
+          this.cdr.markForCheck();
+          if (error instanceof MediaUnconfiguredError) {
+            this.alerts
+              .open('სურათების ატვირთვა ამ გარემოში არ არის კონფიგურირებული', {
+                appearance: 'error',
+              })
+              .pipe(take(1))
+              .subscribe();
+            return;
+          }
+          console.error('Error uploading logo:', error);
+          this.alerts
+            .open('შეცდომა სურათის ატვირთვისას', { appearance: 'error' })
+            .pipe(take(1))
+            .subscribe();
+        },
+      });
   }
 
   removeLogo(): void {

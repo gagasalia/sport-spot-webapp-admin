@@ -42,7 +42,7 @@
   <!-- Content Section -->
   <div class="p-4 flex flex-col flex-1">
     <h3 class="title-text text-lg font-bold m-0 georgian-text h-7 line-clamp-1" lang="ka">
-      {{ facility.description || '--' }}
+      {{ facility.name || '--' }}
     </h3>
     <p
       class="description-text text-sm m-0 leading-relaxed georgian-text h-10 line-clamp-2 mt-2 mb-3"
@@ -84,7 +84,7 @@
         size="m"
         class="flex-1 flex items-center justify-center gap-1.5 text-sm sm:text-base px-3 py-2 min-w-0"
         [routerLink]="['/configuration/courts']"
-        [queryParams]="{ facilityId: facility.id }"
+        [queryParams]="{ facilityId: facility._id ?? facility.id }"
         [attr.aria-label]="'კორტები'"
       >
         <tui-icon icon="@lucide.layout-grid" class="w-4 h-4 shrink-0"></tui-icon>

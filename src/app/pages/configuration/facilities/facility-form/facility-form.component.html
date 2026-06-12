@@ -219,8 +219,16 @@
           class="hidden"
           #fileInput
         />
-        <button type="button" tuiButton appearance="outline" (click)="fileInput.click()">
-          <span class="georgian-text" lang="ka">ფოტოების არჩევა</span>
+        <button
+          type="button"
+          tuiButton
+          appearance="outline"
+          (click)="fileInput.click()"
+          [disabled]="isUploadingMedia()"
+        >
+          <span class="georgian-text" lang="ka">{{
+            isUploadingMedia() ? 'იტვირთება...' : 'ფოტოების არჩევა'
+          }}</span>
         </button>
       </div>
 

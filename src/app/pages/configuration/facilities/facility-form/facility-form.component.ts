@@ -20,6 +20,10 @@ import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 import { TuiDialogContext } from '@taiga-ui/experimental';
 import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
 import { FacilityService } from '../../../../services/http-services/facility.service';
+import {
+  MediaService,
+  MediaUnconfiguredError,
+} from '../../../../services/http-services/media.service';
 import { Facility, IMedia, CreateFacilityDto } from '../../../../shared/models/facility.model';
 import { Amenity, AMENITY_LABELS, AMENITY_ICONS } from '../../../../shared/enums/amenity.enum';
 import { TenantService } from '../../../../shared/services/tenant.service';
@@ -76,6 +80,9 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
 
   private readonly ngZone = inject(NgZone);
   private readonly tenant = inject(TenantService);
+  private readonly mediaService = inject(MediaService);
+
+  protected readonly isUploadingMedia = signal<boolean>(false);
 
   constructor(
     private fb: FormBuilder,
@@ -116,12 +123,9 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
       }),
     });
 
-    // Pre-populate media
+    // Pre-populate media from the API `media` field (stored publicUrl shape).
     if (f?.media?.length) {
       this.mediaItems.set(f.media);
-    } else if (f?.photos?.length) {
-      // Backward compat: wrap legacy base64 photos as IMedia
-      this.mediaItems.set(f.photos.map((url) => ({ url, type: 'image/*', size: 0 })));
     }
 
     // Pre-set map marker
@@ -234,17 +238,46 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
 
   private handleFiles(files: File[]): void {
     const imageFiles = files.filter((file) => file.type.startsWith('image/'));
+    if (imageFiles.length === 0) return;
+
+    this.isUploadingMedia.set(true);
+    let pending = imageFiles.length;
+    const settle = () => {
+      pending -= 1;
+      if (pending === 0) {
+        this.isUploadingMedia.set(false);
+        this.cdr.markForCheck();
+      }
+    };
+
     imageFiles.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        if (result) {
-          const newMedia: IMedia = { url: result, type: file.type, size: file.size };
-          this.mediaItems.update((current) => [...current, newMedia]);
-          this.cdr.markForCheck();
-        }
-      };
-      reader.readAsDataURL(file);
+      this.mediaService
+        .upload(file, 'facility-media')
+        .pipe(take(1))
+        .subscribe({
+          next: (media: IMedia) => {
+            this.mediaItems.update((current) => [...current, media]);
+            this.cdr.markForCheck();
+            settle();
+          },
+          error: (error) => {
+            if (error instanceof MediaUnconfiguredError) {
+              this.alerts
+                .open('სურათების ატვირთვა ამ გარემოში არ არის კონფიგურირებული', {
+                  appearance: 'error',
+                })
+                .pipe(take(1))
+                .subscribe();
+            } else {
+              console.error('Error uploading media:', error);
+              this.alerts
+                .open('შეცდომა სურათის ატვირთვისას', { appearance: 'error' })
+                .pipe(take(1))
+                .subscribe();
+            }
+            settle();
+          },
+        });
     });
   }
 

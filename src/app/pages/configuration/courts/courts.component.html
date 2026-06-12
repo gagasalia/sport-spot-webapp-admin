@@ -38,9 +38,14 @@
           <tui-textfield tuiChevron [stringify]="stringifyFacility">
             <input tuiSelect [formControl]="facilityControl" class="georgian-text" lang="ka" />
             <tui-data-list *tuiTextfieldDropdown>
-              <button *ngFor="let facility of facilities()" new tuiOption [value]="facility.id">
+              <button
+                *ngFor="let facility of facilities()"
+                new
+                tuiOption
+                [value]="facility._id ?? facility.id"
+              >
                 <span class="georgian-text" lang="ka">
-                  {{ facility.description || facility.addressText || 'უსახელო ობიექტი' }}
+                  {{ facility.name || facility.description || 'უსახელო ობიექტი' }}
                 </span>
               </button>
             </tui-data-list>
@@ -62,7 +67,7 @@
       </div>
     } @else if (courts().length > 0) {
       <div class="grid grid-cols-1 gap-6 auto-rows-fr responsive-grid">
-        @for (court of courts(); track court.id) {
+        @for (court of courts(); track court._id ?? court.id) {
           <app-court-card
             [court]="court"
             (courtUpdated)="onCourtUpdated($event)"

@@ -9,8 +9,8 @@ import {
 import { take } from 'rxjs';
 import { TuiAlertService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { ConfigurationService } from '../../../services/http-services/configuration.service';
 import { FacilityService } from '../../../services/http-services/facility.service';
+import { TenantService } from '../../../shared/services/tenant.service';
 import { Facility } from '../../../shared/models/facility.model';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { FacilityFormComponent } from './facility-form/facility-form.component';
@@ -28,12 +28,15 @@ export class FacilitiesComponent implements OnInit {
   private readonly dialogs = inject(TuiDialogService);
   private readonly alerts = inject(TuiAlertService);
   private readonly injector = inject(Injector);
+  private readonly facilityService = inject(FacilityService);
+  private readonly tenant = inject(TenantService);
+
   facilities = signal<Facility[]>([]);
   isLoading = signal<boolean>(false);
 
-  private readonly facilityService = inject(FacilityService);
-
-  constructor(private configurationService: ConfigurationService) {}
+  private facilityId(f: Facility): string | undefined {
+    return f._id ?? f.id;
+  }
 
   ngOnInit(): void {
     this.loadFacilities();
@@ -56,14 +59,14 @@ export class FacilitiesComponent implements OnInit {
       })
       .pipe(take(1))
       .subscribe(() => {
-        // Refresh the facilities list after dialog closes
         this.loadFacilities();
       });
   }
 
   onFacilityUpdated(updatedFacility: Facility): void {
+    const updatedId = this.facilityId(updatedFacility);
     const currentFacilities = this.facilities();
-    const index = currentFacilities.findIndex((f) => f.id === updatedFacility.id);
+    const index = currentFacilities.findIndex((f) => this.facilityId(f) === updatedId);
     if (index !== -1) {
       const updatedFacilities = [...currentFacilities];
       updatedFacilities[index] = updatedFacility;
@@ -94,9 +97,15 @@ export class FacilitiesComponent implements OnInit {
   }
 
   private loadFacilities(): void {
+    const academyId = this.tenant.academyId();
+    if (!academyId) {
+      this.facilities.set([]);
+      return;
+    }
+
     this.isLoading.set(true);
-    this.configurationService
-      .getFacilities()
+    this.facilityService
+      .getFacilitiesByAcademy(academyId)
       .pipe(take(1))
       .subscribe({
         next: (facilities) => {
@@ -111,14 +120,14 @@ export class FacilitiesComponent implements OnInit {
   }
 
   onDeleteFacility(facility: Facility): void {
-    const facilityId = facility._id || facility.id;
+    const facilityId = this.facilityId(facility);
     if (!facilityId) return;
     this.facilityService
       .deleteFacility(facilityId)
       .pipe(take(1))
       .subscribe({
         next: () => {
-          this.facilities.update((list) => list.filter((f) => (f._id || f.id) !== facilityId));
+          this.facilities.update((list) => list.filter((f) => this.facilityId(f) !== facilityId));
           this.alerts.open('ობიექტი წარმატებით წაიშალა', { appearance: 'success' }).subscribe();
         },
         error: (error) => {

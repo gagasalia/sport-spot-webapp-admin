@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectionStrategy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -7,6 +7,8 @@ import {
   Validators,
   FormsModule,
   FormControl,
+  AbstractControl,
+  ValidationErrors,
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -17,10 +19,37 @@ import { type TuiMarkerHandler } from '@taiga-ui/core';
 import { TuiInputDateMulti } from '@taiga-ui/kit';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { ScheduleService } from '../../../services/http-services/schedule.service';
-import { ConfigurationService } from '../../../services/http-services/configuration.service';
-import { GeneralScheduleDTO, TimeRangeDTO, Weekday } from '../../../shared/models/schedule.model';
+import { FacilityService } from '../../../services/http-services/facility.service';
+import { TenantService } from '../../../shared/services/tenant.service';
+import {
+  FacilityScheduleDTO,
+  HolidayDTO,
+  PricingDTO,
+  TimeRangeDTO,
+  WeeklyHoursDTO,
+  Weekday,
+} from '../../../shared/models/schedule.model';
 import { Facility } from '../../../shared/models/facility.model';
 import { Day, DAY_LABELS } from '../../../shared/enums/day.enum';
+
+/** Validates that a group's `endHour:endMinute` is strictly after `startHour:startMinute`. */
+function endAfterStartValidator(
+  startHourKey = 'startHour',
+  startMinuteKey = 'startMinute',
+  endHourKey = 'endHour',
+  endMinuteKey = 'endMinute',
+): (group: AbstractControl) => ValidationErrors | null {
+  return (group: AbstractControl): ValidationErrors | null => {
+    const sh = group.get(startHourKey)?.value;
+    const sm = group.get(startMinuteKey)?.value;
+    const eh = group.get(endHourKey)?.value;
+    const em = group.get(endMinuteKey)?.value;
+    if (sh == null || sm == null || eh == null || em == null) return null;
+    const start = sh * 60 + sm;
+    const end = eh * 60 + em;
+    return end > start ? null : { endNotAfterStart: true };
+  };
+}
 
 @Component({
   selector: 'app-working-hours-and-prices',
@@ -38,9 +67,17 @@ import { Day, DAY_LABELS } from '../../../shared/enums/day.enum';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WorkingHoursAndPricesComponent implements OnInit {
+  private readonly fb = inject(FormBuilder);
+  private readonly scheduleService = inject(ScheduleService);
+  private readonly facilityService = inject(FacilityService);
+  private readonly tenant = inject(TenantService);
+  private readonly alerts = inject(TuiAlertService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+
   scheduleForm!: FormGroup;
   pricesForm!: FormGroup;
-  schedule = signal<GeneralScheduleDTO | null>(null);
+  schedule = signal<FacilityScheduleDTO | null>(null);
   facilities = signal<Facility[]>([]);
   selectedFacilityId = signal<string | null>(null);
   isLoading = signal<boolean>(false);
@@ -48,19 +85,22 @@ export class WorkingHoursAndPricesComponent implements OnInit {
 
   facilityControl = new FormControl<string | null>(null);
 
+  private facilityIdOf(f: Facility): string | null {
+    return f._id ?? f.id ?? null;
+  }
+
   readonly stringifyFacility: TuiStringHandler<string> = (id) => {
-    const facility = this.facilities().find((f) => f.id === id);
+    const facility = this.facilities().find((f) => this.facilityIdOf(f) === id);
     if (!facility) return '';
-    return facility.description || facility.addressText || 'უსახელო ობიექტი';
+    return facility.name || facility.description || 'უსახელო ობიექტი';
   };
 
-  // Holidays
+  // Holidays as TuiDay[]; we keep the server holiday docs to address by _id.
   holidays: TuiDay[] = [];
-  private readonly HOLIDAYS_STORAGE_KEY = 'sportify_holidays';
-  private readonly PRICES_STORAGE_KEY = 'sportify_prices';
-  private readonly WORKING_DAYS_STORAGE_KEY = 'sportify_working_days';
+  private serverHolidays: HolidayDTO[] = [];
 
-  // Working days selection
+  // Working days selection — derived from / written into weeklyHours
+  // (a day is "working" iff it has at least one time range).
   workingDays: { [key in Day]?: boolean } = {
     [Day.Monday]: true,
     [Day.Tuesday]: true,
@@ -98,92 +138,81 @@ export class WorkingHoursAndPricesComponent implements OnInit {
   ];
   readonly dayLabels = DAY_LABELS;
 
-  // Hour options: 00 to 23
   readonly hours = Array.from({ length: 24 }, (_, i) => i);
-  // Minute options: 00 or 30
   readonly minutes = [0, 30];
 
   readonly stringifyHour: TuiStringHandler<number> = (hour) => hour.toString().padStart(2, '0');
   readonly stringifyMinute: TuiStringHandler<number> = (minute) =>
     minute.toString().padStart(2, '0');
 
-  constructor(
-    private fb: FormBuilder,
-    private scheduleService: ScheduleService,
-    private configurationService: ConfigurationService,
-    private alerts: TuiAlertService,
-    private route: ActivatedRoute,
-    private router: Router,
-  ) {
-    // Subscribe to form control changes
+  constructor() {
     this.facilityControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((facilityId) => {
       this.onFacilityChange(facilityId);
     });
   }
 
   ngOnInit(): void {
-    this.loadFacilities();
     this.initializePricesForm();
+    this.loadFacilities();
   }
 
   private loadFacilities(): void {
+    const academyId = this.tenant.academyId();
+    if (!academyId) {
+      this.facilities.set([]);
+      this.selectedFacilityId.set(null);
+      return;
+    }
+
     this.isLoadingFacilities.set(true);
-    this.configurationService
-      .getFacilities()
+    this.facilityService
+      .getFacilitiesByAcademy(academyId)
       .pipe(take(1))
       .subscribe({
         next: (facilities) => {
           this.facilities.set(facilities);
           this.isLoadingFacilities.set(false);
-
-          // Handle facility selection based on the query param or number of facilities
-          this.route.queryParams.pipe(take(1)).subscribe((params) => {
-            const facilityIdFromQuery = params['facilityId'];
-
-            if (facilities.length === 0) {
-              // No facilities, do nothing
-              this.selectedFacilityId.set(null);
-              this.facilityControl.setValue(null, { emitEvent: false });
-            } else if (facilities.length === 1) {
-              // Exactly 1 facility, auto-select it
-              const facility = facilities[0];
-              const fId = facility.id ?? null;
-              this.selectedFacilityId.set(fId);
-              this.facilityControl.setValue(fId, { emitEvent: false });
-              // Update query param if not already set
-              if (facilityIdFromQuery !== fId) {
-                this.updateQueryParam(fId);
-              }
-              if (fId) this.loadScheduleForFacility(fId);
-            } else {
-              // More than 1 facility
-              if (facilityIdFromQuery) {
-                // If there's a query param, use it
-                const facility = facilities.find((f) => f.id === facilityIdFromQuery);
-                if (facility) {
-                  const fId = facility.id ?? null;
-                  this.selectedFacilityId.set(fId);
-                  this.facilityControl.setValue(fId, { emitEvent: false });
-                  if (fId) this.loadScheduleForFacility(fId);
-                } else {
-                  // Invalid facilityId in query param, clear it
-                  this.selectedFacilityId.set(null);
-                  this.facilityControl.setValue(null, { emitEvent: false });
-                  this.updateQueryParam(null);
-                }
-              } else {
-                // No query param, user needs to select
-                this.selectedFacilityId.set(null);
-                this.facilityControl.setValue(null, { emitEvent: false });
-              }
-            }
-          });
+          this.resolveSelection(facilities);
         },
         error: (error) => {
           console.error('Error loading facilities:', error);
           this.isLoadingFacilities.set(false);
         },
       });
+  }
+
+  private resolveSelection(facilities: Facility[]): void {
+    this.route.queryParams.pipe(take(1)).subscribe((params) => {
+      const facilityIdFromQuery = params['facilityId'];
+
+      if (facilities.length === 0) {
+        this.selectedFacilityId.set(null);
+        this.facilityControl.setValue(null, { emitEvent: false });
+      } else if (facilities.length === 1) {
+        const fId = this.facilityIdOf(facilities[0]);
+        this.selectedFacilityId.set(fId);
+        this.facilityControl.setValue(fId, { emitEvent: false });
+        if (facilityIdFromQuery !== fId) {
+          this.updateQueryParam(fId);
+        }
+        if (fId) this.loadScheduleForFacility(fId);
+      } else if (facilityIdFromQuery) {
+        const facility = facilities.find((f) => this.facilityIdOf(f) === facilityIdFromQuery);
+        if (facility) {
+          const fId = this.facilityIdOf(facility);
+          this.selectedFacilityId.set(fId);
+          this.facilityControl.setValue(fId, { emitEvent: false });
+          if (fId) this.loadScheduleForFacility(fId);
+        } else {
+          this.selectedFacilityId.set(null);
+          this.facilityControl.setValue(null, { emitEvent: false });
+          this.updateQueryParam(null);
+        }
+      } else {
+        this.selectedFacilityId.set(null);
+        this.facilityControl.setValue(null, { emitEvent: false });
+      }
+    });
   }
 
   onFacilityChange(facilityId: string | null): void {
@@ -210,113 +239,16 @@ export class WorkingHoursAndPricesComponent implements OnInit {
     this.router.navigate(['/configuration/facilities']);
   }
 
+  /** Loads the whole schedule resource for the selected facility (single source). */
   private loadScheduleForFacility(facilityId: string): void {
-    this.loadSchedule();
-    this.loadHolidays(facilityId);
-    this.loadPrices(facilityId);
-    this.loadWorkingDays(facilityId);
-  }
-
-  private loadWorkingDays(facilityId: string): void {
-    const stored = localStorage.getItem(`${this.WORKING_DAYS_STORAGE_KEY}_${facilityId}`);
-    if (stored) {
-      try {
-        this.workingDays = JSON.parse(stored);
-      } catch (error) {
-        console.error('Error loading working days:', error);
-      }
-    } else {
-      // Reset to default values
-      this.workingDays = {
-        [Day.Monday]: true,
-        [Day.Tuesday]: true,
-        [Day.Wednesday]: true,
-        [Day.Thursday]: true,
-        [Day.Friday]: true,
-        [Day.Saturday]: true,
-        [Day.Sunday]: false,
-      };
-    }
-  }
-
-  onSaveWorkingDays(): void {
-    const facilityId = this.selectedFacilityId();
-    if (!facilityId) return;
-
-    localStorage.setItem(
-      `${this.WORKING_DAYS_STORAGE_KEY}_${facilityId}`,
-      JSON.stringify(this.workingDays),
-    );
-
-    this.alerts
-      .open('სამუშაო დღეები წარმატებით შეინახა!', { appearance: 'success' })
-      .pipe(take(1))
-      .subscribe();
-  }
-
-  toggleWorkingDay(day: Day): void {
-    this.workingDays[day] = !this.workingDays[day];
-  }
-
-  private loadHolidays(facilityId: string): void {
-    const stored = localStorage.getItem(`${this.HOLIDAYS_STORAGE_KEY}_${facilityId}`);
-    if (stored) {
-      try {
-        const dates: string[] = JSON.parse(stored);
-        this.holidays = dates.map((dateStr) => {
-          const [year, month, day] = dateStr.split('-').map(Number);
-          return new TuiDay(year, month - 1, day);
-        });
-      } catch (error) {
-        console.error('Error loading holidays:', error);
-      }
-    } else {
-      this.holidays = [];
-    }
-  }
-
-  private initializePricesForm(): void {
-    this.pricesForm = this.fb.group({
-      generalPrice: [0, [Validators.required, Validators.min(0)]],
-      offPeakStartHour: [0, Validators.required],
-      offPeakStartMinute: [0, Validators.required],
-      offPeakEndHour: [0, Validators.required],
-      offPeakEndMinute: [0, Validators.required],
-      offPeakPrice: [0, [Validators.required, Validators.min(0)]],
-    });
-  }
-
-  private loadPrices(facilityId: string): void {
-    const stored = localStorage.getItem(`${this.PRICES_STORAGE_KEY}_${facilityId}`);
-    if (stored) {
-      try {
-        const prices = JSON.parse(stored);
-        this.pricesForm.patchValue(prices);
-      } catch (error) {
-        console.error('Error loading prices:', error);
-      }
-    } else {
-      // Reset to default values if no data
-      this.pricesForm.reset({
-        generalPrice: 0,
-        offPeakStartHour: 0,
-        offPeakStartMinute: 0,
-        offPeakEndHour: 0,
-        offPeakEndMinute: 0,
-        offPeakPrice: 0,
-      });
-    }
-  }
-
-  private loadSchedule(): void {
     this.isLoading.set(true);
     this.scheduleService
-      .getGeneralSchedule()
+      .getSchedule(facilityId)
       .pipe(take(1))
       .subscribe({
         next: (schedule) => {
           this.schedule.set(schedule);
-          this.initializeForm(schedule);
+          this.applySchedule(schedule);
           this.isLoading.set(false);
         },
         error: (error) => {
@@ -330,181 +262,328 @@ export class WorkingHoursAndPricesComponent implements OnInit {
       });
   }
 
-  private initializeForm(schedule: GeneralScheduleDTO): void {
-    const formGroups: any = {};
-
-    // Initialize weekdays group (Monday to Friday with same time)
-    const weekdayRange = schedule.weeklyHours[Day.Monday as Weekday]?.[0] || {
-      start: '09:00',
-      end: '22:00',
-    };
-    const [weekdayStartHour, weekdayStartMinute] = weekdayRange.start.split(':').map(Number);
-    const [weekdayEndHour, weekdayEndMinute] = weekdayRange.end.split(':').map(Number);
-
-    formGroups['weekdays'] = this.fb.group({
-      startHour: [weekdayStartHour, Validators.required],
-      startMinute: [weekdayStartMinute, Validators.required],
-      endHour: [weekdayEndHour, Validators.required],
-      endMinute: [weekdayEndMinute, Validators.required],
-    });
-
-    // Initialize Saturday
-    const saturdayRange = schedule.weeklyHours[Day.Saturday as Weekday]?.[0] || {
-      start: '09:00',
-      end: '22:00',
-    };
-    const [satStartHour, satStartMinute] = saturdayRange.start.split(':').map(Number);
-    const [satEndHour, satEndMinute] = saturdayRange.end.split(':').map(Number);
-
-    formGroups['saturday'] = this.fb.group({
-      startHour: [satStartHour, Validators.required],
-      startMinute: [satStartMinute, Validators.required],
-      endHour: [satEndHour, Validators.required],
-      endMinute: [satEndMinute, Validators.required],
-    });
-
-    // Initialize Sunday
-    const sundayRange = schedule.weeklyHours[Day.Sunday as Weekday]?.[0] || {
-      start: '09:00',
-      end: '22:00',
-    };
-    const [sunStartHour, sunStartMinute] = sundayRange.start.split(':').map(Number);
-    const [sunEndHour, sunEndMinute] = sundayRange.end.split(':').map(Number);
-
-    formGroups['sunday'] = this.fb.group({
-      startHour: [sunStartHour, Validators.required],
-      startMinute: [sunStartMinute, Validators.required],
-      endHour: [sunEndHour, Validators.required],
-      endMinute: [sunEndMinute, Validators.required],
-    });
-
-    this.scheduleForm = this.fb.group(formGroups);
+  /** Hydrates all three forms (hours/working-days, holidays, prices) from one doc. */
+  private applySchedule(schedule: FacilityScheduleDTO): void {
+    this.initializeForm(schedule);
+    this.applyHolidays(schedule);
+    this.applyPrices(schedule);
   }
 
-  onSave(): void {
-    if (this.scheduleForm.valid) {
-      const formValue = this.scheduleForm.value;
-      const weeklyHours: any = {};
+  private rangeFor(weeklyHours: WeeklyHoursDTO, day: Weekday): TimeRangeDTO {
+    return weeklyHours?.[day]?.[0] ?? { start: '09:00', end: '22:00' };
+  }
 
-      // Map weekdays (Mon-Fri) to backend
-      const weekdaysValue = formValue.weekdays;
-      const weekdaysStart = `${weekdaysValue.startHour
-        .toString()
-        .padStart(2, '0')}:${weekdaysValue.startMinute.toString().padStart(2, '0')}`;
-      const weekdaysEnd = `${weekdaysValue.endHour
-        .toString()
-        .padStart(2, '0')}:${weekdaysValue.endMinute.toString().padStart(2, '0')}`;
+  private initializeForm(schedule: FacilityScheduleDTO): void {
+    const wh = schedule.weeklyHours;
 
-      [Day.Monday, Day.Tuesday, Day.Wednesday, Day.Thursday, Day.Friday].forEach((day) => {
-        weeklyHours[day] = [{ start: weekdaysStart, end: weekdaysEnd }];
+    // Derive "working day" from whether the day has any ranges.
+    this.workingDays = {
+      [Day.Monday]: (wh?.[Day.Monday as Weekday]?.length ?? 0) > 0,
+      [Day.Tuesday]: (wh?.[Day.Tuesday as Weekday]?.length ?? 0) > 0,
+      [Day.Wednesday]: (wh?.[Day.Wednesday as Weekday]?.length ?? 0) > 0,
+      [Day.Thursday]: (wh?.[Day.Thursday as Weekday]?.length ?? 0) > 0,
+      [Day.Friday]: (wh?.[Day.Friday as Weekday]?.length ?? 0) > 0,
+      [Day.Saturday]: (wh?.[Day.Saturday as Weekday]?.length ?? 0) > 0,
+      [Day.Sunday]: (wh?.[Day.Sunday as Weekday]?.length ?? 0) > 0,
+    };
+
+    const buildGroup = (range: TimeRangeDTO): FormGroup => {
+      const [sh, sm] = range.start.split(':').map(Number);
+      const [eh, em] = range.end.split(':').map(Number);
+      return this.fb.group(
+        {
+          startHour: [sh, Validators.required],
+          startMinute: [sm, Validators.required],
+          endHour: [eh, Validators.required],
+          endMinute: [em, Validators.required],
+        },
+        { validators: endAfterStartValidator() },
+      );
+    };
+
+    // Mon–Fri are collapsed into a single "weekdays" range, seeded from Monday's
+    // range (per-day weekday editing is a future enhancement). Any per-day
+    // backend differences across Mon–Fri are intentionally NOT round-tripped by
+    // this form — onSave writes Monday's range to all five weekdays.
+    this.scheduleForm = this.fb.group({
+      weekdays: buildGroup(this.rangeFor(wh, Day.Monday as Weekday)),
+      saturday: buildGroup(this.rangeFor(wh, Day.Saturday as Weekday)),
+      sunday: buildGroup(this.rangeFor(wh, Day.Sunday as Weekday)),
+    });
+  }
+
+  private applyHolidays(schedule: FacilityScheduleDTO): void {
+    this.serverHolidays = schedule.holidays ?? [];
+    this.holidays = this.serverHolidays.map((h) => {
+      const [year, month, day] = h.date.split('-').map(Number);
+      return new TuiDay(year, month - 1, day);
+    });
+  }
+
+  private initializePricesForm(): void {
+    this.pricesForm = this.fb.group({
+      generalPrice: [0, [Validators.required, Validators.min(0)]],
+      offPeakStartHour: [0, Validators.required],
+      offPeakStartMinute: [0, Validators.required],
+      offPeakEndHour: [0, Validators.required],
+      offPeakEndMinute: [0, Validators.required],
+      offPeakPrice: [0, [Validators.required, Validators.min(0)]],
+    });
+  }
+
+  private applyPrices(schedule: FacilityScheduleDTO): void {
+    const pricing = schedule.pricing;
+    if (!pricing) {
+      this.pricesForm.reset({
+        generalPrice: 0,
+        offPeakStartHour: 0,
+        offPeakStartMinute: 0,
+        offPeakEndHour: 0,
+        offPeakEndMinute: 0,
+        offPeakPrice: 0,
       });
-
-      // Map Saturday
-      const saturdayValue = formValue.saturday;
-      const saturdayStart = `${saturdayValue.startHour
-        .toString()
-        .padStart(2, '0')}:${saturdayValue.startMinute.toString().padStart(2, '0')}`;
-      const saturdayEnd = `${saturdayValue.endHour
-        .toString()
-        .padStart(2, '0')}:${saturdayValue.endMinute.toString().padStart(2, '0')}`;
-      weeklyHours[Day.Saturday] = [{ start: saturdayStart, end: saturdayEnd }];
-
-      // Map Sunday
-      const sundayValue = formValue.sunday;
-      const sundayStart = `${sundayValue.startHour
-        .toString()
-        .padStart(2, '0')}:${sundayValue.startMinute.toString().padStart(2, '0')}`;
-      const sundayEnd = `${sundayValue.endHour.toString().padStart(2, '0')}:${sundayValue.endMinute
-        .toString()
-        .padStart(2, '0')}`;
-      weeklyHours[Day.Sunday] = [{ start: sundayStart, end: sundayEnd }];
-
-      this.isLoading.set(true);
-      this.scheduleService
-        .updateWeeklyHours(weeklyHours)
-        .pipe(take(1))
-        .subscribe({
-          next: (updatedSchedule) => {
-            this.schedule.set(updatedSchedule);
-            this.isLoading.set(false);
-            this.alerts
-              .open('გრაფიკი წარმატებით შეინახა!', { appearance: 'success' })
-              .pipe(take(1))
-              .subscribe();
-          },
-          error: (error) => {
-            console.error('Error saving schedule:', error);
-            this.isLoading.set(false);
-            this.alerts
-              .open('შეცდომა გრაფიკის შენახვისას', { appearance: 'error' })
-              .pipe(take(1))
-              .subscribe();
-          },
-        });
+      return;
     }
+
+    const [opSh, opSm] = (pricing.offPeak?.start ?? '00:00').split(':').map(Number);
+    const [opEh, opEm] = (pricing.offPeak?.end ?? '00:00').split(':').map(Number);
+
+    this.pricesForm.patchValue({
+      generalPrice: ScheduleService.tetriToGel(pricing.generalPriceTetri),
+      offPeakStartHour: opSh,
+      offPeakStartMinute: opSm,
+      offPeakEndHour: opEh,
+      offPeakEndMinute: opEm,
+      offPeakPrice: ScheduleService.tetriToGel(pricing.offPeak?.priceTetri ?? 0),
+    });
   }
 
+  toggleWorkingDay(day: Day): void {
+    this.workingDays[day] = !this.workingDays[day];
+  }
+
+  private hhmm(hour: number, minute: number): string {
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  }
+
+  private rangeFromGroup(group: { startHour: number; startMinute: number; endHour: number; endMinute: number }): TimeRangeDTO {
+    return {
+      start: this.hhmm(group.startHour, group.startMinute),
+      end: this.hhmm(group.endHour, group.endMinute),
+    };
+  }
+
+  /** Saves weekly hours per selected facility. Disabled days get no ranges. */
+  onSave(): void {
+    const facilityId = this.selectedFacilityId();
+    if (!facilityId || !this.scheduleForm?.valid) {
+      this.scheduleForm?.markAllAsTouched();
+      return;
+    }
+
+    const v = this.scheduleForm.value;
+    const weekdayRange = this.rangeFromGroup(v.weekdays);
+    const saturdayRange = this.rangeFromGroup(v.saturday);
+    const sundayRange = this.rangeFromGroup(v.sunday);
+
+    const dayRange = (day: Day): TimeRangeDTO[] => {
+      if (!this.workingDays[day]) return [];
+      if (day === Day.Saturday) return [saturdayRange];
+      if (day === Day.Sunday) return [sundayRange];
+      return [weekdayRange];
+    };
+
+    const weeklyHours: WeeklyHoursDTO = {
+      [Day.Monday]: dayRange(Day.Monday),
+      [Day.Tuesday]: dayRange(Day.Tuesday),
+      [Day.Wednesday]: dayRange(Day.Wednesday),
+      [Day.Thursday]: dayRange(Day.Thursday),
+      [Day.Friday]: dayRange(Day.Friday),
+      [Day.Saturday]: dayRange(Day.Saturday),
+      [Day.Sunday]: dayRange(Day.Sunday),
+    };
+
+    this.isLoading.set(true);
+    this.scheduleService
+      .updateWeeklyHours(facilityId, weeklyHours)
+      .pipe(take(1))
+      .subscribe({
+        next: (updated) => {
+          this.schedule.set(updated);
+          this.isLoading.set(false);
+          this.alerts
+            .open('გრაფიკი წარმატებით შეინახა!', { appearance: 'success' })
+            .pipe(take(1))
+            .subscribe();
+        },
+        error: (error) => {
+          console.error('Error saving schedule:', error);
+          this.isLoading.set(false);
+          this.alerts
+            .open('შეცდომა გრაფიკის შენახვისას', { appearance: 'error' })
+            .pipe(take(1))
+            .subscribe();
+        },
+      });
+  }
+
+  onSaveWorkingDays(): void {
+    // Working days are now part of weeklyHours; saving hours persists them.
+    this.onSave();
+  }
+
+  private tuiDayToIso(day: TuiDay): string {
+    const year = day.year;
+    const month = (day.month + 1).toString().padStart(2, '0');
+    const dayNum = day.day.toString().padStart(2, '0');
+    return `${year}-${month}-${dayNum}`;
+  }
+
+  /**
+   * Reconciles the picked holiday dates against the server's holiday subdocs:
+   * deletes removed ones by `_id`, adds new ones. The schedule resource is the
+   * source of truth (no localStorage).
+   */
   onSaveHolidays(): void {
     const facilityId = this.selectedFacilityId();
     if (!facilityId) return;
 
-    // Convert TuiDay[] to date strings for local storage
-    const holidayDates = this.holidays.map((day) => {
-      // Format directly from TuiDay to avoid timezone issues
-      const year = day.year;
-      const month = (day.month + 1).toString().padStart(2, '0'); // TuiDay month is 0-indexed
-      const dayNum = day.day.toString().padStart(2, '0');
-      return `${year}-${month}-${dayNum}`; // Format: YYYY-MM-DD
+    const pickedIso = new Set(this.holidays.map((d) => this.tuiDayToIso(d)));
+    const existingIso = new Set(this.serverHolidays.map((h) => h.date));
+
+    // A server holiday the user un-picked should be deleted — but we can only
+    // address subdocs by `_id`. If one lacks an `_id` we cannot delete it, so the
+    // page state would silently diverge from the server. Warn per-doc and raise a
+    // single alert so the user knows the divergence happened.
+    const removed = this.serverHolidays.filter((h) => !pickedIso.has(h.date));
+    const undeletable = removed.filter((h) => !h._id);
+    undeletable.forEach((h) => console.warn('Holiday missing _id, cannot delete', h));
+    if (undeletable.length > 0) {
+      this.alerts
+        .open('ზოგიერთი დასვენების დღის წაშლა ვერ მოხერხდა — გვერდი შესაძლოა არ ემთხვეოდეს სერვერს.', {
+          appearance: 'warning',
+        })
+        .pipe(take(1))
+        .subscribe();
+    }
+
+    const toDelete = removed.filter((h) => h._id);
+    const toAddIso = [...pickedIso].filter((iso) => !existingIso.has(iso));
+
+    const ops = [
+      ...toDelete.map((h) => this.scheduleService.deleteHoliday(facilityId, h._id!)),
+      ...toAddIso.map((iso) =>
+        this.scheduleService.addHoliday(facilityId, { date: iso, isClosed: true }),
+      ),
+    ];
+
+    if (ops.length === 0) {
+      this.alerts
+        .open('დასვენების დღეები წარმატებით შეინახა!', { appearance: 'success' })
+        .pipe(take(1))
+        .subscribe();
+      return;
+    }
+
+    // Run sequentially; the last response carries the up-to-date holiday list.
+    this.runHolidayOps(ops, facilityId);
+  }
+
+  private runHolidayOps(
+    ops: ReturnType<ScheduleService['addHoliday']>[],
+    facilityId: string,
+  ): void {
+    const [first, ...rest] = ops;
+    first.pipe(take(1)).subscribe({
+      next: (schedule) => {
+        if (rest.length > 0) {
+          this.runHolidayOps(rest, facilityId);
+        } else {
+          this.schedule.set(schedule);
+          this.applyHolidays(schedule);
+          this.alerts
+            .open('დასვენების დღეები წარმატებით შეინახა!', { appearance: 'success' })
+            .pipe(take(1))
+            .subscribe();
+        }
+      },
+      error: (error) => {
+        console.error('Error saving holidays:', error);
+        this.alerts
+          .open('შეცდომა დასვენების დღეების შენახვისას', { appearance: 'error' })
+          .pipe(take(1))
+          .subscribe();
+      },
     });
+  }
 
-    // Save to localStorage with facility-specific key
-    localStorage.setItem(
-      `${this.HOLIDAYS_STORAGE_KEY}_${facilityId}`,
-      JSON.stringify(holidayDates),
-    );
-
-    this.alerts
-      .open('დასვენების დღეები წარმატებით შეინახა!', { appearance: 'success' })
-      .pipe(take(1))
-      .subscribe();
-
-    // TODO: Implement actual API call when backend is ready
-    // this.scheduleService.saveHolidays(facilityId, holidayDates).pipe(take(1)).subscribe({
-    //   next: () => {
-    //     this.alerts.open('დასვენების დღეები წარმატებით შეინახა!', { appearance: 'success' }).pipe(take(1)).subscribe();
-    //   },
-    //   error: (error) => {
-    //     console.error('Error saving holidays:', error);
-    //     this.alerts.open('შეცდომა დასვენების დღეების შენახვისას', { appearance: 'error' }).pipe(take(1)).subscribe();
-    //   },
-    // });
+  /** Off-peak window must end strictly after it starts. */
+  private offPeakValid(v: {
+    offPeakStartHour: number;
+    offPeakStartMinute: number;
+    offPeakEndHour: number;
+    offPeakEndMinute: number;
+  }): boolean {
+    const start = v.offPeakStartHour * 60 + v.offPeakStartMinute;
+    const end = v.offPeakEndHour * 60 + v.offPeakEndMinute;
+    return end > start;
   }
 
   onSavePrices(): void {
     const facilityId = this.selectedFacilityId();
-    if (!facilityId) return;
+    if (!facilityId || !this.pricesForm.valid) {
+      this.pricesForm.markAllAsTouched();
+      return;
+    }
 
-    if (this.pricesForm.valid) {
-      const pricesData = this.pricesForm.value;
+    const v = this.pricesForm.value;
 
-      // Save to localStorage with facility-specific key
-      localStorage.setItem(`${this.PRICES_STORAGE_KEY}_${facilityId}`, JSON.stringify(pricesData));
-
+    const hasOffPeak = this.offPeakValid(v);
+    // Reject an inverted off-peak window only when one was actually entered
+    // (a zeroed/equal window means "no off-peak").
+    if (!hasOffPeak && (v.offPeakPrice > 0 || v.offPeakEndHour > 0 || v.offPeakEndMinute > 0)) {
       this.alerts
-        .open('ფასები წარმატებით შეინახა!', { appearance: 'success' })
+        .open('არაპიკური ფანჯრის დასასრული უნდა იყოს დაწყების შემდეგ', { appearance: 'error' })
         .pipe(take(1))
         .subscribe();
-
-      // TODO: Implement actual API call when backend is ready
-      // this.scheduleService.savePrices(facilityId, pricesData).pipe(take(1)).subscribe({
-      //   next: () => {
-      //     this.alerts.open('ფასები წარმატებით შეინახა!', { appearance: 'success' }).pipe(take(1)).subscribe();
-      //   },
-      //   error: (error) => {
-      //     console.error('Error saving prices:', error);
-      //     this.alerts.open('შეცდომა ფასების შენახვისას', { appearance: 'error' }).pipe(take(1)).subscribe();
-      //   },
-      // });
+      return;
     }
+
+    const pricing: PricingDTO = {
+      currency: 'GEL',
+      generalPriceTetri: ScheduleService.gelToTetri(v.generalPrice),
+      ...(hasOffPeak
+        ? {
+            offPeak: {
+              start: this.hhmm(v.offPeakStartHour, v.offPeakStartMinute),
+              end: this.hhmm(v.offPeakEndHour, v.offPeakEndMinute),
+              priceTetri: ScheduleService.gelToTetri(v.offPeakPrice),
+            },
+          }
+        : {}),
+    };
+
+    this.isLoading.set(true);
+    this.scheduleService
+      .updatePricing(facilityId, pricing)
+      .pipe(take(1))
+      .subscribe({
+        next: (updated) => {
+          this.schedule.set(updated);
+          this.isLoading.set(false);
+          this.alerts
+            .open('ფასები წარმატებით შეინახა!', { appearance: 'success' })
+            .pipe(take(1))
+            .subscribe();
+        },
+        error: (error) => {
+          console.error('Error saving prices:', error);
+          this.isLoading.set(false);
+          this.alerts
+            .open('შეცდომა ფასების შენახვისას', { appearance: 'error' })
+            .pipe(take(1))
+            .subscribe();
+        },
+      });
   }
 }

@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import {
   HttpClient,
+  HttpContext,
   provideHttpClient,
   withInterceptors,
 } from '@angular/common/http';
@@ -9,7 +10,7 @@ import { Router } from '@angular/router';
 import { of } from 'rxjs';
 import { TuiAlertService } from '@taiga-ui/core';
 
-import { errorInterceptor } from './error.interceptor';
+import { errorInterceptor, SKIP_ERROR_TOAST } from './error.interceptor';
 import { AuthService } from '../services/auth.service';
 import { TenantService } from '../services/tenant.service';
 import { environment } from '../../../environments/environment';
@@ -98,5 +99,31 @@ describe('errorInterceptor', () => {
       appearance: 'error',
     });
     expect(authSpy.logout).not.toHaveBeenCalled();
+  });
+
+  it('should NOT show the generic toast when SKIP_ERROR_TOAST is set (presign 503)', () => {
+    // Mirrors MediaService's presign request: the caller surfaces its own alert,
+    // so the interceptor must stay quiet to avoid double-toasting.
+    const context = new HttpContext().set(SKIP_ERROR_TOAST, true);
+    http.post(`${base}/media/presign`, {}, { context }).subscribe({ error: () => {} });
+    httpMock
+      .expectOne(`${base}/media/presign`)
+      .flush(
+        { errors: [{ statusCode: 503, message: 'not configured' }] },
+        { status: 503, statusText: 'Service Unavailable' },
+      );
+
+    expect(alertsSpy.open).not.toHaveBeenCalled();
+  });
+
+  it('should still toast a normal request error when SKIP_ERROR_TOAST is NOT set', () => {
+    http.get(`${base}/academy`).subscribe({ error: () => {} });
+    httpMock
+      .expectOne(`${base}/academy`)
+      .flush({ errors: [] }, { status: 503, statusText: 'Service Unavailable' });
+
+    expect(alertsSpy.open).toHaveBeenCalledWith('მოხდა შეცდომა, გთხოვთ სცადოთ მოგვიანებით.', {
+      appearance: 'error',
+    });
   });
 });

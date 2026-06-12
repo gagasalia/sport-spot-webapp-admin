@@ -7,6 +7,8 @@ import { Court } from '../../../../shared/models/court.model';
 import {
   SportType,
   CourtLocationType,
+  SurfaceMaterial,
+  SurfaceColor,
   SPORT_TYPE_LABELS,
   SPORT_TYPE_ICONS,
   COURT_LOCATION_TYPE_LABELS,
@@ -16,7 +18,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { take } from 'rxjs';
-import { ConfigurationService } from '../../../../services/http-services/configuration.service';
+import { CourtService } from '../../../../services/http-services/court.service';
 
 @Component({
   selector: 'app-court-card',
@@ -39,7 +41,17 @@ export class CourtCardComponent {
 
   private readonly dialogs = inject(TuiDialogService);
   private readonly alerts = inject(TuiAlertService);
-  constructor(private configurationService: ConfigurationService) {}
+  private readonly courtService = inject(CourtService);
+
+  /** Location type from API (`locationType`) or legacy (`type`). */
+  private get location(): CourtLocationType | undefined {
+    return this.court.locationType ?? this.court.type;
+  }
+
+  /** Surface from API (`surface`) or legacy (`courtSurface`). */
+  private get surface() {
+    return this.court.surface ?? this.court.courtSurface;
+  }
 
   get sportTypeName(): string {
     return this.sportTypeLabels[this.court.sportType as SportType] || '';
@@ -50,7 +62,8 @@ export class CourtCardComponent {
   }
 
   get locationTypeName(): string {
-    return this.locationTypeLabels[this.court.type as CourtLocationType] || '';
+    const loc = this.location;
+    return loc ? this.locationTypeLabels[loc] || '' : '';
   }
 
   get locationTypeIcon(): string {
@@ -59,15 +72,18 @@ export class CourtCardComponent {
       [CourtLocationType.Outdoor]: '@lucide.sun',
       [CourtLocationType.Covered]: '@lucide.umbrella',
     };
-    return iconMap[this.court.type as CourtLocationType] || '@lucide.building';
+    const loc = this.location;
+    return (loc && iconMap[loc]) || '@lucide.building';
   }
 
   get surfaceMaterialName(): string {
-    return this.surfaceMaterialLabels[this.court.courtSurface.material] || '';
+    const material = this.surface?.material;
+    return material ? this.surfaceMaterialLabels[material] || '' : '';
   }
 
   get surfaceColorName(): string {
-    return this.surfaceColorLabels[this.court.courtSurface.color] || '';
+    const color = this.surface?.color;
+    return color ? this.surfaceColorLabels[color] || '' : '';
   }
 
   get isPublished(): boolean {
@@ -77,8 +93,15 @@ export class CourtCardComponent {
   onToggleState(checked: boolean): void {
     this.court.activeState = checked;
 
-    this.configurationService
-      .updateCourt(this.court.id, { activeState: checked })
+    const facilityId = this.court.facility ?? this.court.facilityId;
+    const courtId = this.court._id ?? this.court.id;
+    if (!facilityId || !courtId) {
+      this.court.activeState = !checked;
+      return;
+    }
+
+    this.courtService
+      .setCourtStatus(facilityId, courtId, checked)
       .pipe(take(1))
       .subscribe({
         next: (updated) => {

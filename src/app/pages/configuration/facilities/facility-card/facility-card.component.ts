@@ -9,7 +9,7 @@ import { AMENITY_LABELS, AMENITY_ICONS } from '../../../../shared/enums/amenity.
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { take } from 'rxjs';
-import { ConfigurationService } from '../../../../services/http-services/configuration.service';
+import { FacilityService } from '../../../../services/http-services/facility.service';
 
 @Component({
   selector: 'app-facility-card',
@@ -29,7 +29,7 @@ export class FacilityCardComponent {
 
   private readonly dialogs = inject(TuiDialogService);
   private readonly alerts = inject(TuiAlertService);
-  constructor(private configurationService: ConfigurationService) {}
+  private readonly facilityService = inject(FacilityService);
 
   get primaryPhoto(): string {
     if (this.facility.media?.length) return this.facility.media[0].url;
@@ -61,11 +61,17 @@ export class FacilityCardComponent {
   }
 
   onToggleState(checked: boolean): void {
-    // Update the facility state
+    // Optimistic update; revert if the PATCH fails.
     this.facility.activeState = checked;
 
-    this.configurationService
-      .updateFacility(this.facility.id ?? this.facility._id ?? '', { activeState: checked })
+    const facilityId = this.facility._id ?? this.facility.id;
+    if (!facilityId) {
+      this.facility.activeState = !checked;
+      return;
+    }
+
+    this.facilityService
+      .setFacilityStatus(facilityId, checked)
       .pipe(take(1))
       .subscribe({
         next: (updated) => {
@@ -73,7 +79,6 @@ export class FacilityCardComponent {
         },
         error: (error) => {
           console.error('Error updating facility state:', error);
-          // Revert the change on error
           this.facility.activeState = !checked;
         },
       });
