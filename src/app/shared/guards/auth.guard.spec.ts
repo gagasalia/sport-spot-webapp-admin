@@ -1,7 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import {
   ActivatedRouteSnapshot,
-  Router,
   RouterStateSnapshot,
   UrlTree,
 } from '@angular/router';
@@ -22,7 +21,6 @@ describe('authGuard', () => {
   // type-check awkwardly; a plain stub with a callable spy mirrors the Signal
   // shape exactly.
   let authStub: { isAuthenticated: jasmine.Spy<() => boolean> };
-  let router: Router;
 
   beforeEach(() => {
     authStub = { isAuthenticated: jasmine.createSpy('isAuthenticated').and.returnValue(false) };
@@ -30,7 +28,6 @@ describe('authGuard', () => {
     TestBed.configureTestingModule({
       providers: [provideRouter([]), { provide: AuthService, useValue: authStub }],
     });
-    router = TestBed.inject(Router);
   });
 
   it('should allow an authenticated user', () => {

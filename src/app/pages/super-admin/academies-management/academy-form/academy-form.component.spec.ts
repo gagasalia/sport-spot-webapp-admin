@@ -38,7 +38,7 @@ const mockAdminUsers: User[] = [mockAdminUser, mockSuperAdminUser];
 const mockExistingAcademy: Academy = {
   _id: 'academy-id-1',
   name: 'Existing Academy',
-  admins: [{ _id: 'admin-id-1', firstName: 'Admin', lastName: 'One', email: 'admin@example.com' }],
+  admins: [mockAdminUser],
   status: AcademyStatus.PUBLISHED,
   color: '',
 };
@@ -307,7 +307,14 @@ describe('AcademyFormComponent', () => {
     it('should leave admins empty when none of the academy admins match the loaded users', async () => {
       const academyWithUnknownAdmin: Academy = {
         ...mockExistingAcademy,
-        admins: [{ _id: 'unknown-id', email: 'ghost@example.com' }],
+        admins: [
+          {
+            _id: 'unknown-id',
+            email: 'ghost@example.com',
+            userType: [UserType.ADMIN],
+            phone: '5559999',
+          },
+        ],
       };
       await createComponent(academyWithUnknownAdmin);
 

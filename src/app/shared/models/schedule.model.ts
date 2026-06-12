@@ -7,9 +7,7 @@ export interface TimeRangeDTO {
 // 0 = Monday, 6 = Sunday
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-export type WeeklyHoursDTO = {
-  [day in Weekday]: TimeRangeDTO[];
-};
+export type WeeklyHoursDTO = Record<Weekday, TimeRangeDTO[]>;
 
 export interface HolidayDTO {
   _id?: string; // server subdocument id

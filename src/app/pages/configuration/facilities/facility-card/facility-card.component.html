@@ -7,11 +7,11 @@
       <input
         tuiSwitch
         type="checkbox"
-        [ngModel]="isPublished"
+        [ngModel]="activeState()"
         (ngModelChange)="onToggleState($event)"
       />
 
-      @if (facility.activeState) {
+      @if (activeState()) {
         <tui-chip appearance="success" size="m" class="georgian-text" lang="ka">
           გამოქვეყნებული
         </tui-chip>
@@ -51,8 +51,9 @@
       {{ facility.description || '--' }}
     </p>
 
-    <div
-      class="flex gap-2 h-11 mb-4 cursor-pointer hover:opacity-80 transition-opacity"
+    <button
+      type="button"
+      class="flex gap-2 h-11 mb-4 w-full text-left cursor-pointer hover:opacity-80 transition-opacity"
       (click)="openInGoogleMaps($event)"
     >
       <tui-icon icon="@lucide.map-pin" class="location-icon w-4 h-4 mt-0.5 shrink-0"></tui-icon>
@@ -60,7 +61,7 @@
         <div class="line-clamp-1">{{ facility.addressText || '--' }}</div>
         <div class="line-clamp-1">{{ cityName || '--' }}, {{ countryName || '--' }}</div>
       </div>
-    </div>
+    </button>
 
     <!-- Action Buttons -->
     <div class="flex gap-2 mt-auto items-center">

@@ -47,16 +47,13 @@ export class AcademyComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly tenant = inject(TenantService);
   private readonly mediaService = inject(MediaService);
+  private readonly fb = inject(FormBuilder);
+  private readonly academyService = inject(AcademyService);
+  private readonly alerts = inject(TuiAlertService);
+  private readonly router = inject(Router);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   isUploadingLogo = signal<boolean>(false);
-
-  constructor(
-    private fb: FormBuilder,
-    private academyService: AcademyService,
-    private alerts: TuiAlertService,
-    private router: Router,
-    private cdr: ChangeDetectorRef,
-  ) {}
 
   ngOnInit(): void {
     this.initializeForm();

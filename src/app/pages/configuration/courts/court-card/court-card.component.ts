@@ -7,8 +7,6 @@ import { Court } from '../../../../shared/models/court.model';
 import {
   SportType,
   CourtLocationType,
-  SurfaceMaterial,
-  SurfaceColor,
   SPORT_TYPE_LABELS,
   SPORT_TYPE_ICONS,
   COURT_LOCATION_TYPE_LABELS,

@@ -1,3 +1,5 @@
+import { User } from './user.model';
+
 export enum AcademyStatus {
   PUBLISHED = 'published',
   UNPUBLISHED = 'unpublished',
@@ -5,7 +7,8 @@ export enum AcademyStatus {
 
 export interface Academy {
   _id?: string;
-  admins: any[];
+  // The API may return admins as raw id strings or fully populated User docs.
+  admins: (string | User)[];
   name: string;
   status: AcademyStatus;
   color?: string;
@@ -41,5 +44,5 @@ export interface IMedia {
   url: string;
   type: string;
   size: number;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }

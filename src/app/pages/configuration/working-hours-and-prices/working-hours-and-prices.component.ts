@@ -101,7 +101,7 @@ export class WorkingHoursAndPricesComponent implements OnInit {
 
   // Working days selection — derived from / written into weeklyHours
   // (a day is "working" iff it has at least one time range).
-  workingDays: { [key in Day]?: boolean } = {
+  workingDays: Partial<Record<Day, boolean>> = {
     [Day.Monday]: true,
     [Day.Tuesday]: true,
     [Day.Wednesday]: true,

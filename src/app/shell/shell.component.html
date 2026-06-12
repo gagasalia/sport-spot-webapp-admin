@@ -12,11 +12,15 @@
     [title]="darkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
   ></button>
 
-  <button iconStart="@tui.bell" tuiIconButton type="button">
-    Notifications
+  <button iconStart="@tui.bell" tuiIconButton type="button" [attr.aria-label]="'შეტყობინებები'">
     <tui-badge-notification />
   </button>
-  <button iconStart="@tui.ellipsis" tuiIconButton type="button">More</button>
+  <button
+    iconStart="@tui.ellipsis"
+    tuiIconButton
+    type="button"
+    [attr.aria-label]="'მეტი'"
+  ></button>
 </header>
 <div [style.display]="'flex'">
   <!-- Desktop Sidebar -->

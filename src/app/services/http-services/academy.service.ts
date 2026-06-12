@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -9,9 +9,8 @@ import { ApiResponse } from '../../shared/models/api-response.model';
   providedIn: 'root',
 })
 export class AcademyService {
+  private readonly http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiUrl}/academy`;
-
-  constructor(private http: HttpClient) {}
 
   createAcademy(academy: CreateAcademyDto): Observable<Academy> {
     return this.http

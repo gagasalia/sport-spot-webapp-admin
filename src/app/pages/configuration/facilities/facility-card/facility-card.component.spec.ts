@@ -42,6 +42,7 @@ describe('FacilityCardComponent', () => {
     fixture = TestBed.createComponent(FacilityCardComponent);
     component = fixture.componentInstance;
     component.facility = { ...facility };
+    component.ngOnChanges();
     fixture.detectChanges();
   }
 
@@ -57,7 +58,7 @@ describe('FacilityCardComponent', () => {
     component.onToggleState(true);
 
     expect(facilitySpy.setFacilityStatus).toHaveBeenCalledWith('fac-1', true);
-    expect(component.facility.activeState).toBeTrue();
+    expect(component.activeState()).toBeTrue();
   });
 
   it('emits the updated facility on success', () => {
@@ -77,6 +78,6 @@ describe('FacilityCardComponent', () => {
 
     component.onToggleState(true);
 
-    expect(component.facility.activeState).toBeFalse();
+    expect(component.activeState()).toBeFalse();
   });
 });

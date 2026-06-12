@@ -7,7 +7,7 @@
         {{ data.date }} · {{ data.start }}–{{ data.end }}
       </span>
     </div>
-    @if (priceGel() != null && mode() === 'booking') {
+    @if (priceGel() !== null && mode() === 'booking') {
       <div class="text-sm mt-1" style="color: var(--tui-text-secondary)">
         {{ priceGel() }} GEL
       </div>

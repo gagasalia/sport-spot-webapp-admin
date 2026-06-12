@@ -1,4 +1,4 @@
-import { AvailabilityByCourt, AvailabilitySlot, Booking } from '../../shared/models/booking.model';
+import { AvailabilityByCourt, Booking } from '../../shared/models/booking.model';
 
 /**
  * Pure grid-building logic for the operator calendar (Phase 4, design §5).

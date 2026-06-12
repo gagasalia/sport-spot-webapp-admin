@@ -236,6 +236,8 @@
                 <h3 class="text-base font-semibold georgian-text" lang="ka">არაპიკური საათები</h3>
 
                 <div class="space-y-3">
+                  <!-- Caption for the start/end time-range group below. -->
+                  <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
                   <label class="georgian-text text-sm font-medium block mb-3" lang="ka"
                     >დროის შუალედი</label
                   >
@@ -381,9 +383,13 @@
                 [class.border-green-500]="workingDays[day]"
                 [class.dark:bg-green-900/20]="workingDays[day]"
                 style="border-color: var(--tui-border-normal)"
-                (click)="toggleWorkingDay(day)"
               >
-                <input tuiCheckbox type="checkbox" [checked]="workingDays[day]" readonly />
+                <input
+                  tuiCheckbox
+                  type="checkbox"
+                  [checked]="workingDays[day]"
+                  (change)="toggleWorkingDay(day)"
+                />
                 <span class="georgian-text text-sm font-medium" lang="ka">{{
                   dayLabels[day]
                 }}</span>

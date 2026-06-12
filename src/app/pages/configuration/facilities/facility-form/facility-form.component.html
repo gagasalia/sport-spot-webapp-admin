@@ -70,6 +70,9 @@
 
         <div formGroupName="address" class="space-y-3">
           <!-- Address search (Google Places Autocomplete) -->
+          <!-- The associated control is the Places web component injected into
+               #autocompleteContainer at runtime, which the linter cannot see. -->
+          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
           <label tuiLabel>
             <span class="georgian-text" lang="ka">მისამართის ძებნა</span>
             <div #autocompleteContainer class="w-full"></div>
@@ -197,6 +200,8 @@
 
     <!-- Media Upload -->
     <div>
+      <!-- Group caption for the media drop-zone below, not a single-control label. -->
+      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
       <label tuiLabel>
         <span class="georgian-text mb-3" lang="ka">მედია (ფოტოები)</span>
       </label>
@@ -256,6 +261,8 @@
 
     <!-- Amenities -->
     <div>
+      <!-- Group caption for the amenity checkbox grid below, not a single-control label. -->
+      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
       <label tuiLabel>
         <span class="georgian-text mb-3" lang="ka">მოხერხებულობები</span>
       </label>

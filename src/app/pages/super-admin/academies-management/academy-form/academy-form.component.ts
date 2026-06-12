@@ -91,7 +91,9 @@ export class AcademyFormComponent implements OnInit {
           this.isLoadingUsers.set(false);
 
           if (a?.admins?.length) {
-            const adminIds = a.admins.map((admin: any) => admin._id || admin);
+            const adminIds = a.admins.map((admin) =>
+              typeof admin === 'string' ? admin : admin._id,
+            );
             const matched = filtered.filter((u) => adminIds.includes(u._id));
             this.academyForm.get('admins')?.setValue(matched);
           }
@@ -122,7 +124,7 @@ export class AcademyFormComponent implements OnInit {
               .open('აკადემია წარმატებით განახლდა!', { appearance: 'success' })
               .pipe(take(1))
               .subscribe();
-            (this.context as any).completeWith(saved);
+            this.context.completeWith(saved);
           },
           error: () => {
             this.alerts
@@ -144,7 +146,7 @@ export class AcademyFormComponent implements OnInit {
               .open('აკადემია წარმატებით დაემატა!', { appearance: 'success' })
               .pipe(take(1))
               .subscribe();
-            (this.context as any).completeWith(saved);
+            this.context.completeWith(saved);
           },
           error: () => {
             this.alerts
@@ -157,6 +159,6 @@ export class AcademyFormComponent implements OnInit {
   }
 
   onCancel(): void {
-    (this.context as any).completeWith(null);
+    this.context.completeWith(null);
   }
 }

@@ -1,59 +1,76 @@
-# SportifyAdmin
+# Sport Spot Admin
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.5.
+Operator/admin web app for **Sport Spot**, a court-booking platform for sports
+academies in Georgia (launch market: padel in Tbilisi). Academies (tenants) own
+facilities, facilities contain courts, and courts are booked in priced time slots.
+This app is what academy operators and superadmins use to manage that inventory and
+the booking calendar; players use a separate (planned) app. It talks to the
+`sport-spot-api` NestJS backend.
 
-## Development server
+For the product picture, phased plan, and pinned conventions, see [`../docs`](../docs)
+(start with `01-current-state.md` and `03-admin-completion-plan.md`).
 
-To start a local development server, run:
+## Stack
 
-```bash
-ng serve
-```
+- **Angular 20** — standalone components, signals, lazy-loaded routes, OnPush
+- **Taiga UI 4.64** + **Tailwind CSS 4** for UI
+- **Reactive Forms**; RxJS for API streams, signals for local/derived state
+- **Karma + Jasmine** (ChromeHeadless) for unit tests
+- **ESLint** (angular-eslint flat config) + Prettier
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Environments
 
-## Code scaffolding
+Config lives in `src/environments/`; the build swaps the file via `fileReplacements`:
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- `environment.ts` / `environment.dev.ts` — local dev, `apiUrl: http://localhost:3000`
+- `environment.prod.ts` — production build (currently points at the staging API
+  Gateway stage until a dedicated prod stage exists)
 
-```bash
-ng generate component component-name
-```
+The only field is `apiUrl`. There is **no `academyId`** any more: post-auth, the
+operator's academy is resolved at runtime by `TenantService` (it calls
+`GET /academy/:id` with the logged-in user's id; the backend `$or:[{_id},{admins}]`
+lookup returns the academy they administer). Superadmins have no single tenant.
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Local development
 
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+Run the backend first so `apiUrl` resolves:
 
 ```bash
-ng test
+# in ../sport-spot-api
+npm start            # NestJS dev server on http://localhost:3000
 ```
 
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
+Then start the admin (serves on http://localhost:4200, also builds Tailwind CSS):
 
 ```bash
-ng e2e
+npm install          # honors .npmrc legacy-peer-deps (Angular 20 vs google-maps 21 peer)
+npm start
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## Commands
 
-## Additional Resources
+```bash
+npm start            # dev server + Tailwind watch
+npm run build        # production build to dist/
+npm test             # unit tests (interactive Karma)
+npm test -- --watch=false --browsers=ChromeHeadless   # headless single run (CI mode)
+npm run lint         # ESLint with --fix
+npm run lint:check   # ESLint, no fixes (CI gate)
+```
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## CI
+
+`.github/workflows/ci.yml` runs on push/PR to `develop` and `main`: Node 22, `npm ci`,
+`lint:check`, the ChromeHeadless test suite, then `ng build`. GitHub-hosted runners
+ship Chrome preinstalled, so no extra browser setup is needed.
+
+## Project layout
+
+```
+src/app/
+  pages/        feature pages (lazy-loaded): configuration/*, reservations, super-admin/*, login
+  services/     http-services/* — one service per backend resource
+  shared/       models, enums, guards, interceptors, services (auth, tenant, loading), utils
+  shell/        authenticated app chrome
+public/         favicon.ico, logos/, images/  (copied to build output as assets)
+```

@@ -23,7 +23,7 @@ import { TuiInputDate } from '@taiga-ui/kit/components/input-date';
 import { TuiMultiSelect } from '@taiga-ui/kit';
 import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
 import { UserManagementService } from '../../../../services/http-services/user-management.service';
-import { User, UserType } from '../../../../shared/models/user.model';
+import { CreateUserDto, User, UserType } from '../../../../shared/models/user.model';
 import { arrayRequiredValidator } from '../../../../shared/validators/array-required.validator';
 
 @Component({
@@ -149,7 +149,7 @@ export class UserFormComponent implements OnInit {
               .open('მომხმარებელი წარმატებით განახლდა!', { appearance: 'success' })
               .pipe(take(1))
               .subscribe();
-            (this.context as any).completeWith(savedUser);
+            this.context.completeWith(savedUser);
           },
           error: () => {
             this.alerts
@@ -159,7 +159,7 @@ export class UserFormComponent implements OnInit {
           },
         });
     } else {
-      const createDto = {
+      const createDto: CreateUserDto = {
         email: formValue.email,
         password: formValue.password,
         firstName: formValue.firstName || undefined,
@@ -171,7 +171,7 @@ export class UserFormComponent implements OnInit {
       };
 
       this.userService
-        .createUser(createDto as any)
+        .createUser(createDto)
         .pipe(take(1))
         .subscribe({
           next: (savedUser) => {
@@ -179,7 +179,7 @@ export class UserFormComponent implements OnInit {
               .open('მომხმარებელი წარმატებით დაემატა!', { appearance: 'success' })
               .pipe(take(1))
               .subscribe();
-            (this.context as any).completeWith(savedUser);
+            this.context.completeWith(savedUser);
           },
           error: () => {
             this.alerts
@@ -192,6 +192,6 @@ export class UserFormComponent implements OnInit {
   }
 
   onCancel(): void {
-    (this.context as any).completeWith(null);
+    this.context.completeWith(null);
   }
 }

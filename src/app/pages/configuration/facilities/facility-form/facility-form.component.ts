@@ -84,12 +84,10 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
 
   protected readonly isUploadingMedia = signal<boolean>(false);
 
-  constructor(
-    private fb: FormBuilder,
-    private cdr: ChangeDetectorRef,
-    private facilityService: FacilityService,
-    private alerts: TuiAlertService,
-  ) {}
+  private readonly fb = inject(FormBuilder);
+  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly facilityService = inject(FacilityService);
+  private readonly alerts = inject(TuiAlertService);
 
   ngOnInit(): void {
     const f = this.context.data?.facility;
@@ -149,7 +147,10 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
 
   private async initAutocomplete(): Promise<void> {
     try {
-      // Load the Places library via the new dynamic import API
+      // The new Places `PlaceAutocompleteElement` / `gmp-select` API is not yet
+      // covered by the installed @types/google.maps, so this interop boundary is
+      // necessarily untyped. `any` is confined to these two lines.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { PlaceAutocompleteElement } = (await google.maps.importLibrary('places')) as any;
       if (!PlaceAutocompleteElement) return;
 
@@ -157,6 +158,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
       autocomplete.style.width = '100%';
       this.autocompleteContainer.nativeElement.appendChild(autocomplete);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       autocomplete.addEventListener('gmp-select', async (event: any) => {
         const place = event.placePrediction.toPlace();
         await place.fetchFields({ fields: ['formattedAddress', 'location'] });
@@ -344,7 +346,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
       next: (savedFacility) => {
         const message = facilityId ? 'ობიექტი წარმატებით განახლდა!' : 'ობიექტი წარმატებით დაემატა!';
         this.alerts.open(message, { appearance: 'success' }).pipe(take(1)).subscribe();
-        (this.context as any).completeWith(savedFacility);
+        this.context.completeWith(savedFacility);
       },
       error: () => {
         const message = facilityId
@@ -356,6 +358,6 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
   }
 
   onCancel(): void {
-    (this.context as any).completeWith(null);
+    this.context.completeWith(null);
   }
 }

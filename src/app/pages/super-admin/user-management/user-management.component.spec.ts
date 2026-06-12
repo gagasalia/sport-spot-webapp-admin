@@ -2,7 +2,6 @@ import { ComponentFixture, TestBed, fakeAsync, tick, flush } from '@angular/core
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { DatePipe, Location } from '@angular/common';
 import { provideLocationMocks, SpyLocation } from '@angular/common/testing';
-import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of, throwError, Subject } from 'rxjs';
 import { provideAnimations } from '@angular/platform-browser/animations';

@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -14,9 +14,8 @@ export interface PaginatedUsers {
   providedIn: 'root',
 })
 export class UserManagementService {
+  private readonly http = inject(HttpClient);
   private readonly apiUrl = environment.apiUrl;
-
-  constructor(private http: HttpClient) {}
 
   createUser(user: CreateUserDto): Observable<User> {
     return this.http

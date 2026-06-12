@@ -91,9 +91,14 @@
       <!-- ════════════════════════ DAY VIEW ════════════════════════ -->
       @if (tab() === 'day') {
         <div class="flex flex-wrap items-end gap-3 mb-4">
-          <button tuiIconButton iconStart="@tui.chevron-left" type="button" (click)="prevDay()" size="s">
-            Prev
-          </button>
+          <button
+            tuiIconButton
+            iconStart="@tui.chevron-left"
+            type="button"
+            (click)="prevDay()"
+            size="s"
+            [attr.aria-label]="'წინა დღე'"
+          ></button>
           <label tuiLabel>
             <span class="georgian-text" lang="ka">თარიღი</span>
             <tui-textfield>
@@ -101,9 +106,14 @@
               <tui-calendar *tuiTextfieldDropdown />
             </tui-textfield>
           </label>
-          <button tuiIconButton iconStart="@tui.chevron-right" type="button" (click)="nextDay()" size="s">
-            Next
-          </button>
+          <button
+            tuiIconButton
+            iconStart="@tui.chevron-right"
+            type="button"
+            (click)="nextDay()"
+            size="s"
+            [attr.aria-label]="'შემდეგი დღე'"
+          ></button>
           <button tuiButton appearance="flat" size="s" type="button" (click)="today()">
             <span class="georgian-text" lang="ka">დღეს</span>
           </button>
@@ -174,7 +184,7 @@
                               (click)="onCellClick(cell)"
                             >
                               <span class="text-xs">+</span>
-                              @if (cellPriceGel(cell) != null) {
+                              @if (cellPriceGel(cell) !== null) {
                                 <span class="block text-[10px]">{{ cellPriceGel(cell) }} GEL</span>
                               }
                             </button>
@@ -201,10 +211,16 @@
                             </button>
                           }
                           @case ('booking') {
+                            <!-- Cannot be a <button> (it nests the "Paid" button),
+                                 so keyboard support is added explicitly. -->
                             <div
+                              role="button"
+                              tabindex="0"
                               class="w-full rounded-md p-2 text-left cursor-pointer"
                               style="background: var(--tui-status-info-pale)"
                               (click)="onCellClick(cell)"
+                              (keydown.enter)="onCellClick(cell)"
+                              (keydown.space)="onCellClick(cell)"
                             >
                               <span class="block text-xs font-medium truncate">{{ cellLabel(cell) }}</span>
                               <div class="flex items-center gap-1 mt-1">
@@ -317,23 +333,25 @@
                             </div>
                           }
                           @case ('block') {
-                            <div
-                              class="w-full rounded-md p-2 text-xs truncate georgian-text cursor-pointer"
+                            <button
+                              type="button"
+                              class="w-full rounded-md p-2 text-xs truncate georgian-text text-left cursor-pointer"
                               lang="ka"
                               style="background: var(--tui-background-neutral-2); color: var(--tui-text-secondary)"
                               (click)="onCellClick(cell, cell.date)"
                             >
                               {{ cellLabel(cell) }}
-                            </div>
+                            </button>
                           }
                           @case ('booking') {
-                            <div
-                              class="w-full rounded-md p-2 text-xs truncate cursor-pointer"
+                            <button
+                              type="button"
+                              class="w-full rounded-md p-2 text-xs truncate text-left cursor-pointer"
                               style="background: var(--tui-status-info-pale)"
                               (click)="onCellClick(cell, cell.date)"
                             >
                               {{ cellLabel(cell) }}
-                            </div>
+                            </button>
                           }
                         }
                       </td>
@@ -437,7 +455,7 @@
                       }
                     </td>
                     <td class="p-2 whitespace-nowrap">
-                      @if (bookingPriceGel(b) != null) {
+                      @if (bookingPriceGel(b) !== null) {
                         {{ bookingPriceGel(b) }} GEL
                       } @else {
                         —
