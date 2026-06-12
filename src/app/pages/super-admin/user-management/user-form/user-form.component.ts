@@ -1,6 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { take } from 'rxjs';
 import { type MaskitoOptions } from '@maskito/core';
 import { MaskitoDirective } from '@maskito/angular';
@@ -15,15 +20,18 @@ import { TuiAlertService } from '@taiga-ui/core';
 import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 import { TuiDialogContext } from '@taiga-ui/experimental';
 import { TuiInputDate } from '@taiga-ui/kit/components/input-date';
+import { TuiMultiSelect } from '@taiga-ui/kit';
 import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
 import { UserManagementService } from '../../../../services/http-services/user-management.service';
 import { User, UserType } from '../../../../shared/models/user.model';
+import { arrayRequiredValidator } from '../../../../shared/validators/array-required.validator';
 
 @Component({
   selector: 'app-user-form',
   standalone: true,
   imports: [
     ...SHARED_TAIGA_IMPORTS,
+    ...TuiMultiSelect,
     ReactiveFormsModule,
     CommonModule,
     ...TuiInputDate,
@@ -89,7 +97,7 @@ export class UserFormComponent implements OnInit {
       phone: [phoneValue, [Validators.required, Validators.pattern(/^\+9955\d{8}$/)]],
       pid: [editingUser?.pid || '', [Validators.pattern(/^\d{11}$/)]],
       dateOfBirth: [dateOfBirth],
-      userType: [editingUser?.userType?.[0] || UserType.USER, Validators.required],
+      userType: [editingUser?.userType?.length ? [...editingUser.userType] : [UserType.USER], [arrayRequiredValidator]],
     });
   }
 
@@ -128,7 +136,7 @@ export class UserFormComponent implements OnInit {
         phone,
         pid: formValue.pid || undefined,
         dateOfBirth,
-        userType: [formValue.userType],
+        userType: formValue.userType,
         ...(formValue.password ? { password: formValue.password } : {}),
       };
 
@@ -159,7 +167,7 @@ export class UserFormComponent implements OnInit {
         phone,
         pid: formValue.pid || undefined,
         dateOfBirth,
-        userType: [formValue.userType],
+        userType: formValue.userType,
       };
 
       this.userService

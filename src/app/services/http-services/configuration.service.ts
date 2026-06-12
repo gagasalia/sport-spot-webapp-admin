@@ -69,7 +69,7 @@ export class ConfigurationService {
         localStorage.setItem(this.FACILITIES_STORAGE_KEY, JSON.stringify(facilitiesWithoutPhotos));
       } catch (e) {
         console.error('Still failed after clearing. LocalStorage quota exceeded.');
-        alert('אזהרה: שטח האחסון המקומי מלא. התמונות לא יישמרו. אנא השתמש ב-API אמיתי.');
+        alert('გაფრთხილება: ლოკალური მეხსიერება გადაივსო. სურათები ვერ შეინახება.');
       }
     }
   }

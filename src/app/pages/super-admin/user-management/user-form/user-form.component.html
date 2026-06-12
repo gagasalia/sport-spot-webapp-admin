@@ -93,11 +93,16 @@
       </tui-textfield>
     </label>
 
-    <!-- User Type -->
+    <!-- User Type (multi-select — a user can hold several roles) -->
     <label tuiLabel>
       <span class="georgian-text" lang="ka">როლი <span class="text-red-500">*</span></span>
-      <tui-textfield tuiChevron [stringify]="stringifyUserType">
-        <input tuiSelect formControlName="userType" class="georgian-text" lang="ka" />
+      <tui-textfield multi tuiChevron [stringify]="stringifyUserType">
+        <select
+          tuiMultiSelect
+          formControlName="userType"
+          class="georgian-text"
+          lang="ka"
+        ></select>
         <tui-data-list *tuiTextfieldDropdown>
           @for (type of userTypes; track type) {
             <button tuiOption [value]="type" new>
@@ -106,6 +111,9 @@
           }
         </tui-data-list>
       </tui-textfield>
+      @if (userForm.get('userType')?.touched && userForm.get('userType')?.hasError('required')) {
+        <span class="text-xs text-red-500 georgian-text" lang="ka">როლი სავალდებულოა</span>
+      }
     </label>
 
     <!-- Action Buttons -->

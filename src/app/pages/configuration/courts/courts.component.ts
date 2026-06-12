@@ -7,8 +7,9 @@ import {
   Injector,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { take, switchMap } from 'rxjs';
+import { take } from 'rxjs';
 import { TuiAlertService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { type TuiStringHandler } from '@taiga-ui/cdk';
@@ -51,7 +52,7 @@ export class CourtsComponent implements OnInit {
 
   constructor(private configurationService: ConfigurationService) {
     // Subscribe to form control changes
-    this.facilityControl.valueChanges.subscribe((facilityId) => {
+    this.facilityControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((facilityId) => {
       this.onFacilityChange(facilityId);
     });
   }
@@ -69,7 +70,6 @@ export class CourtsComponent implements OnInit {
         next: (facilities) => {
           this.facilities.set(facilities);
           this.isLoadingFacilities.set(false);
-          console.log('Loaded facilities:', facilities);
           // Handle facility selection based on the query param or number of facilities
           this.route.queryParams.pipe(take(1)).subscribe((params) => {
             const facilityIdFromQuery = params['facilityId'];
@@ -111,8 +111,6 @@ export class CourtsComponent implements OnInit {
                 this.facilityControl.setValue(null, { emitEvent: false });
               }
             }
-
-            console.log('Selected facility ID:', this.selectedFacilityId());
           });
         },
         error: (error) => {
@@ -194,7 +192,6 @@ export class CourtsComponent implements OnInit {
   }
 
   onEditCourt(court: Court): void {
-    console.log('Editing court:', court);
     this.dialogs
       .open(new PolymorpheusComponent(CourtFormComponent, this.injector), {
         label: 'რედაქტირება',

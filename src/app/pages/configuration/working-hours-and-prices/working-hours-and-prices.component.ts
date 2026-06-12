@@ -9,6 +9,7 @@ import {
   FormControl,
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { take } from 'rxjs';
 import { TuiAlertService, TuiCalendar } from '@taiga-ui/core';
 import { type TuiStringHandler, EMPTY_ARRAY, TuiDay } from '@taiga-ui/cdk';
@@ -115,7 +116,7 @@ export class WorkingHoursAndPricesComponent implements OnInit {
     private router: Router,
   ) {
     // Subscribe to form control changes
-    this.facilityControl.valueChanges.subscribe((facilityId) => {
+    this.facilityControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((facilityId) => {
       this.onFacilityChange(facilityId);
     });
   }
@@ -247,7 +248,6 @@ export class WorkingHoursAndPricesComponent implements OnInit {
       JSON.stringify(this.workingDays),
     );
 
-    console.log('Saving working days for facility:', facilityId, this.workingDays);
     this.alerts
       .open('სამუშაო დღეები წარმატებით შეინახა!', { appearance: 'success' })
       .pipe(take(1))
@@ -463,7 +463,6 @@ export class WorkingHoursAndPricesComponent implements OnInit {
       JSON.stringify(holidayDates),
     );
 
-    console.log('Saving holidays for facility:', facilityId, holidayDates);
     this.alerts
       .open('დასვენების დღეები წარმატებით შეინახა!', { appearance: 'success' })
       .pipe(take(1))
@@ -491,7 +490,6 @@ export class WorkingHoursAndPricesComponent implements OnInit {
       // Save to localStorage with facility-specific key
       localStorage.setItem(`${this.PRICES_STORAGE_KEY}_${facilityId}`, JSON.stringify(pricesData));
 
-      console.log('Saving prices for facility:', facilityId, pricesData);
       this.alerts
         .open('ფასები წარმატებით შეინახა!', { appearance: 'success' })
         .pipe(take(1))

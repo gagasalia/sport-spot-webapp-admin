@@ -269,6 +269,17 @@
         }
       </div>
     }
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="flex justify-center mt-6">
+        <tui-pagination
+          [length]="totalPages()"
+          [index]="page() - 1"
+          (indexChange)="onPageChange($event)"
+        />
+      </div>
+    }
   }
   <!-- end isLoading -->
 </div>

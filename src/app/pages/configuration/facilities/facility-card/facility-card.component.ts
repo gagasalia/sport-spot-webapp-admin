@@ -61,8 +61,6 @@ export class FacilityCardComponent {
   }
 
   onToggleState(checked: boolean): void {
-    console.log('Toggling facility state from:', this.facility.activeState, 'to:', checked);
-
     // Update the facility state
     this.facility.activeState = checked;
 
@@ -71,7 +69,6 @@ export class FacilityCardComponent {
       .pipe(take(1))
       .subscribe({
         next: (updated) => {
-          console.log('Facility updated successfully:', updated);
           this.facilityUpdated.emit(updated);
         },
         error: (error) => {
@@ -143,6 +140,5 @@ export class FacilityCardComponent {
   onManageCourts(event: Event): void {
     event.stopPropagation();
     // TODO: Implement courts management functionality
-    console.log('Manage courts for facility:', this.facility);
   }
 }

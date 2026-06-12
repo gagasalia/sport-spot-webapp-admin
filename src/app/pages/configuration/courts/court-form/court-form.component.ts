@@ -71,7 +71,6 @@ export class CourtFormComponent implements OnInit {
 
   ngOnInit(): void {
     const editingCourt = this.context.data?.court;
-    console.log('Form initialized with court:', editingCourt);
 
     this.courtForm = this.fb.group({
       courtNumber: [editingCourt?.courtNumber || null, [Validators.required, Validators.min(1)]],
@@ -104,7 +103,6 @@ export class CourtFormComponent implements OnInit {
 
       saveOperation.pipe(take(1)).subscribe({
         next: (savedCourt) => {
-          console.log('Court saved:', savedCourt);
           const message = editingCourt ? 'კორტი წარმატებით განახლდა!' : 'კორტი წარმატებით დაემატა!';
           this.alerts.open(message, { appearance: 'success' }).pipe(take(1)).subscribe();
           (this.context as any).completeWith(savedCourt);

@@ -3,12 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Academy, CreateAcademyDto, UpdateAcademyDto } from '../../shared/models/academy.model';
-
-interface ApiResponse<T> {
-  result: {
-    data: T;
-  };
-}
+import { ApiResponse } from '../../shared/models/api-response.model';
 
 @Injectable({
   providedIn: 'root',

@@ -44,4 +44,8 @@ export const routes: Routes = [
     redirectTo: 'configuration/academy',
     pathMatch: 'full',
   },
+  {
+    path: '**',
+    redirectTo: 'configuration/academy',
+  },
 ];

@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { of, throwError, Subject } from 'rxjs';
 import { provideAnimations } from '@angular/platform-browser/animations';
 
 import { TuiAlertService } from '@taiga-ui/core';
@@ -80,6 +80,8 @@ describe('AcademyComponent', () => {
     });
 
     it('should initialize the academyForm on creation', () => {
+      // The form is built in ngOnInit, which only runs after the first detectChanges.
+      fixture.detectChanges();
       expect(component.academyForm).toBeDefined();
     });
   });
@@ -182,8 +184,12 @@ describe('AcademyComponent', () => {
 
   describe('form initial state (before academy loads)', () => {
     beforeEach(async () => {
-      // Delay load so we can observe initial state before detectChanges
       await createComponent();
+      // Defer the academy load so the form keeps its initial (un-patched) values:
+      // detectChanges runs ngOnInit (which builds academyForm) but the Subject never
+      // emits, so loadAcademy's patchValue does not run.
+      academyServiceSpy.getAcademyById.and.returnValue(new Subject<Academy>());
+      fixture.detectChanges();
     });
 
     it('should start with name as an empty string', () => {

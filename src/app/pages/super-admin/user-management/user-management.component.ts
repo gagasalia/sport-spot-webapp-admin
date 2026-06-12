@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   inject,
   signal,
+  computed,
   HostListener,
   OnInit,
   DestroyRef,
@@ -19,6 +20,7 @@ import { TuiAlertService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { TuiDialogService } from '@taiga-ui/experimental';
 import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit/components/confirm';
+import { TuiPagination } from '@taiga-ui/kit';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { UserManagementService } from '../../../services/http-services/user-management.service';
 import { User, UserType, FilterUsersDto } from '../../../shared/models/user.model';
@@ -27,10 +29,12 @@ import { FormsModule } from '@angular/forms';
 import { WA_WINDOW } from '@ng-web-apis/common';
 import { DatePipe } from '@angular/common';
 
+const DEFAULT_PAGE_SIZE = 20;
+
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, DatePipe, FormsModule],
+  imports: [...SHARED_TAIGA_IMPORTS, DatePipe, FormsModule, TuiPagination],
   templateUrl: './user-management.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -55,20 +59,50 @@ export class UserManagementComponent implements OnInit {
   protected readonly filterRole = signal<UserType | null>(null);
   protected readonly roleOptions = Object.values(UserType);
 
+  // Pagination state (1-based page for the API, 0-based index for TuiPagination)
+  protected readonly page = signal(1);
+  protected readonly total = signal(0);
+  protected readonly limit = DEFAULT_PAGE_SIZE;
+  protected readonly totalPages = computed(() => Math.ceil(this.total() / this.limit));
+
   private readonly filterChanged$ = new Subject<void>();
-  private initializing = true;
+  private firstFilterRun = true;
+  // When set, the next effect run skips the debounced reload. Used by code paths that
+  // already trigger an explicit load right after setting the filter signals (clearFilters,
+  // URL-seeded init) so we never fire a duplicate /um/find request.
+  private suppressNextFilterEffect = false;
 
   constructor() {
     effect(() => {
+      // Track every filter signal first so the effect re-runs whenever any of them
+      // change. Tracking MUST happen before any early return, otherwise the effect
+      // would stop reacting to later changes.
       this.filterName();
       this.filterEmail();
       this.filterPhone();
       this.filterPid();
       this.filterRole();
 
-      if (!this.initializing) {
-        this.filterChanged$.next();
+      // Skip the effect's initial run (registration/seed from query params) — only
+      // genuine user-driven filter changes should trigger a debounced reload. If the
+      // initial query-param seeding was batched into this same first run, also clear
+      // the suppress flag so it never dangles into a later genuine change.
+      if (this.firstFilterRun) {
+        this.firstFilterRun = false;
+        this.suppressNextFilterEffect = false;
+        return;
       }
+
+      // Skip exactly one run when a code path already performs its own explicit load
+      // right after mutating the filter signals (clearFilters / URL-seeded init).
+      if (this.suppressNextFilterEffect) {
+        this.suppressNextFilterEffect = false;
+        return;
+      }
+
+      // Any filter change resets back to the first page.
+      this.page.set(1);
+      this.filterChanged$.next();
     });
   }
 
@@ -78,15 +112,29 @@ export class UserManagementComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // 1. Read query params on init, populate signals, trigger initial search
+    // 1. Read query params on init, populate signals, trigger initial search.
+    // Seeding the filter signals re-triggers the tracking effect (firstFilterRun is
+    // already consumed by the effect's registration run). Suppress that one effect run
+    // so the explicit loadUsers below remains the single initial /um/find call.
+    // NOTE: Angular batches effects per tick — all signal sets in this synchronous block
+    // collapse into ONE effect run, so a single suppress-once flag is sufficient.
     this.route.queryParams.pipe(take(1)).subscribe((params) => {
+      const hasSeed =
+        !!params['name'] ||
+        !!params['email'] ||
+        !!params['phone'] ||
+        !!params['pid'] ||
+        !!params['role'];
+      if (hasSeed) this.suppressNextFilterEffect = true;
+
       if (params['name']) this.filterName.set(params['name']);
       if (params['email']) this.filterEmail.set(params['email']);
       if (params['phone']) this.filterPhone.set(params['phone']);
       if (params['pid']) this.filterPid.set(params['pid']);
       if (params['role']) this.filterRole.set(params['role'] as UserType);
+      const parsedPage = Number(params['page']);
+      if (parsedPage >= 1) this.page.set(parsedPage);
 
-      this.initializing = false;
       this.loadUsers(this.buildFilters());
     });
 
@@ -106,8 +154,9 @@ export class UserManagementComponent implements OnInit {
       .findAllUsers(filters, context)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (users) => {
-          this.users.set(users);
+        next: ({ data, page }) => {
+          this.users.set(data);
+          this.total.set(page?.total ?? data.length);
           this.isLoading.set(false);
         },
         error: () => {
@@ -117,14 +166,27 @@ export class UserManagementComponent implements OnInit {
   }
 
   protected clearFilters(): void {
+    // Suppress the debounced reload the effect would otherwise queue when the filter
+    // signals change — clearFilters performs its own explicit load below, so without
+    // this we'd fire two /um/find calls per clear.
+    this.suppressNextFilterEffect = true;
+
     this.filterName.set('');
     this.filterEmail.set('');
     this.filterPhone.set('');
     this.filterPid.set('');
     this.filterRole.set(null);
+    this.page.set(1);
 
-    this.replaceUrl({});
-    this.loadUsers({}, new HttpContext().set(SKIP_LOADING, true));
+    const filters = this.buildFilters();
+    this.replaceUrl(filters);
+    this.loadUsers(filters, new HttpContext().set(SKIP_LOADING, true));
+  }
+
+  protected onPageChange(index: number): void {
+    // TuiPagination is 0-based; the API is 1-based.
+    this.page.set(index + 1);
+    this.syncUrlAndSearch();
   }
 
   private syncUrlAndSearch(): void {
@@ -134,7 +196,7 @@ export class UserManagementComponent implements OnInit {
   }
 
   private buildFilters(): FilterUsersDto {
-    const filters: FilterUsersDto = {};
+    const filters: FilterUsersDto = { page: this.page(), limit: this.limit };
     const name = this.filterName().trim();
     const email = this.filterEmail().trim();
     const phone = this.filterPhone().trim();
@@ -156,6 +218,7 @@ export class UserManagementComponent implements OnInit {
     if (filters.phone) params.set('phone', filters.phone);
     if (filters.pid) params.set('pid', filters.pid);
     if (filters.userType?.length) params.set('role', filters.userType[0]);
+    if (filters.page && filters.page > 1) params.set('page', String(filters.page));
 
     const query = params.toString();
     const path = this.route.snapshot.pathFromRoot
@@ -177,7 +240,7 @@ export class UserManagementComponent implements OnInit {
       .pipe(take(1))
       .subscribe((result) => {
         if (result) {
-          this.loadUsers();
+          this.loadUsers(this.buildFilters());
         }
       });
   }
@@ -194,7 +257,7 @@ export class UserManagementComponent implements OnInit {
       .pipe(take(1))
       .subscribe((result) => {
         if (result) {
-          this.loadUsers();
+          this.loadUsers(this.buildFilters());
         }
       });
   }
@@ -218,6 +281,7 @@ export class UserManagementComponent implements OnInit {
         take(1),
         filter(Boolean),
         switchMap(() => this.userService.deleteUser(user._id!)),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
         next: () => {

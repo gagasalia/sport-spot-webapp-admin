@@ -23,8 +23,8 @@ const mockUser: User = {
   phone: '5551234',
 };
 
-function wrapInApiResponse<T>(data: T) {
-  return { result: { data } };
+function wrapInApiResponse<T>(data: T, page?: { page: number; size: number; total: number }) {
+  return { result: { data, ...(page ? { page } : {}) }, errors: [] };
 }
 
 // ─── Suite ───────────────────────────────────────────────────────────────────
@@ -116,30 +116,43 @@ describe('UserManagementService', () => {
       req.flush(wrapInApiResponse([]));
     });
 
-    it('should map the response through res.result.data and return the user array', () => {
+    it('should map the response to { data, page } and return the user array', () => {
       const users: User[] = [mockUser];
-      let emittedUsers: User[] | undefined;
+      let emitted: { data: User[]; page?: unknown } | undefined;
 
-      service.findAllUsers().subscribe((data) => {
-        emittedUsers = data;
+      service.findAllUsers().subscribe((res) => {
+        emitted = res;
       });
 
       const req = httpMock.expectOne(`${base}/um/find`);
       req.flush(wrapInApiResponse(users));
 
-      expect(emittedUsers).toEqual(users);
+      expect(emitted?.data).toEqual(users);
+    });
+
+    it('should expose the page metadata when the API returns it', () => {
+      const pageMeta = { page: 2, size: 20, total: 57 };
+      let emitted: { data: User[]; page?: typeof pageMeta } | undefined;
+
+      service.findAllUsers({ page: 2, limit: 20 }).subscribe((res) => {
+        emitted = res as any;
+      });
+
+      httpMock.expectOne(`${base}/um/find`).flush(wrapInApiResponse([mockUser], pageMeta));
+
+      expect(emitted?.page).toEqual(pageMeta);
     });
 
     it('should return an empty array when the API returns no users', () => {
-      let emittedUsers: User[] | undefined;
+      let emitted: { data: User[] } | undefined;
 
-      service.findAllUsers().subscribe((data) => {
-        emittedUsers = data;
+      service.findAllUsers().subscribe((res) => {
+        emitted = res;
       });
 
       httpMock.expectOne(`${base}/um/find`).flush(wrapInApiResponse([]));
 
-      expect(emittedUsers).toEqual([]);
+      expect(emitted?.data).toEqual([]);
     });
   });
 

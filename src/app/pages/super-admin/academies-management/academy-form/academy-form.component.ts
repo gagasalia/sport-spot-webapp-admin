@@ -5,8 +5,6 @@ import {
   FormGroup,
   ReactiveFormsModule,
   Validators,
-  AbstractControl,
-  ValidationErrors,
 } from '@angular/forms';
 import { take } from 'rxjs';
 import { type TuiStringHandler } from '@taiga-ui/cdk';
@@ -19,10 +17,7 @@ import { AcademyService } from '../../../../services/http-services/academy.servi
 import { UserManagementService } from '../../../../services/http-services/user-management.service';
 import { Academy, AcademyStatus } from '../../../../shared/models/academy.model';
 import { User, UserType } from '../../../../shared/models/user.model';
-
-function arrayRequiredValidator(control: AbstractControl): ValidationErrors | null {
-  return Array.isArray(control.value) && control.value.length > 0 ? null : { required: true };
-}
+import { arrayRequiredValidator } from '../../../../shared/validators/array-required.validator';
 
 @Component({
   selector: 'app-academy-form',
@@ -74,14 +69,21 @@ export class AcademyFormComponent implements OnInit {
     this.academyForm = this.fb.group({
       name: [a?.name || '', Validators.required],
       admins: [[], [arrayRequiredValidator]],
-      status: [a?.status || AcademyStatus.UNPUBLISHED, Validators.required],
     });
+
+    // Status is only editable in edit mode — academies start unpublished server-side.
+    if (this.isEditMode) {
+      this.academyForm.addControl(
+        'status',
+        this.fb.control(a?.status || AcademyStatus.UNPUBLISHED, Validators.required),
+      );
+    }
 
     this.userService
       .findAllUsers({ userType: [UserType.ADMIN, UserType.SUPERADMIN] })
       .pipe(take(1))
       .subscribe({
-        next: (users) => {
+        next: ({ data: users }) => {
           const filtered = users.filter((u) =>
             u.userType?.some((type) => type === UserType.ADMIN || type === UserType.SUPERADMIN),
           );
@@ -110,6 +112,8 @@ export class AcademyFormComponent implements OnInit {
       this.academyService
         .updateAcademy(a._id, {
           name: v.name,
+          admins: v.admins.map((u: User) => u._id),
+          status: v.status,
         })
         .pipe(take(1))
         .subscribe({

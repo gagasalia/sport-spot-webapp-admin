@@ -4,7 +4,10 @@ import {
   signal,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
+  DestroyRef,
+  inject,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -37,6 +40,8 @@ export class AcademyComponent implements OnInit {
   isSaving = signal<boolean>(false);
   isSaved = signal<boolean>(false);
 
+  private readonly destroyRef = inject(DestroyRef);
+
   constructor(
     private fb: FormBuilder,
     private academyService: AcademyService,
@@ -49,11 +54,13 @@ export class AcademyComponent implements OnInit {
     this.initializeForm();
     this.loadAcademy();
 
-    this.academyForm.valueChanges.subscribe(() => {
-      if (this.academyForm.dirty) {
-        this.isSaved.set(false);
-      }
-    });
+    this.academyForm.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.academyForm.dirty) {
+          this.isSaved.set(false);
+        }
+      });
   }
 
   private initializeForm(): void {

@@ -3,11 +3,11 @@ import { HttpClient, HttpContext } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { User, CreateUserDto, UpdateUserDto, FilterUsersDto } from '../../shared/models/user.model';
+import { ApiPage, ApiResponse } from '../../shared/models/api-response.model';
 
-interface ApiResponse<T> {
-  result: {
-    data: T;
-  };
+export interface PaginatedUsers {
+  data: User[];
+  page?: ApiPage;
 }
 
 @Injectable({
@@ -24,10 +24,10 @@ export class UserManagementService {
       .pipe(map((res) => res.result.data));
   }
 
-  findAllUsers(filters: FilterUsersDto = {}, context?: HttpContext): Observable<User[]> {
+  findAllUsers(filters: FilterUsersDto = {}, context?: HttpContext): Observable<PaginatedUsers> {
     return this.http
       .post<ApiResponse<User[]>>(`${this.apiUrl}/um/find`, filters, { context })
-      .pipe(map((res) => res.result.data));
+      .pipe(map((res) => ({ data: res.result.data, page: res.result.page })));
   }
 
   findUserById(id: string): Observable<User> {

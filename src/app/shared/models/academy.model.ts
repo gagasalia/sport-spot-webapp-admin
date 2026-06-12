@@ -25,6 +25,8 @@ export interface CreateAcademyDto {
 
 export interface UpdateAcademyDto {
   name?: string;
+  admins?: string[];
+  status?: AcademyStatus;
   color?: string;
   descriptionGeorgian?: string;
   descriptionEnglish?: string;

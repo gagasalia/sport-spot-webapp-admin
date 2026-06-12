@@ -72,7 +72,6 @@ export class FacilitiesComponent implements OnInit {
   }
 
   onEditFacility(facility: Facility): void {
-    console.log('Editing facility:', facility);
     this.dialogs
       .open(new PolymorpheusComponent(FacilityFormComponent, this.injector), {
         label: 'რედაქტირება',

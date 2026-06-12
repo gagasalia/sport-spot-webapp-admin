@@ -1,7 +1,9 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, tick, flush } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { DatePipe, Location } from '@angular/common';
+import { provideLocationMocks, SpyLocation } from '@angular/common/testing';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of, throwError, Subject } from 'rxjs';
 import { provideAnimations } from '@angular/platform-browser/animations';
 
@@ -10,7 +12,10 @@ import { TuiAlertService } from '@taiga-ui/core';
 import { TuiDialogService } from '@taiga-ui/experimental';
 
 import { UserManagementComponent } from './user-management.component';
-import { UserManagementService } from '../../../services/http-services/user-management.service';
+import {
+  UserManagementService,
+  PaginatedUsers,
+} from '../../../services/http-services/user-management.service';
 import { User, UserType, FilterUsersDto } from '../../../shared/models/user.model';
 
 // ─── Test data ───────────────────────────────────────────────────────────────
@@ -33,6 +38,10 @@ const mockUsers: User[] = [
     phone: '5559999',
   },
 ];
+
+function page(data: User[], total = data.length, pageNum = 1, size = 20): PaginatedUsers {
+  return { data, page: { page: pageNum, size, total } };
+}
 
 // ─── Mock window ─────────────────────────────────────────────────────────────
 
@@ -64,6 +73,11 @@ describe('UserManagementComponent', () => {
   let userServiceSpy: jasmine.SpyObj<UserManagementService>;
   let dialogServiceSpy: jasmine.SpyObj<TuiDialogService>;
   let alertServiceSpy: jasmine.SpyObj<TuiAlertService>;
+  let location: SpyLocation;
+
+  // Flush queued Angular effects (the filter-change effect). detectChanges runs the
+  // component's reactive effects synchronously without advancing fake time.
+  const flushEffects = () => fixture.detectChanges();
 
   beforeEach(async () => {
     userServiceSpy = jasmine.createSpyObj('UserManagementService', [
@@ -75,8 +89,8 @@ describe('UserManagementComponent', () => {
     dialogServiceSpy = jasmine.createSpyObj('TuiDialogService', ['open']);
     alertServiceSpy = jasmine.createSpyObj('TuiAlertService', ['open']);
 
-    // Default: findAllUsers returns the mock list
-    userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
+    // Default: findAllUsers returns the mock list wrapped with page metadata
+    userServiceSpy.findAllUsers.and.returnValue(of(page(mockUsers)));
     // Default: dialog open returns empty subject (no completion)
     dialogServiceSpy.open.and.returnValue(new Subject<any>());
     // Default: alert open returns empty observable
@@ -86,6 +100,8 @@ describe('UserManagementComponent', () => {
       imports: [UserManagementComponent],
       providers: [
         provideAnimations(),
+        provideRouter([]),
+        provideLocationMocks(),
         { provide: UserManagementService, useValue: userServiceSpy },
         { provide: TuiDialogService, useValue: dialogServiceSpy },
         { provide: TuiAlertService, useValue: alertServiceSpy },
@@ -102,6 +118,7 @@ describe('UserManagementComponent', () => {
 
     fixture = TestBed.createComponent(UserManagementComponent);
     component = fixture.componentInstance;
+    location = TestBed.inject(Location) as SpyLocation;
   });
 
   it('should create the component', () => {
@@ -131,6 +148,14 @@ describe('UserManagementComponent', () => {
       expect((component as any).filterRole()).toBeNull();
     });
 
+    it('should initialize the page signal to 1', () => {
+      expect((component as any).page()).toBe(1);
+    });
+
+    it('should initialize the total signal to 0', () => {
+      expect((component as any).total()).toBe(0);
+    });
+
     it('should expose all UserType values as roleOptions', () => {
       expect((component as any).roleOptions).toEqual(Object.values(UserType));
     });
@@ -139,12 +164,32 @@ describe('UserManagementComponent', () => {
   // ─── ngOnInit / loadUsers ──────────────────────────────────────────────────
 
   describe('ngOnInit', () => {
-    it('should call findAllUsers on init and populate users signal', fakeAsync(() => {
+    it('should call findAllUsers on init with the default page and limit', fakeAsync(() => {
       fixture.detectChanges(); // triggers ngOnInit
       tick();
 
-      expect(userServiceSpy.findAllUsers).toHaveBeenCalledWith({});
+      const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
+      expect(calledWith.page).toBe(1);
+      expect(calledWith.limit).toBe(20);
       expect((component as any).users()).toEqual(mockUsers);
+    }));
+
+    it('should populate the total signal from the response page metadata', fakeAsync(() => {
+      userServiceSpy.findAllUsers.and.returnValue(of(page(mockUsers, 57)));
+
+      fixture.detectChanges();
+      tick();
+
+      expect((component as any).total()).toBe(57);
+    }));
+
+    it('should fall back to data length when no page metadata is returned', fakeAsync(() => {
+      userServiceSpy.findAllUsers.and.returnValue(of({ data: mockUsers } as PaginatedUsers));
+
+      fixture.detectChanges();
+      tick();
+
+      expect((component as any).total()).toBe(mockUsers.length);
     }));
 
     it('should set isLoading to false after successful load', fakeAsync(() => {
@@ -164,222 +209,208 @@ describe('UserManagementComponent', () => {
     }));
   });
 
-  // ─── applyFilters ──────────────────────────────────────────────────────────
+  // ─── Debounced filter signals → reload ─────────────────────────────────────
 
-  describe('applyFilters', () => {
-    beforeEach(() => {
-      // Initialise the component so it's in a stable state before each test
+  describe('debounced filtering', () => {
+    beforeEach(fakeAsync(() => {
+      // Initialise the component (ngOnInit reads query params and does the first load)
       fixture.detectChanges();
-    });
-
-    it('should call findAllUsers with an empty filter when all signals are empty', fakeAsync(() => {
-      userServiceSpy.findAllUsers.calls.reset();
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
-
-      (component as any).applyFilters();
       tick();
-
-      expect(userServiceSpy.findAllUsers).toHaveBeenCalledWith({});
+      userServiceSpy.findAllUsers.calls.reset();
     }));
 
-    it('should include name in the filter when filterName signal has a value', fakeAsync(() => {
+    it('should NOT reload immediately when a filter signal changes', fakeAsync(() => {
       (component as any).filterName.set('John');
-      userServiceSpy.findAllUsers.calls.reset();
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
+      flushEffects(); // flush the effect (queues the debounced reload), no time elapses
 
-      (component as any).applyFilters();
-      tick();
+      expect(userServiceSpy.findAllUsers).not.toHaveBeenCalled();
+      flush();
+    }));
+
+    it('should reload after the 500ms debounce window elapses', fakeAsync(() => {
+      (component as any).filterName.set('John');
+      flushEffects(); // flush the effect → debounce timer is armed
+      tick(499);
+      expect(userServiceSpy.findAllUsers).not.toHaveBeenCalled();
+
+      tick(1);
+      expect(userServiceSpy.findAllUsers).toHaveBeenCalledTimes(1);
+      flush();
+    }));
+
+    it('should include the trimmed filter value in the reload request', fakeAsync(() => {
+      (component as any).filterName.set('  John  ');
+      flushEffects();
+      tick(500);
 
       const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
       expect(calledWith.name).toBe('John');
+      flush();
     }));
 
-    it('should include email in the filter when filterEmail signal has a value', fakeAsync(() => {
+    it('should debounce rapid successive changes into a single reload', fakeAsync(() => {
+      (component as any).filterName.set('J');
+      flushEffects();
+      tick(200);
+      (component as any).filterName.set('Jo');
+      flushEffects();
+      tick(200);
       (component as any).filterEmail.set('john@example.com');
-      userServiceSpy.findAllUsers.calls.reset();
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
+      flushEffects();
+      tick(500);
 
-      (component as any).applyFilters();
-      tick();
-
+      expect(userServiceSpy.findAllUsers).toHaveBeenCalledTimes(1);
       const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
+      expect(calledWith.name).toBe('Jo');
       expect(calledWith.email).toBe('john@example.com');
+      flush();
     }));
 
-    it('should include phone in the filter when filterPhone signal has a value', fakeAsync(() => {
-      (component as any).filterPhone.set('555');
-      userServiceSpy.findAllUsers.calls.reset();
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
-
-      (component as any).applyFilters();
-      tick();
-
-      const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
-      expect(calledWith.phone).toBe('555');
-    }));
-
-    it('should include pid in the filter when filterPid signal has a value', fakeAsync(() => {
-      (component as any).filterPid.set('PID001');
-      userServiceSpy.findAllUsers.calls.reset();
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
-
-      (component as any).applyFilters();
-      tick();
-
-      const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
-      expect(calledWith.pid).toBe('PID001');
-    }));
-
-    it('should include userType as a single-element array when filterRole is set', fakeAsync(() => {
-      (component as any).filterRole.set(UserType.ADMIN);
-      userServiceSpy.findAllUsers.calls.reset();
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
-
-      (component as any).applyFilters();
-      tick();
-
-      const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
-      expect(calledWith.userType).toEqual([UserType.ADMIN]);
-    }));
-
-    it('should not include userType when filterRole is null', fakeAsync(() => {
-      (component as any).filterRole.set(null);
-      userServiceSpy.findAllUsers.calls.reset();
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
-
-      (component as any).applyFilters();
-      tick();
-
-      const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
-      expect(calledWith.userType).toBeUndefined();
-    }));
-
-    it('should build a combined filter when multiple signals have values', fakeAsync(() => {
+    it('should build a combined filter (with page/limit) when multiple signals are set', fakeAsync(() => {
       (component as any).filterName.set('John');
       (component as any).filterEmail.set('john@example.com');
       (component as any).filterPhone.set('555');
       (component as any).filterPid.set('PID001');
       (component as any).filterRole.set(UserType.USER);
-
-      userServiceSpy.findAllUsers.calls.reset();
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
-
-      (component as any).applyFilters();
-      tick();
+      flushEffects();
+      tick(500);
 
       const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
-
       expect(calledWith).toEqual({
+        page: 1,
+        limit: 20,
         name: 'John',
         email: 'john@example.com',
         phone: '555',
         pid: 'PID001',
         userType: [UserType.USER],
       });
+      flush();
     }));
 
-    it('should trim whitespace from string filter values', fakeAsync(() => {
-      (component as any).filterName.set('  John  ');
-      userServiceSpy.findAllUsers.calls.reset();
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
-
-      (component as any).applyFilters();
-      tick();
-
-      const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
-      expect(calledWith.name).toBe('John');
-    }));
-
-    it('should not include a field when its trimmed value is empty', fakeAsync(() => {
-      (component as any).filterName.set('   ');
-      userServiceSpy.findAllUsers.calls.reset();
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
-
-      (component as any).applyFilters();
-      tick();
-
-      const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
-      expect(calledWith.name).toBeUndefined();
-    }));
-
-    it('should update the users signal after a successful filtered load', fakeAsync(() => {
-      const filteredUsers = [mockUsers[0]];
+    it('should reset the page signal back to 1 when a filter changes', fakeAsync(() => {
+      (component as any).page.set(3);
       (component as any).filterName.set('John');
-      userServiceSpy.findAllUsers.and.returnValue(of(filteredUsers));
+      flushEffects();
+      tick(500);
 
-      (component as any).applyFilters();
+      expect((component as any).page()).toBe(1);
+      flush();
+    }));
+
+    it('should sync the active filters into the URL via Location', fakeAsync(() => {
+      (component as any).filterName.set('John');
+      flushEffects();
+      tick(500);
+
+      expect(location.urlChanges.some((u) => u.includes('name=John'))).toBeTrue();
+      flush();
+    }));
+  });
+
+  // ─── Pagination ────────────────────────────────────────────────────────────
+
+  describe('pagination', () => {
+    beforeEach(fakeAsync(() => {
+      userServiceSpy.findAllUsers.and.returnValue(of(page(mockUsers, 100)));
+      fixture.detectChanges();
+      tick();
+      userServiceSpy.findAllUsers.calls.reset();
+    }));
+
+    it('should compute totalPages from total and limit', () => {
+      expect((component as any).totalPages()).toBe(5); // 100 / 20
+    });
+
+    it('should set the 1-based page from the 0-based pagination index on change', fakeAsync(() => {
+      (component as any).onPageChange(2); // index 2 → page 3
       tick();
 
-      expect((component as any).users()).toEqual(filteredUsers);
+      expect((component as any).page()).toBe(3);
+      flush();
+    }));
+
+    it('should request the selected page from the service', fakeAsync(() => {
+      (component as any).onPageChange(2);
+      tick();
+
+      const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
+      expect(calledWith.page).toBe(3);
+      expect(calledWith.limit).toBe(20);
+      flush();
+    }));
+
+    it('should put the page number in the URL when greater than 1', fakeAsync(() => {
+      (component as any).onPageChange(1); // page 2
+      tick();
+
+      expect(location.urlChanges.some((u) => u.includes('page=2'))).toBeTrue();
+      flush();
     }));
   });
 
   // ─── clearFilters ──────────────────────────────────────────────────────────
 
   describe('clearFilters', () => {
-    beforeEach(() => {
+    beforeEach(fakeAsync(() => {
       fixture.detectChanges();
-    });
+      tick();
+      userServiceSpy.findAllUsers.calls.reset();
+    }));
 
-    it('should reset filterName to empty string', fakeAsync(() => {
+    it('should reset every filter signal', fakeAsync(() => {
       (component as any).filterName.set('John');
+      (component as any).filterEmail.set('john@example.com');
+      (component as any).filterPhone.set('555');
+      (component as any).filterPid.set('PID001');
+      (component as any).filterRole.set(UserType.ADMIN);
+      flush(); // let the debounced change settle
 
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
       (component as any).clearFilters();
       tick();
 
       expect((component as any).filterName()).toBe('');
-    }));
-
-    it('should reset filterEmail to empty string', fakeAsync(() => {
-      (component as any).filterEmail.set('john@example.com');
-
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
-      (component as any).clearFilters();
-      tick();
-
       expect((component as any).filterEmail()).toBe('');
-    }));
-
-    it('should reset filterPhone to empty string', fakeAsync(() => {
-      (component as any).filterPhone.set('555');
-
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
-      (component as any).clearFilters();
-      tick();
-
       expect((component as any).filterPhone()).toBe('');
-    }));
-
-    it('should reset filterPid to empty string', fakeAsync(() => {
-      (component as any).filterPid.set('PID001');
-
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
-      (component as any).clearFilters();
-      tick();
-
       expect((component as any).filterPid()).toBe('');
-    }));
-
-    it('should reset filterRole to null', fakeAsync(() => {
-      (component as any).filterRole.set(UserType.ADMIN);
-
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
-      (component as any).clearFilters();
-      tick();
-
       expect((component as any).filterRole()).toBeNull();
+      flush();
     }));
 
-    it('should reload users after resetting all filters', fakeAsync(() => {
-      userServiceSpy.findAllUsers.calls.reset();
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
+    it('should reset the page back to 1', fakeAsync(() => {
+      (component as any).page.set(4);
 
       (component as any).clearFilters();
       tick();
 
-      expect(userServiceSpy.findAllUsers).toHaveBeenCalledWith({});
+      expect((component as any).page()).toBe(1);
+      flush();
+    }));
+
+    it('should reload users with only page/limit after clearing', fakeAsync(() => {
+      (component as any).clearFilters();
+      tick();
+
+      const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
+      expect(calledWith).toEqual({ page: 1, limit: 20 });
       expect((component as any).users()).toEqual(mockUsers);
+      flush();
+    }));
+
+    it('should fire exactly ONE findAllUsers call per clear (no debounced double load)', fakeAsync(() => {
+      // Seed some active filters and let their debounced reload settle.
+      (component as any).filterName.set('John');
+      (component as any).filterEmail.set('john@example.com');
+      flush();
+      userServiceSpy.findAllUsers.calls.reset();
+
+      (component as any).clearFilters();
+      // Drain the debounce window — the suppressed effect must NOT queue a second call.
+      flush();
+
+      expect(userServiceSpy.findAllUsers).toHaveBeenCalledTimes(1);
+      const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
+      expect(calledWith).toEqual({ page: 1, limit: 20 });
     }));
   });
 
@@ -519,7 +550,11 @@ describe('UserManagementComponent', () => {
   // ─── addUser / editUser ───────────────────────────────────────────────────
 
   describe('addUser', () => {
-    beforeEach(() => fixture.detectChanges());
+    beforeEach(fakeAsync(() => {
+      fixture.detectChanges();
+      tick();
+      userServiceSpy.findAllUsers.calls.reset();
+    }));
 
     it('should open a dialog', () => {
       dialogServiceSpy.open.and.returnValue(of(null) as any);
@@ -527,19 +562,24 @@ describe('UserManagementComponent', () => {
       expect(dialogServiceSpy.open).toHaveBeenCalled();
     });
 
-    it('should reload users when the dialog returns a user', fakeAsync(() => {
+    it('should reload users WITH the active filters when the dialog returns a user', fakeAsync(() => {
+      (component as any).filterName.set('John');
+      flush(); // settle the debounced reload from the filter change
       userServiceSpy.findAllUsers.calls.reset();
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
+
       dialogServiceSpy.open.and.returnValue(of(mockUsers[0]) as any);
 
       (component as any).addUser();
       tick();
 
-      expect(userServiceSpy.findAllUsers).toHaveBeenCalled();
+      expect(userServiceSpy.findAllUsers).toHaveBeenCalledTimes(1);
+      const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
+      expect(calledWith.name).toBe('John');
+      expect(calledWith.page).toBe(1);
+      expect(calledWith.limit).toBe(20);
     }));
 
     it('should not reload users when the dialog returns null', fakeAsync(() => {
-      userServiceSpy.findAllUsers.calls.reset();
       dialogServiceSpy.open.and.returnValue(of(null) as any);
 
       (component as any).addUser();
@@ -550,7 +590,11 @@ describe('UserManagementComponent', () => {
   });
 
   describe('editUser', () => {
-    beforeEach(() => fixture.detectChanges());
+    beforeEach(fakeAsync(() => {
+      fixture.detectChanges();
+      tick();
+      userServiceSpy.findAllUsers.calls.reset();
+    }));
 
     it('should open a dialog with the user data', () => {
       dialogServiceSpy.open.and.returnValue(of(null) as any);
@@ -558,15 +602,90 @@ describe('UserManagementComponent', () => {
       expect(dialogServiceSpy.open).toHaveBeenCalled();
     });
 
-    it('should reload users when the dialog returns an updated user', fakeAsync(() => {
+    it('should reload users WITH the active filters when the dialog returns an updated user', fakeAsync(() => {
+      (component as any).filterEmail.set('john@example.com');
+      flush();
       userServiceSpy.findAllUsers.calls.reset();
-      userServiceSpy.findAllUsers.and.returnValue(of(mockUsers));
+
       dialogServiceSpy.open.and.returnValue(of(mockUsers[0]) as any);
 
       (component as any).editUser(mockUsers[0]);
       tick();
 
-      expect(userServiceSpy.findAllUsers).toHaveBeenCalled();
+      expect(userServiceSpy.findAllUsers).toHaveBeenCalledTimes(1);
+      const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
+      expect(calledWith.email).toBe('john@example.com');
     }));
   });
+});
+
+// ─── URL-seeded init (separate TestBed: custom ActivatedRoute with initial params) ─
+
+describe('UserManagementComponent — URL-seeded filters', () => {
+  let component: UserManagementComponent;
+  let fixture: ComponentFixture<UserManagementComponent>;
+  let userServiceSpy: jasmine.SpyObj<UserManagementService>;
+
+  // Stub ActivatedRoute: queryParams seeded with name=foo, plus the snapshot shape
+  // replaceUrl() reads (pathFromRoot → url segments).
+  function buildRoute(params: Record<string, string>): Partial<ActivatedRoute> {
+    return {
+      queryParams: of(params),
+      snapshot: {
+        pathFromRoot: [{ url: [{ path: 'users' } as any] } as any],
+      } as any,
+    };
+  }
+
+  async function setup(params: Record<string, string>) {
+    userServiceSpy = jasmine.createSpyObj('UserManagementService', [
+      'findAllUsers',
+      'createUser',
+      'updateUser',
+      'deleteUser',
+    ]);
+    const dialogServiceSpy = jasmine.createSpyObj('TuiDialogService', ['open']);
+    const alertServiceSpy = jasmine.createSpyObj('TuiAlertService', ['open']);
+
+    userServiceSpy.findAllUsers.and.returnValue(of(page(mockUsers)));
+    dialogServiceSpy.open.and.returnValue(new Subject<any>());
+    alertServiceSpy.open.and.returnValue(of(undefined) as any);
+
+    await TestBed.configureTestingModule({
+      imports: [UserManagementComponent],
+      providers: [
+        provideAnimations(),
+        provideLocationMocks(),
+        { provide: ActivatedRoute, useValue: buildRoute(params) },
+        { provide: UserManagementService, useValue: userServiceSpy },
+        { provide: TuiDialogService, useValue: dialogServiceSpy },
+        { provide: TuiAlertService, useValue: alertServiceSpy },
+        { provide: WA_WINDOW, useValue: mockWindow },
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
+    })
+      .overrideComponent(UserManagementComponent, {
+        set: { imports: [DatePipe], schemas: [NO_ERRORS_SCHEMA] },
+      })
+      .compileComponents();
+
+    fixture = TestBed.createComponent(UserManagementComponent);
+    component = fixture.componentInstance;
+  }
+
+  it('should fire exactly ONE findAllUsers call when filters are seeded from the URL', fakeAsync(async () => {
+    await setup({ name: 'foo' });
+
+    fixture.detectChanges(); // ngOnInit: reads queryParams, seeds signals, single load
+    tick();
+    // Drain the debounce window — the suppressed effect must NOT queue a second call.
+    flush();
+
+    expect(userServiceSpy.findAllUsers).toHaveBeenCalledTimes(1);
+    const calledWith = userServiceSpy.findAllUsers.calls.mostRecent().args[0] as FilterUsersDto;
+    expect(calledWith.name).toBe('foo');
+    expect(calledWith.page).toBe(1);
+    expect(calledWith.limit).toBe(20);
+    expect((component as any).filterName()).toBe('foo');
+  }));
 });

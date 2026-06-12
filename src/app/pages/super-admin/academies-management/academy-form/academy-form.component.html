@@ -39,7 +39,6 @@
               formControlName="admins"
               class="georgian-text"
               lang="ka"
-              [items]="adminUsers()"
             ></select>
             <tui-data-list *tuiTextfieldDropdown>
               @for (user of adminUsers(); track user._id) {
@@ -65,20 +64,22 @@
         }
       </label>
 
-      <!-- Status -->
-      <label tuiLabel>
-        <span class="georgian-text" lang="ka">სტატუსი <span class="text-red-500">*</span></span>
-        <tui-textfield tuiChevron [stringify]="stringifyStatus">
-          <input tuiSelect formControlName="status" class="georgian-text" lang="ka" />
-          <tui-data-list *tuiTextfieldDropdown>
-            @for (option of statusOptions; track option) {
-              <button tuiOption [value]="option" new>
-                <span class="georgian-text" lang="ka">{{ stringifyStatus(option) }}</span>
-              </button>
-            }
-          </tui-data-list>
-        </tui-textfield>
-      </label>
+      <!-- Status (edit mode only — academies start unpublished server-side) -->
+      @if (isEditMode) {
+        <label tuiLabel>
+          <span class="georgian-text" lang="ka">სტატუსი <span class="text-red-500">*</span></span>
+          <tui-textfield tuiChevron [stringify]="stringifyStatus">
+            <input tuiSelect formControlName="status" class="georgian-text" lang="ka" />
+            <tui-data-list *tuiTextfieldDropdown>
+              @for (option of statusOptions; track option) {
+                <button tuiOption [value]="option" new>
+                  <span class="georgian-text" lang="ka">{{ stringifyStatus(option) }}</span>
+                </button>
+              }
+            </tui-data-list>
+          </tui-textfield>
+        </label>
+      }
     </div>
 
     <!-- Action Buttons -->

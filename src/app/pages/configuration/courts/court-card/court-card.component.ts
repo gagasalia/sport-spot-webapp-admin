@@ -75,8 +75,6 @@ export class CourtCardComponent {
   }
 
   onToggleState(checked: boolean): void {
-    console.log('Toggling court state from:', this.court.activeState, 'to:', checked);
-
     this.court.activeState = checked;
 
     this.configurationService
@@ -84,7 +82,6 @@ export class CourtCardComponent {
       .pipe(take(1))
       .subscribe({
         next: (updated) => {
-          console.log('Court updated successfully:', updated);
           this.courtUpdated.emit(updated);
         },
         error: (error) => {

@@ -1,5 +1,4 @@
 <tui-root [attr.tuiTheme]="darkMode() ? 'dark' : null">
-  <!-- Ignore this part, it is only here to position drawer inside the example block -->
   <div>
     <ng-container #viewContainer />
   </div>
@@ -27,28 +26,6 @@
     <!-- Desktop Sidebar -->
     @if (!isMobile()) {
       <aside [style.height]="'calc(100vh - 48px)'" [tuiNavigationAside]="expanded()">
-        <!-- 📅 რეზერვაციები (Reservations) -->
-        <button
-          automation-id="reservations"
-          iconStart="@lucide.calendar-days"
-          tuiAsideItem
-          type="button"
-        >
-          <span tuiFade lang="ka" class="georgian-text">რეზერვაციები</span>
-        </button>
-
-        <!-- 👥 მომხმარებლები (Users) -->
-        <button automation-id="users" iconStart="@lucide.users" tuiAsideItem type="button">
-          <span tuiFade lang="ka" class="georgian-text">მომხმარებლები</span>
-        </button>
-
-        <!-- 📊 რეპორტები (Reports) -->
-        <button automation-id="reports" iconStart="@lucide.bar-chart-2" tuiAsideItem type="button">
-          <span tuiFade lang="ka" class="georgian-text">რეპორტები</span>
-        </button>
-
-        <hr />
-
         <tui-aside-group>
           <button
             automation-id="setting"
@@ -124,15 +101,6 @@
   <!-- Mobile TabBar -->
   @if (isMobile()) {
     <nav tuiTabBar ngProjectAs="tuiOverContent">
-      <a icon="@lucide.calendar-days" routerLinkActive tuiTabBarItem routerLink="/reservations">
-        <span lang="ka" class="georgian-text">რეზერვაციები</span>
-      </a>
-      <a icon="@lucide.users" routerLinkActive tuiTabBarItem routerLink="/users">
-        <span lang="ka" class="georgian-text">მომხმარებლები</span>
-      </a>
-      <a icon="@lucide.bar-chart-2" routerLinkActive tuiTabBarItem routerLink="/reports">
-        <span lang="ka" class="georgian-text">რეპორტები</span>
-      </a>
       <button
         icon="@tui.settings"
         tuiTabBarItem

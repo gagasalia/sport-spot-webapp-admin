@@ -82,7 +82,7 @@ describe('AcademyFormComponent', () => {
     alertServiceSpy = jasmine.createSpyObj('TuiAlertService', ['open']);
 
     // Defaults
-    userServiceSpy.findAllUsers.and.returnValue(of(mockAdminUsers));
+    userServiceSpy.findAllUsers.and.returnValue(of({ data: mockAdminUsers }) as any);
     alertServiceSpy.open.and.returnValue(of(undefined) as any);
 
     await TestBed.configureTestingModule({
@@ -116,13 +116,13 @@ describe('AcademyFormComponent', () => {
       expect(component).toBeTruthy();
     });
 
-    it('should initialize form with name, admins, and status controls', fakeAsync(() => {
+    it('should initialize form with name and admins controls (no status in create mode)', fakeAsync(() => {
       fixture.detectChanges();
       tick();
 
       expect(component.academyForm.contains('name')).toBeTrue();
       expect(component.academyForm.contains('admins')).toBeTrue();
-      expect(component.academyForm.contains('status')).toBeTrue();
+      expect(component.academyForm.contains('status')).toBeFalse();
     }));
 
     it('should require the name field', fakeAsync(() => {
@@ -166,11 +166,12 @@ describe('AcademyFormComponent', () => {
       expect(component.academyForm.get('admins')!.valid).toBeTrue();
     }));
 
-    it('should default the status to UNPUBLISHED in create mode', fakeAsync(() => {
+    it('should not register a status control in create mode', fakeAsync(() => {
       fixture.detectChanges();
       tick();
 
-      expect(component.academyForm.get('status')!.value).toBe(AcademyStatus.UNPUBLISHED);
+      expect(component.academyForm.contains('status')).toBeFalse();
+      expect(component.academyForm.get('status')).toBeNull();
     }));
 
     it('should default the name to an empty string in create mode', fakeAsync(() => {
@@ -216,7 +217,7 @@ describe('AcademyFormComponent', () => {
         mockAdminUser,
         { _id: 'user-id-1', email: 'user@example.com', userType: [UserType.USER], phone: '5553333' },
       ];
-      userServiceSpy.findAllUsers.and.returnValue(of(mixedUsers));
+      userServiceSpy.findAllUsers.and.returnValue(of({ data: mixedUsers }) as any);
 
       fixture.detectChanges();
       tick();
@@ -344,7 +345,6 @@ describe('AcademyFormComponent', () => {
       component.academyForm.setValue({
         name: 'New Academy',
         admins: [mockAdminUser],
-        status: AcademyStatus.UNPUBLISHED,
       });
 
       component.onSubmit();
@@ -365,7 +365,6 @@ describe('AcademyFormComponent', () => {
       component.academyForm.setValue({
         name: 'Published Academy',
         admins: [mockAdminUser],
-        status: AcademyStatus.PUBLISHED,
       });
 
       component.onSubmit();
@@ -384,7 +383,6 @@ describe('AcademyFormComponent', () => {
       component.academyForm.setValue({
         name: 'Multi Admin Academy',
         admins: [mockAdminUser, mockSuperAdminUser],
-        status: AcademyStatus.UNPUBLISHED,
       });
 
       component.onSubmit();
@@ -403,7 +401,6 @@ describe('AcademyFormComponent', () => {
       component.academyForm.setValue({
         name: 'New Academy',
         admins: [mockAdminUser],
-        status: AcademyStatus.UNPUBLISHED,
       });
 
       component.onSubmit();
@@ -421,7 +418,6 @@ describe('AcademyFormComponent', () => {
       component.academyForm.setValue({
         name: 'New Academy',
         admins: [mockAdminUser],
-        status: AcademyStatus.UNPUBLISHED,
       });
 
       component.onSubmit();
@@ -442,7 +438,6 @@ describe('AcademyFormComponent', () => {
       component.academyForm.setValue({
         name: 'New Academy',
         admins: [mockAdminUser],
-        status: AcademyStatus.UNPUBLISHED,
       });
 
       component.onSubmit();
@@ -474,7 +469,7 @@ describe('AcademyFormComponent', () => {
       expect(academyServiceSpy.updateAcademy).not.toHaveBeenCalled();
     }));
 
-    it('should call updateAcademy with the academy ID and only the name', fakeAsync(() => {
+    it('should call updateAcademy with the academy ID, name, admins and status', fakeAsync(() => {
       const updatedAcademy = { ...mockExistingAcademy, name: 'Updated Academy' };
       academyServiceSpy.updateAcademy.and.returnValue(of(updatedAcademy));
 
@@ -492,10 +487,12 @@ describe('AcademyFormComponent', () => {
 
       expect(academyServiceSpy.updateAcademy).toHaveBeenCalledWith('academy-id-1', {
         name: 'Updated Academy',
+        admins: ['admin-id-1'],
+        status: AcademyStatus.PUBLISHED,
       });
     }));
 
-    it('should not include admins in the update payload (admins are not sent during update)', fakeAsync(() => {
+    it('should include admins as an array of ID strings in the update payload', fakeAsync(() => {
       const updatedAcademy = { ...mockExistingAcademy };
       academyServiceSpy.updateAcademy.and.returnValue(of(updatedAcademy));
 
@@ -512,10 +509,10 @@ describe('AcademyFormComponent', () => {
       tick();
 
       const callArg = academyServiceSpy.updateAcademy.calls.mostRecent().args[1] as any;
-      expect(callArg.admins).toBeUndefined();
+      expect(callArg.admins).toEqual(['admin-id-1', 'superadmin-id-1']);
     }));
 
-    it('should not include status in the update payload (status is not sent during update)', fakeAsync(() => {
+    it('should include the selected status in the update payload', fakeAsync(() => {
       const unpublishedAcademy = { ...mockExistingAcademy, status: AcademyStatus.UNPUBLISHED };
       academyServiceSpy.updateAcademy.and.returnValue(of(unpublishedAcademy));
 
@@ -532,7 +529,7 @@ describe('AcademyFormComponent', () => {
       tick();
 
       const callArg = academyServiceSpy.updateAcademy.calls.mostRecent().args[1] as any;
-      expect(callArg.status).toBeUndefined();
+      expect(callArg.status).toBe(AcademyStatus.UNPUBLISHED);
     }));
 
     it('should call context.completeWith with the updated academy on success', fakeAsync(() => {

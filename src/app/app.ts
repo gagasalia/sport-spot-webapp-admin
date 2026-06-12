@@ -13,7 +13,7 @@ import {
   TuiLoader,
   tuiLoaderOptionsProvider,
 } from '@taiga-ui/core';
-import { TuiBadgeNotification, TuiChevron, TuiFade } from '@taiga-ui/kit';
+import { TuiBadgeNotification, TuiChevron } from '@taiga-ui/kit';
 import { TuiNavigation } from '@taiga-ui/layout';
 import { TuiTabBar } from '@taiga-ui/addon-mobile';
 import { LoadingService } from './shared/services/loading.service';
@@ -30,7 +30,6 @@ import { LoadingService } from './shared/services/loading.service';
     TuiDropdown,
     TuiBadgeNotification,
     TuiChevron,
-    TuiFade,
     TuiNavigation,
     TuiLoader,
     TuiTabBar,
