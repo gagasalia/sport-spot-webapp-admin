@@ -26,7 +26,7 @@ import {
   MediaService,
   MediaUnconfiguredError,
 } from '../../../services/http-services/media.service';
-import { Academy } from '../../../shared/models/academy.model';
+import { Academy, IMedia, UpdateAcademyDto } from '../../../shared/models/academy.model';
 import { TenantService } from '../../../shared/services/tenant.service';
 
 @Component({
@@ -93,9 +93,12 @@ export class AcademyComponent implements OnInit {
 
   private loadAcademy(): void {
     this.isLoading.set(true);
+    // Initialize through ensure() so a hard refresh / deep link onto /academy
+    // resolves the tenant (one `/academy/my` call, replayed if already resolved)
+    // before patching the form, instead of reading a still-null signal.
     this.tenant
-      .resolveAcademy()
-      .pipe(take(1))
+      .ensure()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (academy) => {
           if (academy) {
@@ -133,10 +136,10 @@ export class AcademyComponent implements OnInit {
       }
 
       this.isSaving.set(true);
-      const formValue = this.academyForm.value;
+      const payload = this.buildUpdatePayload();
 
       this.academyService
-        .updateAcademy(academyId, formValue)
+        .updateAcademy(academyId, payload)
         .pipe(take(1))
         .subscribe({
           next: (savedAcademy) => {
@@ -167,6 +170,50 @@ export class AcademyComponent implements OnInit {
         .pipe(take(1))
         .subscribe();
     }
+  }
+
+  /**
+   * Builds the `PUT /academy/:id` payload from the form, OMITTING empty optional
+   * fields rather than sending empty strings/placeholders that fail backend
+   * validation:
+   *  - empty-string optional fields (email/phone/instagram/facebook/descriptions)
+   *    are dropped — e.g. `email:''` would otherwise fail `@IsEmail`;
+   *  - the logo group is dropped entirely unless a real logo exists (non-empty
+   *    url) — the placeholder `{url:'',type:''}` would otherwise fail nested
+   *    media validation.
+   * `name` (required) and `color` are always sent.
+   */
+  private buildUpdatePayload(): UpdateAcademyDto {
+    const v = this.academyForm.value;
+
+    const payload: UpdateAcademyDto = { name: v.name };
+
+    if (v.color) payload.color = v.color;
+
+    const optionalText: (keyof UpdateAcademyDto)[] = [
+      'descriptionGeorgian',
+      'descriptionEnglish',
+      'phone',
+      'email',
+      'instagram',
+      'facebook',
+    ];
+    for (const key of optionalText) {
+      const value = v[key];
+      // Omit empty strings (and null/undefined); keep only real, non-blank values.
+      if (typeof value === 'string' && value.trim() !== '') {
+        (payload[key] as string) = value;
+      }
+    }
+
+    // Only attach the logo when a real one was uploaded (non-empty url). The
+    // initial/cleared placeholder `{url:'', type:''}` must never be sent.
+    const logo = v.logo as IMedia | undefined;
+    if (logo?.url) {
+      payload.logo = logo;
+    }
+
+    return payload;
   }
 
   navigateToFacilities(): void {

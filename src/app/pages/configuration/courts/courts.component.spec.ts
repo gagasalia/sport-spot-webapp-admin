@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { TuiAlertService } from '@taiga-ui/core';
 import { TuiDialogService } from '@taiga-ui/experimental';
 
@@ -49,9 +49,11 @@ describe('CourtsComponent', () => {
     facilitySpy = jasmine.createSpyObj<FacilityService>('FacilityService', [
       'getFacilitiesByAcademy',
     ]);
-    tenantSpy = jasmine.createSpyObj<TenantService>('TenantService', ['academyId']);
+    tenantSpy = jasmine.createSpyObj<TenantService>('TenantService', ['academyId', 'ensure']);
 
     tenantSpy.academyId.and.returnValue('aca-1');
+    // ngOnInit drives the load through ensure(); emit so loadFacilities() runs.
+    tenantSpy.ensure.and.returnValue(of(null));
     facilitySpy.getFacilitiesByAcademy.and.returnValue(of([facility]));
     courtSpy.getCourts.and.returnValue(of([court]));
 
@@ -104,6 +106,27 @@ describe('CourtsComponent', () => {
 
     expect(facilitySpy.getFacilitiesByAcademy).not.toHaveBeenCalled();
     expect(component.facilities()).toEqual([]);
+  }));
+
+  it('hard-refresh: waits for tenant.ensure() to resolve before loading facilities', fakeAsync(() => {
+    // Simulate a deep-link / hard refresh where the tenant is not yet resolved:
+    // ensure() is in-flight (a Subject that has not emitted), so no load yet.
+    const ensure$ = new Subject<null>();
+    tenantSpy.ensure.and.returnValue(ensure$);
+    facilitySpy.getFacilitiesByAcademy.calls.reset();
+
+    component.ngOnInit();
+    tick();
+
+    // Nothing loaded while ensure() is pending.
+    expect(facilitySpy.getFacilitiesByAcademy).not.toHaveBeenCalled();
+
+    // Tenant resolves → the page loads against the now-available academyId.
+    ensure$.next(null);
+    ensure$.complete();
+    tick();
+
+    expect(facilitySpy.getFacilitiesByAcademy).toHaveBeenCalledWith('aca-1');
   }));
 
   it('deletes a court via CourtService with facility + court ids, then reloads', () => {

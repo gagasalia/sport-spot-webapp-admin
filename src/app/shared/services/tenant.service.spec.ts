@@ -1,18 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 
 import { TenantService } from './tenant.service';
-import { AuthService } from './auth.service';
 import { AcademyService } from '../../services/http-services/academy.service';
 import { Academy, AcademyStatus } from '../models/academy.model';
-import { JwtPayload } from '../models/auth.model';
-
-// `isSuperAdmin` and `currentUser` are Angular Signals (callables), so the stubs
-// model them as plain callable spies rather than createSpyObj method entries.
-interface AuthStub {
-  isSuperAdmin: jasmine.Spy<() => boolean>;
-  currentUser: jasmine.Spy<() => JwtPayload | null>;
-}
 
 const mockAcademy: Academy = {
   _id: 'academy-1',
@@ -21,20 +12,14 @@ const mockAcademy: Academy = {
   status: AcademyStatus.PUBLISHED,
 };
 
-function makePayload(sub: string): JwtPayload {
-  return { sub, email: 'op@example.com', userType: ['admin'], academies: [] };
-}
-
 describe('TenantService', () => {
   let service: TenantService;
-  let authStub: AuthStub;
   let academyServiceSpy: jasmine.SpyObj<AcademyService>;
 
   function configure() {
     TestBed.configureTestingModule({
       providers: [
         TenantService,
-        { provide: AuthService, useValue: authStub },
         { provide: AcademyService, useValue: academyServiceSpy },
       ],
     });
@@ -42,59 +27,31 @@ describe('TenantService', () => {
   }
 
   beforeEach(() => {
-    authStub = {
-      isSuperAdmin: jasmine.createSpy('isSuperAdmin').and.returnValue(false),
-      currentUser: jasmine.createSpy('currentUser').and.returnValue(null),
-    };
-    academyServiceSpy = jasmine.createSpyObj<AcademyService>('AcademyService', ['getAcademyById']);
+    academyServiceSpy = jasmine.createSpyObj<AcademyService>('AcademyService', ['getMyAcademy']);
   });
 
-  // ─── Superadmin ───────────────────────────────────────────────────────────
+  // ─── Operator resolution via /academy/my ──────────────────────────────────
 
-  describe('superadmin', () => {
+  describe('operator resolution via /academy/my', () => {
     beforeEach(() => {
-      authStub.isSuperAdmin.and.returnValue(true);
+      academyServiceSpy.getMyAcademy.and.returnValue(of(mockAcademy));
       configure();
     });
 
-    it('should resolve to null without calling AcademyService', (done) => {
+    it('should resolve the academy through getMyAcademy (a single /my call)', (done) => {
       service.resolveAcademy().subscribe((academy) => {
-        expect(academy).toBeNull();
-        expect(academyServiceSpy.getAcademyById).not.toHaveBeenCalled();
+        expect(academy).toEqual(mockAcademy);
+        expect(academyServiceSpy.getMyAcademy).toHaveBeenCalledTimes(1);
+        expect(service.academyId()).toBe('academy-1');
+        expect(service.hasTenant()).toBeTrue();
         done();
       });
     });
 
-    it('should cache the null result and not re-resolve on a second call', (done) => {
+    it('should never call the per-id endpoint (no getAcademyById)', (done) => {
       service.resolveAcademy().subscribe(() => {
-        // Flip the flag: a cached resolution must ignore it.
-        authStub.isSuperAdmin.and.returnValue(false);
-        authStub.currentUser.and.returnValue(makePayload('user-1'));
-
-        service.resolveAcademy().subscribe((academy) => {
-          expect(academy).toBeNull();
-          expect(academyServiceSpy.getAcademyById).not.toHaveBeenCalled();
-          done();
-        });
-      });
-    });
-  });
-
-  // ─── Operator with a user id ──────────────────────────────────────────────
-
-  describe('operator with a userId', () => {
-    beforeEach(() => {
-      authStub.isSuperAdmin.and.returnValue(false);
-      authStub.currentUser.and.returnValue(makePayload('user-1'));
-      academyServiceSpy.getAcademyById.and.returnValue(of(mockAcademy));
-      configure();
-    });
-
-    it('should call getAcademyById once with the user id and resolve the academy', (done) => {
-      service.resolveAcademy().subscribe((academy) => {
-        expect(academy).toEqual(mockAcademy);
-        expect(academyServiceSpy.getAcademyById).toHaveBeenCalledOnceWith('user-1');
-        expect(service.academyId()).toBe('academy-1');
+        expect((academyServiceSpy as unknown as Record<string, unknown>)['getAcademyById'])
+          .toBeUndefined();
         done();
       });
     });
@@ -103,28 +60,97 @@ describe('TenantService', () => {
       service.resolveAcademy().subscribe(() => {
         service.resolveAcademy().subscribe((academy) => {
           expect(academy).toEqual(mockAcademy);
-          expect(academyServiceSpy.getAcademyById).toHaveBeenCalledTimes(1);
+          expect(academyServiceSpy.getMyAcademy).toHaveBeenCalledTimes(1);
           done();
         });
       });
     });
   });
 
-  // ─── Operator without a user id ───────────────────────────────────────────
+  // ─── ensure(): replay for hard-refresh / deep-link page init ───────────────
 
-  describe('operator without a userId', () => {
+  describe('ensure() — replay for hard-refresh page init', () => {
+    it('de-duplicates concurrent first calls into a single /my request', () => {
+      const subject = new Subject<Academy | null>();
+      academyServiceSpy.getMyAcademy.and.returnValue(subject.asObservable());
+      configure();
+
+      // Two pages init "simultaneously" before the request settles.
+      let a: Academy | null | undefined;
+      let b: Academy | null | undefined;
+      service.ensure().subscribe((v) => (a = v));
+      service.ensure().subscribe((v) => (b = v));
+
+      subject.next(mockAcademy);
+      subject.complete();
+
+      expect(academyServiceSpy.getMyAcademy).toHaveBeenCalledTimes(1);
+      expect(a).toEqual(mockAcademy);
+      expect(b).toEqual(mockAcademy);
+      expect(service.academyId()).toBe('academy-1');
+    });
+
+    it('replays the already-resolved academy to a late subscriber without re-fetching', (done) => {
+      academyServiceSpy.getMyAcademy.and.returnValue(of(mockAcademy));
+      configure();
+
+      // First resolution (as if the login flow ran).
+      service.ensure().subscribe(() => {
+        // A page that initializes later (hard refresh) must get the cached value.
+        service.ensure().subscribe((academy) => {
+          expect(academy).toEqual(mockAcademy);
+          expect(academyServiceSpy.getMyAcademy).toHaveBeenCalledTimes(1);
+          done();
+        });
+      });
+    });
+  });
+
+  // ─── Superadmin / no-academy null path ────────────────────────────────────
+
+  describe('superadmin / no-academy null path', () => {
     beforeEach(() => {
-      authStub.isSuperAdmin.and.returnValue(false);
-      authStub.currentUser.and.returnValue(null);
+      // The API returns null data for a superadmin or an operator with no academy.
+      academyServiceSpy.getMyAcademy.and.returnValue(of(null));
       configure();
     });
 
-    it('should resolve to null without calling AcademyService', (done) => {
-      service.resolveAcademy().subscribe((academy) => {
+    it('should resolve to null and report no tenant', (done) => {
+      service.ensure().subscribe((academy) => {
         expect(academy).toBeNull();
-        expect(academyServiceSpy.getAcademyById).not.toHaveBeenCalled();
         expect(service.academyId()).toBeNull();
+        expect(service.hasTenant()).toBeFalse();
         done();
+      });
+    });
+
+    it('should cache the null result and not re-resolve on a second call', (done) => {
+      service.resolveAcademy().subscribe(() => {
+        service.resolveAcademy().subscribe((academy) => {
+          expect(academy).toBeNull();
+          expect(academyServiceSpy.getMyAcademy).toHaveBeenCalledTimes(1);
+          done();
+        });
+      });
+    });
+  });
+
+  // ─── clear() ───────────────────────────────────────────────────────────────
+
+  describe('clear()', () => {
+    it('resets the cache so the next ensure() re-fetches', (done) => {
+      academyServiceSpy.getMyAcademy.and.returnValue(of(mockAcademy));
+      configure();
+
+      service.ensure().subscribe(() => {
+        service.clear();
+        expect(service.academyId()).toBeNull();
+
+        service.ensure().subscribe((academy) => {
+          expect(academy).toEqual(mockAcademy);
+          expect(academyServiceSpy.getMyAcademy).toHaveBeenCalledTimes(2);
+          done();
+        });
       });
     });
   });

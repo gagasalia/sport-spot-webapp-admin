@@ -123,11 +123,7 @@
             <label tuiLabel class="ml-auto">
               <span class="georgian-text" lang="ka">კორტი</span>
               <tui-textfield tuiChevron [stringify]="stringifyCourt">
-                <input
-                  tuiSelect
-                  [ngModel]="selectedCourtId()"
-                  (ngModelChange)="onCourtSwitch($event)"
-                />
+                <input tuiSelect [formControl]="courtControl" />
                 <tui-data-list *tuiTextfieldDropdown>
                   @for (court of activeCourts(); track court.id) {
                     <button tuiOption [value]="court.id">{{ court.label }}</button>
@@ -156,7 +152,10 @@
             <table class="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  <th class="p-2 text-left sticky left-0 z-10" style="background: var(--tui-background-base)">
+                  <th
+                    class="w-20 p-2 text-left sticky left-0 z-10"
+                    style="background: var(--tui-background-base)"
+                  >
                     <span class="georgian-text" lang="ka">დრო</span>
                   </th>
                   @for (court of dayGrid().courts; track court.id) {
@@ -168,7 +167,7 @@
                 @for (row of dayGrid().rows; track row.start) {
                   <tr>
                     <td
-                      class="p-2 whitespace-nowrap font-medium sticky left-0 z-10"
+                      class="w-20 p-2 whitespace-nowrap font-medium sticky left-0 z-10"
                       style="background: var(--tui-background-base); color: var(--tui-text-secondary)"
                     >
                       {{ row.start }}
@@ -264,7 +263,7 @@
           <label tuiLabel>
             <span class="georgian-text" lang="ka">კორტი</span>
             <tui-textfield tuiChevron [stringify]="stringifyCourt">
-              <input tuiSelect [ngModel]="selectedCourtId()" (ngModelChange)="onCourtSwitch($event)" />
+              <input tuiSelect [formControl]="courtControl" />
               <tui-data-list *tuiTextfieldDropdown>
                 @for (court of activeCourts(); track court.id) {
                   <button tuiOption [value]="court.id">{{ court.label }}</button>

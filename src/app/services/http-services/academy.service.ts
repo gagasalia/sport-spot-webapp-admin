@@ -28,6 +28,19 @@ export class AcademyService {
       .pipe(map((res) => res.result.data));
   }
 
+  /**
+   * Resolves the caller's own academy via `GET /academy/my`. The backend
+   * derives the academy from the authenticated operator's admin membership and
+   * returns `null` data for a superadmin or an operator with no academy. A
+   * single call that the API authorizes for any operator — unlike
+   * `GET /academy/:id`, which 403s for non-superadmins.
+   */
+  getMyAcademy(): Observable<Academy | null> {
+    return this.http
+      .get<ApiResponse<Academy | null>>(`${this.apiUrl}/my`)
+      .pipe(map((res) => res.result.data));
+  }
+
   updateAcademy(id: string, academy: UpdateAcademyDto): Observable<Academy> {
     return this.http
       .put<ApiResponse<Academy>>(`${this.apiUrl}/${id}`, academy)

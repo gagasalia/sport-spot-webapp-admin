@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   HostListener,
   Injector,
   OnInit,
@@ -87,6 +88,7 @@ export class ReservationsComponent implements OnInit {
   private readonly injector = inject(Injector);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   // ── selection / facility state ───────────────────────────────────────────────
   readonly facilities = signal<Facility[]>([]);
@@ -99,12 +101,20 @@ export class ReservationsComponent implements OnInit {
 
   // ── day view state ───────────────────────────────────────────────────────────
   readonly selectedDate = signal<string>(todayIso());
-  readonly dateControl = new FormControl<TuiDay>(isoToTuiDay(todayIso()));
+  // Nullable + non-null-asserted initial TuiDay so the TuiInputDate control
+  // accessor renders the selected date (today by default) in the textfield —
+  // previously typed as `FormControl<TuiDay>`, which left the field blank.
+  readonly dateControl = new FormControl<TuiDay | null>(isoToTuiDay(todayIso()));
   readonly dayBookings = signal<Booking[]>([]);
   readonly dayAvailability = signal<AvailabilityByCourt>({});
 
   // ── week view state ──────────────────────────────────────────────────────────
   readonly selectedCourtId = signal<string | null>(null);
+  // A real reactive control backs the week / mobile court selectors so the
+  // selected court number renders in the textfield (via `stringifyCourt`). A
+  // one-way `[ngModel]` left the field blank; `[formControl]` + the textfield
+  // `[stringify]` reliably shows the value, mirroring the facility selector.
+  readonly courtControl = new FormControl<string | null>(null);
   readonly weekData = signal<WeekDayData[]>([]);
 
   // ── list view state ──────────────────────────────────────────────────────────
@@ -190,10 +200,20 @@ export class ReservationsComponent implements OnInit {
         this.loadDay();
       }
     });
+    // User-driven court changes from the week / mobile selectors flow through
+    // here; programmatic updates use `{ emitEvent: false }` to avoid re-entry.
+    this.courtControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((id) => {
+      this.onCourtSwitch(id);
+    });
   }
 
   ngOnInit(): void {
-    this.loadFacilities();
+    // Resolve the tenant first so a hard refresh / deep link onto /reservations
+    // waits for `/academy/my` before reading `academyId()`.
+    this.tenant
+      .ensure()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadFacilities());
   }
 
   @HostListener('window:resize')
@@ -262,9 +282,17 @@ export class ReservationsComponent implements OnInit {
   private selectFacility(facilityId: string | null): void {
     this.selectedFacilityId.set(facilityId);
     this.courts.set([]);
-    this.selectedCourtId.set(null);
+    this.setSelectedCourt(null);
     if (facilityId) {
       this.loadCourtsThenData(facilityId);
+    }
+  }
+
+  /** Sets the selected court signal and keeps the backing control in sync. */
+  private setSelectedCourt(courtId: string | null): void {
+    this.selectedCourtId.set(courtId);
+    if (this.courtControl.value !== courtId) {
+      this.courtControl.setValue(courtId, { emitEvent: false });
     }
   }
 
@@ -287,7 +315,7 @@ export class ReservationsComponent implements OnInit {
         next: (courts) => {
           this.courts.set(courts);
           const firstActive = this.activeCourts()[0]?.id ?? null;
-          this.selectedCourtId.set(firstActive);
+          this.setSelectedCourt(firstActive);
           this.loadDay();
         },
         error: () => {
@@ -390,7 +418,7 @@ export class ReservationsComponent implements OnInit {
     // Guard against redundant 14-call week reloads when a rapid toggle re-selects
     // the already-active court (distinctUntilChanged for an imperative handler).
     if (courtId === this.selectedCourtId()) return;
-    this.selectedCourtId.set(courtId);
+    this.setSelectedCourt(courtId);
     if (this.tab() === 'week') this.loadWeek();
   }
 

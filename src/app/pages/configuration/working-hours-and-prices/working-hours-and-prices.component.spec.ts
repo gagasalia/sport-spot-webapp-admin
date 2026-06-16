@@ -58,9 +58,11 @@ describe('WorkingHoursAndPricesComponent', () => {
     facilitySpy = jasmine.createSpyObj<FacilityService>('FacilityService', [
       'getFacilitiesByAcademy',
     ]);
-    tenantSpy = jasmine.createSpyObj<TenantService>('TenantService', ['academyId']);
+    tenantSpy = jasmine.createSpyObj<TenantService>('TenantService', ['academyId', 'ensure']);
 
     tenantSpy.academyId.and.returnValue('aca-1');
+    // ngOnInit drives the load through ensure(); emit so loadFacilities() runs.
+    tenantSpy.ensure.and.returnValue(of(null));
     facilitySpy.getFacilitiesByAcademy.and.returnValue(of([facility]));
     scheduleSpy.getSchedule.and.returnValue(of(schedule));
     scheduleSpy.updateWeeklyHours.and.returnValue(of(schedule));

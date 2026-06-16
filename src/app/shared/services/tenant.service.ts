@@ -1,23 +1,21 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, of, tap } from 'rxjs';
+import { Observable, of, shareReplay, tap } from 'rxjs';
 import { AcademyService } from '../../services/http-services/academy.service';
 import { Academy } from '../models/academy.model';
-import { AuthService } from './auth.service';
 
 /**
  * Holds the tenant (academy) context for the logged-in operator.
  *
- * Replaces the hard-coded `environment.academyId`: after login an operator
- * resolves their academy through `GET /academy/:id` using their own user id —
- * the backend `$or:[{_id},{admins}]` lookup returns the academy they administer.
- * Superadmins have no single tenant (they use the super-admin pages) and skip
- * resolution.
+ * Replaces the hard-coded `environment.academyId`: an operator resolves their
+ * academy through `GET /academy/my`. The backend derives the academy from the
+ * caller's admin membership (returning `null` data for a superadmin or an
+ * operator with no academy), so a single call works for every operator —
+ * unlike `GET /academy/:id`, which the API 403s for non-superadmins.
  */
 @Injectable({
   providedIn: 'root',
 })
 export class TenantService {
-  private readonly auth = inject(AuthService);
   private readonly academyService = inject(AcademyService);
 
   private readonly _academyId = signal<string | null>(null);
@@ -39,29 +37,42 @@ export class TenantService {
   readonly hasTenant = computed(() => this._academyId() !== null);
 
   /**
-   * Resolves and caches the operator's academy. Superadmins resolve to `null`
-   * (no single tenant). Subsequent calls return the cached result, including a
-   * cached `null`.
+   * In-flight / completed resolution stream. `shareReplay(1)` replays the
+   * resolved academy to late subscribers (e.g. a page that initializes after
+   * the login flow already resolved), and de-duplicates concurrent first calls
+   * into a single `GET /academy/my`.
+   */
+  private resolve$: Observable<Academy | null> | null = null;
+
+  /**
+   * Resolves and caches the operator's academy via `GET /academy/my`.
+   * Subsequent calls return the cached result, including a cached `null`.
    */
   resolveAcademy(): Observable<Academy | null> {
     if (this._resolved()) {
       return of(this._academy());
     }
+    return this.ensure();
+  }
 
-    if (this.auth.isSuperAdmin()) {
-      this.setAcademy(null);
-      return of(null);
+  /**
+   * Resolves the tenant once and replays the cached result to every later
+   * subscriber. Tenant-consuming pages drive their initial load through this so
+   * a hard refresh / deep link (where the login flow never ran) still resolves
+   * the academy before reading `academyId()` — instead of synchronously reading
+   * a still-`null` signal and rendering an empty state forever.
+   */
+  ensure(): Observable<Academy | null> {
+    if (this._resolved()) {
+      return of(this._academy());
     }
-
-    const userId = this.auth.currentUser()?.sub;
-    if (!userId) {
-      this.setAcademy(null);
-      return of(null);
+    if (!this.resolve$) {
+      this.resolve$ = this.academyService.getMyAcademy().pipe(
+        tap((academy) => this.setAcademy(academy)),
+        shareReplay(1),
+      );
     }
-
-    return this.academyService.getAcademyById(userId).pipe(
-      tap((academy) => this.setAcademy(academy)),
-    );
+    return this.resolve$;
   }
 
   /** Clears the cached tenant context (call on logout). */
@@ -69,6 +80,7 @@ export class TenantService {
     this._academyId.set(null);
     this._academy.set(null);
     this._resolved.set(false);
+    this.resolve$ = null;
   }
 
   private setAcademy(academy: Academy | null): void {

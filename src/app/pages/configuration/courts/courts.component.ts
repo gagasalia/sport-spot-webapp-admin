@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   signal,
   inject,
@@ -40,6 +41,7 @@ export class CourtsComponent implements OnInit {
   private readonly courtService = inject(CourtService);
   private readonly facilityService = inject(FacilityService);
   private readonly tenant = inject(TenantService);
+  private readonly destroyRef = inject(DestroyRef);
 
   courts = signal<Court[]>([]);
   facilities = signal<Facility[]>([]);
@@ -67,7 +69,13 @@ export class CourtsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadFacilities();
+    // Resolve the tenant first so a hard refresh / deep link onto /courts waits
+    // for `/academy/my` before reading `academyId()` (which is otherwise null
+    // until the login flow runs, leaving the page stuck on an empty state).
+    this.tenant
+      .ensure()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadFacilities());
   }
 
   private loadFacilities(): void {

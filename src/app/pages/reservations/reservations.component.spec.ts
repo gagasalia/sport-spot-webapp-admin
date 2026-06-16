@@ -21,6 +21,7 @@ import {
   SurfaceColor,
 } from '../../shared/enums/court-type.enum';
 import { GridCell } from './calendar-grid';
+import { tuiDayToIso, todayIso } from './calendar-date.util';
 
 const facility: Facility = {
   _id: 'fac-1',
@@ -76,10 +77,12 @@ describe('ReservationsComponent', () => {
     facilitySpy = jasmine.createSpyObj<FacilityService>('FacilityService', [
       'getFacilitiesByAcademy',
     ]);
-    tenantSpy = jasmine.createSpyObj<TenantService>('TenantService', ['academyId']);
+    tenantSpy = jasmine.createSpyObj<TenantService>('TenantService', ['academyId', 'ensure']);
     dialogSpy = jasmine.createSpyObj<TuiDialogService>('TuiDialogService', ['open']);
 
     tenantSpy.academyId.and.returnValue('aca-1');
+    // ngOnInit drives the load through ensure(); emit so loadFacilities() runs.
+    tenantSpy.ensure.and.returnValue(of(null));
     facilitySpy.getFacilitiesByAcademy.and.returnValue(of([facility]));
     courtSpy.getCourts.and.returnValue(of([court]));
     bookingSpy.getAvailability.and.returnValue(
@@ -335,5 +338,28 @@ describe('ReservationsComponent', () => {
     bookingSpy.getBookings.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
     component.nextDay();
     expect(component.hasError()).toBeTrue();
+  });
+
+  // ── NITS: date / court control binding ───────────────────────────────────────
+
+  it('day-view date control is initialized to today (so the field is not blank)', () => {
+    const day = component.dateControl.value;
+    expect(day).toBeTruthy();
+    expect(tuiDayToIso(day!)).toBe(todayIso());
+    expect(tuiDayToIso(day!)).toBe(component.selectedDate());
+  });
+
+  it('week/mobile court control reflects the auto-selected court (so it is not blank)', () => {
+    // Single facility → single active court auto-selected; the backing control
+    // must mirror it so stringifyCourt renders the court number.
+    expect(component.selectedCourtId()).toBe('court-1');
+    expect(component.courtControl.value).toBe('court-1');
+    expect(component.stringifyCourt('court-1')).toBe('კორტი 1');
+  });
+
+  it('court control changes drive onCourtSwitch and keep the signal in sync', () => {
+    component.setTab('week');
+    component.courtControl.setValue('court-1'); // same value → guarded, stays
+    expect(component.selectedCourtId()).toBe('court-1');
   });
 });

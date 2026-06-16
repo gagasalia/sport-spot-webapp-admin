@@ -1,4 +1,11 @@
-import { Component, OnInit, signal, ChangeDetectionStrategy, inject } from '@angular/core';
+import {
+  Component,
+  DestroyRef,
+  OnInit,
+  signal,
+  ChangeDetectionStrategy,
+  inject,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormBuilder,
@@ -74,6 +81,7 @@ export class WorkingHoursAndPricesComponent implements OnInit {
   private readonly alerts = inject(TuiAlertService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   scheduleForm!: FormGroup;
   pricesForm!: FormGroup;
@@ -153,7 +161,12 @@ export class WorkingHoursAndPricesComponent implements OnInit {
 
   ngOnInit(): void {
     this.initializePricesForm();
-    this.loadFacilities();
+    // Resolve the tenant first so a hard refresh / deep link onto /working-hours
+    // waits for `/academy/my` before reading `academyId()`.
+    this.tenant
+      .ensure()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadFacilities());
   }
 
   private loadFacilities(): void {

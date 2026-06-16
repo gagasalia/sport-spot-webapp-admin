@@ -1,12 +1,10 @@
 import { ChangeDetectionStrategy, Component, HostListener, inject, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { WA_LOCAL_STORAGE, WA_WINDOW } from '@ng-web-apis/common';
-import { tuiAsPortal, TuiPortals } from '@taiga-ui/cdk';
 import {
   TuiButton,
   TuiDataList,
   TuiDropdown,
-  TuiDropdownService,
   TUI_DARK_MODE,
   TUI_DARK_MODE_KEY,
 } from '@taiga-ui/core';
@@ -20,6 +18,16 @@ import { AuthService } from '../shared/services/auth.service';
  * dark-mode toggle. Rendered only behind the route-level `authGuard`, so the
  * shell never paints (and never reads auth state) on the public `/login` page.
  * Feature pages render into the shell's own `<router-outlet>`.
+ *
+ * Dropdown portals are intentionally NOT wired here. `TuiRoot` (in `App`)
+ * already renders `<tui-dropdowns>`, which is the `TuiPortals` host that owns
+ * the root `TuiDropdownService` — Taiga's default. A previous Phase-2 split
+ * re-provided `TuiDropdownService` + `tuiAsPortal` on this shell and extended
+ * `TuiPortals`, but without a `#viewContainer` in the template the host's
+ * `vcr` was undefined, so every `tuiSelect`/`tuiDropdown` open threw
+ * "Cannot read properties of undefined (reading 'createComponent')". Letting
+ * `TuiRoot` own the portals fixes it; the `TuiDropdown` directive import below
+ * is only the consumer side used by the mobile tab bar.
  */
 @Component({
   selector: 'app-shell',
@@ -37,10 +45,9 @@ import { AuthService } from '../shared/services/auth.service';
     TuiTabBar,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [TuiDropdownService, tuiAsPortal(TuiDropdownService)],
   templateUrl: './shell.component.html',
 })
-export class ShellComponent extends TuiPortals {
+export class ShellComponent {
   private readonly key = inject(TUI_DARK_MODE_KEY);
   private readonly storage = inject(WA_LOCAL_STORAGE);
   private readonly media = inject(WA_WINDOW).matchMedia('(prefers-color-scheme: dark)');
@@ -55,7 +62,6 @@ export class ShellComponent extends TuiPortals {
   protected superAdminDropdownOpen = signal(false);
 
   constructor() {
-    super();
     this.checkMobile();
   }
 

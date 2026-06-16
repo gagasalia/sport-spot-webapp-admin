@@ -40,10 +40,17 @@ describe('AcademyComponent', () => {
   let routerSpy: jasmine.SpyObj<Router>;
 
   function makeTenantSpy(academyData?: Academy) {
-    const spy = jasmine.createSpyObj<TenantService>('TenantService', ['resolveAcademy', 'clear'], {
-      academyId: (() => (academyData ?? mockAcademy)._id ?? null) as any,
-    });
+    const spy = jasmine.createSpyObj<TenantService>(
+      'TenantService',
+      ['resolveAcademy', 'ensure', 'clear'],
+      {
+        academyId: (() => (academyData ?? mockAcademy)._id ?? null) as any,
+      },
+    );
+    // The component now initializes through ensure(); keep resolveAcademy stubbed
+    // for backward compatibility with assertions that reference it.
     spy.resolveAcademy.and.returnValue(of(academyData ?? mockAcademy));
+    spy.ensure.and.returnValue(of(academyData ?? mockAcademy));
     return spy;
   }
 
@@ -199,7 +206,7 @@ describe('AcademyComponent', () => {
       // Defer the academy load so the form keeps its initial (un-patched) values:
       // detectChanges runs ngOnInit (which builds academyForm) but the Subject never
       // emits, so loadAcademy's patchValue does not run.
-      tenantServiceSpy.resolveAcademy.and.returnValue(new Subject<Academy>());
+      tenantServiceSpy.ensure.and.returnValue(new Subject<Academy>());
       fixture.detectChanges();
     });
 
@@ -410,6 +417,89 @@ describe('AcademyComponent', () => {
     }));
   });
 
+  // ─── onSave: payload omits empty optional fields (BLOCKER 2) ──────────────
+  //
+  // The PUT used to send the raw form value: `email:''` failed @IsEmail and the
+  // placeholder logo `{url:'',type:''}` failed nested validation → constant 400s.
+  // The payload must now omit empty-string optional fields and omit the logo
+  // unless a real (non-empty url) logo exists.
+
+  describe('onSave — payload omits empty optional fields', () => {
+    // A pristine academy: only the required name/color set, everything else empty.
+    const emptyAcademy: Academy = {
+      _id: 'academy-id-1',
+      name: 'Sports Academy',
+      admins: [],
+      status: AcademyStatus.PUBLISHED,
+    };
+
+    beforeEach(async () => {
+      await createComponent(emptyAcademy);
+      fixture.detectChanges();
+    });
+
+    it('saves an empty-email form with NO email key in the payload', fakeAsync(() => {
+      tick();
+      academyServiceSpy.updateAcademy.and.returnValue(of(emptyAcademy));
+      // Email stays blank — the offending field that previously failed @IsEmail.
+      component.academyForm.patchValue({ name: 'Sports Academy', email: '' });
+
+      component.onSave();
+      tick();
+
+      expect(academyServiceSpy.updateAcademy).toHaveBeenCalled();
+      const payload = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
+      expect('email' in payload).toBeFalse();
+      expect(payload.name).toBe('Sports Academy');
+    }));
+
+    it('omits the logo key entirely when no real logo exists (placeholder url)', fakeAsync(() => {
+      tick();
+      academyServiceSpy.updateAcademy.and.returnValue(of(emptyAcademy));
+      // The form's logo group is the empty placeholder {url:'', type:''}.
+      component.onSave();
+      tick();
+
+      const payload = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
+      expect('logo' in payload).toBeFalse();
+    }));
+
+    it('omits all blank optional text fields (phone/instagram/facebook/descriptions)', fakeAsync(() => {
+      tick();
+      academyServiceSpy.updateAcademy.and.returnValue(of(emptyAcademy));
+
+      component.onSave();
+      tick();
+
+      const payload = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
+      expect('phone' in payload).toBeFalse();
+      expect('instagram' in payload).toBeFalse();
+      expect('facebook' in payload).toBeFalse();
+      expect('descriptionGeorgian' in payload).toBeFalse();
+      expect('descriptionEnglish' in payload).toBeFalse();
+    }));
+
+    it('includes filled optional fields and a real logo when present', fakeAsync(() => {
+      tick();
+      academyServiceSpy.updateAcademy.and.returnValue(of(emptyAcademy));
+      component.academyForm.patchValue({
+        email: 'real@academy.ge',
+        phone: '555-9999',
+        descriptionGeorgian: 'აღწერა',
+        logo: { url: 'https://cdn/logo.png', type: 'image/png', size: 1234, metadata: null },
+      });
+
+      component.onSave();
+      tick();
+
+      const payload = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
+      expect(payload.email).toBe('real@academy.ge');
+      expect(payload.phone).toBe('555-9999');
+      expect(payload.descriptionGeorgian).toBe('აღწერა');
+      expect(payload.logo?.url).toBe('https://cdn/logo.png');
+    }));
+  });
+
   // ─── onSave: invalid form ─────────────────────────────────────────────────
 
   describe('onSave — invalid form', () => {
@@ -517,7 +607,7 @@ describe('AcademyComponent', () => {
       fixture.detectChanges();
       tick();
 
-      expect(tenantServiceSpy.resolveAcademy).toHaveBeenCalled();
+      expect(tenantServiceSpy.ensure).toHaveBeenCalled();
     }));
 
     it('should set isLoading to false after a successful load', fakeAsync(async () => {
@@ -530,7 +620,7 @@ describe('AcademyComponent', () => {
 
     it('should set isLoading to false even when loading fails', fakeAsync(async () => {
       await createComponent();
-      tenantServiceSpy.resolveAcademy.and.returnValue(throwError(() => new Error('load error')));
+      tenantServiceSpy.ensure.and.returnValue(throwError(() => new Error('load error')));
 
       fixture.detectChanges();
       tick();
@@ -540,7 +630,7 @@ describe('AcademyComponent', () => {
 
     it('should show an error alert when loading fails', fakeAsync(async () => {
       await createComponent();
-      tenantServiceSpy.resolveAcademy.and.returnValue(throwError(() => new Error('load error')));
+      tenantServiceSpy.ensure.and.returnValue(throwError(() => new Error('load error')));
 
       fixture.detectChanges();
       tick();

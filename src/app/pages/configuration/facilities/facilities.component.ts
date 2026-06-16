@@ -1,11 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   signal,
   inject,
   Injector,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { take } from 'rxjs';
 import { TuiAlertService } from '@taiga-ui/core';
 import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
@@ -30,6 +32,7 @@ export class FacilitiesComponent implements OnInit {
   private readonly injector = inject(Injector);
   private readonly facilityService = inject(FacilityService);
   private readonly tenant = inject(TenantService);
+  private readonly destroyRef = inject(DestroyRef);
 
   facilities = signal<Facility[]>([]);
   isLoading = signal<boolean>(false);
@@ -39,7 +42,14 @@ export class FacilitiesComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadFacilities();
+    // Drive the initial load through the tenant resolution so a hard refresh /
+    // deep link (where the login flow never resolved the tenant) still waits for
+    // `/academy/my` before reading `academyId()` — instead of reading a
+    // still-null signal and rendering an empty state forever.
+    this.tenant
+      .ensure()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.loadFacilities());
   }
 
   addFacility(): void {
