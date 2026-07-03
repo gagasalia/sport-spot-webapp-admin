@@ -117,6 +117,16 @@ describe('WorkingHoursAndPricesComponent', () => {
     expect(component.pricesForm.get('generalPrice')?.value).toBe(25);
   });
 
+  it('labels the pricing fields as per-hour (საათში, contract v2)', () => {
+    fixture.detectChanges();
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+    expect(text).toContain('ზოგადი ფასი (საათში)');
+    expect(text).toContain('არაპიკური ფასი (საათში)');
+    // Helper copy explaining that booking totals scale with duration.
+    expect(text).toContain('ფასები მითითებულია ერთ საათზე');
+  });
+
   it('onSave saves weekly hours for the SELECTED facility', () => {
     component.onSave();
 

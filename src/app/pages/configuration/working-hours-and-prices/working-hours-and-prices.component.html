@@ -211,13 +211,16 @@
         <!-- Prices Column -->
         <div>
           <div class="card-bg rounded-xl border p-6 working-hours-card">
-            <h2 class="text-lg font-semibold georgian-text mb-4" lang="ka">ფასები</h2>
+            <h2 class="text-lg font-semibold georgian-text mb-1" lang="ka">ფასები</h2>
+            <p class="text-sm text-gray-500 georgian-text mb-4" lang="ka">
+              ფასები მითითებულია ერთ საათზე — ჯავშნის ღირებულება ითვლება ხანგრძლივობის მიხედვით
+            </p>
 
             <form [formGroup]="pricesForm" class="space-y-6">
               <!-- General Price -->
               <div>
                 <label tuiLabel class="georgian-text" lang="ka">
-                  <span class="block mb-3">ზოგადი ფასი</span>
+                  <span class="block mb-3">ზოგადი ფასი (საათში)</span>
                   <tui-textfield>
                     <input
                       tuiTextfield
@@ -340,7 +343,7 @@
                 <!-- Off-Peak Price -->
                 <div>
                   <label tuiLabel class="georgian-text" lang="ka">
-                    <span class="block mb-3">არაპიკური ფასი</span>
+                    <span class="block mb-3">არაპიკური ფასი (საათში)</span>
                     <tui-textfield>
                       <input
                         tuiTextfield
