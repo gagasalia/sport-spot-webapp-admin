@@ -76,7 +76,7 @@
             <input tuiSelect formControlName="blockEnd" class="georgian-text" lang="ka" />
             <tui-data-list *tuiTextfieldDropdown>
               @for (slot of data.laterSlots; track slot.start) {
-                <button tuiOption [value]="slot.start">{{ slot.start }} – {{ slot.end }}</button>
+                <button new tuiOption [value]="slot.start">{{ slot.start }} – {{ slot.end }}</button>
               }
             </tui-data-list>
           </tui-textfield>

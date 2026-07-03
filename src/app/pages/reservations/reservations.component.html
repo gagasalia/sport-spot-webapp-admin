@@ -126,7 +126,7 @@
                 <input tuiSelect [formControl]="courtControl" />
                 <tui-data-list *tuiTextfieldDropdown>
                   @for (court of activeCourts(); track court.id) {
-                    <button tuiOption [value]="court.id">{{ court.label }}</button>
+                    <button new tuiOption [value]="court.id">{{ court.label }}</button>
                   }
                 </tui-data-list>
               </tui-textfield>
@@ -266,7 +266,7 @@
               <input tuiSelect [formControl]="courtControl" />
               <tui-data-list *tuiTextfieldDropdown>
                 @for (court of activeCourts(); track court.id) {
-                  <button tuiOption [value]="court.id">{{ court.label }}</button>
+                  <button new tuiOption [value]="court.id">{{ court.label }}</button>
                 }
               </tui-data-list>
             </tui-textfield>
@@ -385,11 +385,11 @@
             <tui-textfield tuiChevron [stringify]="stringifyCourt">
               <input tuiSelect [formControl]="listCourt" />
               <tui-data-list *tuiTextfieldDropdown>
-                <button tuiOption [value]="null">
+                <button new tuiOption [value]="null">
                   <span class="georgian-text" lang="ka">ყველა</span>
                 </button>
                 @for (court of activeCourts(); track court.id) {
-                  <button tuiOption [value]="court.id">{{ court.label }}</button>
+                  <button new tuiOption [value]="court.id">{{ court.label }}</button>
                 }
               </tui-data-list>
             </tui-textfield>
@@ -399,11 +399,11 @@
             <tui-textfield tuiChevron [stringify]="stringifyStatus">
               <input tuiSelect [formControl]="listStatus" />
               <tui-data-list *tuiTextfieldDropdown>
-                <button tuiOption [value]="null">
+                <button new tuiOption [value]="null">
                   <span class="georgian-text" lang="ka">ყველა</span>
                 </button>
                 @for (status of statusOptions; track status) {
-                  <button tuiOption [value]="status">
+                  <button new tuiOption [value]="status">
                     <span class="georgian-text" lang="ka">{{ statusLabels[status] }}</span>
                   </button>
                 }
