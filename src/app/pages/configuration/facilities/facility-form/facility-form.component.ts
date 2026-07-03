@@ -23,6 +23,7 @@ import { FacilityService } from '../../../../services/http-services/facility.ser
 import {
   MediaService,
   MediaUnconfiguredError,
+  MediaFileTooLargeError,
 } from '../../../../services/http-services/media.service';
 import { Facility, IMedia, CreateFacilityDto } from '../../../../shared/models/facility.model';
 import { Amenity, AMENITY_LABELS, AMENITY_ICONS } from '../../../../shared/enums/amenity.enum';
@@ -268,6 +269,11 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
                 .open('სურათების ატვირთვა ამ გარემოში არ არის კონფიგურირებული', {
                   appearance: 'error',
                 })
+                .pipe(take(1))
+                .subscribe();
+            } else if (error instanceof MediaFileTooLargeError) {
+              this.alerts
+                .open('ფაილი ძალიან დიდია. მაქსიმალური ზომაა 10 MB.', { appearance: 'error' })
                 .pipe(take(1))
                 .subscribe();
             } else {

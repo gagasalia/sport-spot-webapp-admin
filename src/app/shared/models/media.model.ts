@@ -8,9 +8,10 @@ export interface PresignRequest {
   scope: MediaScope;
 }
 
-/** Response from POST /media/presign. */
+/** Response from POST /media/presign (presigned POST flow). */
 export interface PresignResponse {
-  uploadUrl: string; // presigned S3 PUT url
+  uploadUrl: string; // presigned S3 POST url (the bucket endpoint)
+  fields: Record<string, string>; // form fields to append BEFORE the file
   key: string; // S3 object key
   publicUrl: string; // public (CloudFront/S3) url to persist in IMedia.url
 }

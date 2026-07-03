@@ -25,6 +25,7 @@ import { AcademyService } from '../../../services/http-services/academy.service'
 import {
   MediaService,
   MediaUnconfiguredError,
+  MediaFileTooLargeError,
 } from '../../../services/http-services/media.service';
 import { Academy, IMedia, UpdateAcademyDto } from '../../../shared/models/academy.model';
 import { TenantService } from '../../../shared/services/tenant.service';
@@ -275,6 +276,13 @@ export class AcademyComponent implements OnInit {
               .open('სურათების ატვირთვა ამ გარემოში არ არის კონფიგურირებული', {
                 appearance: 'error',
               })
+              .pipe(take(1))
+              .subscribe();
+            return;
+          }
+          if (error instanceof MediaFileTooLargeError) {
+            this.alerts
+              .open('ფაილი ძალიან დიდია. მაქსიმალური ზომაა 10 MB.', { appearance: 'error' })
               .pipe(take(1))
               .subscribe();
             return;
