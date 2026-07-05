@@ -1,0 +1,153 @@
+<div class="max-h-[80vh] overflow-y-auto p-1">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
+    <!-- Name -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">სახელი <span class="text-red-500">*</span></span>
+      <tui-textfield>
+        <input tuiTextfield formControlName="name" placeholder="Summer Open 2026" />
+      </tui-textfield>
+      @if (form.get('name')?.touched && form.get('name')?.invalid) {
+        <span class="text-xs text-red-500 georgian-text" lang="ka">მინიმუმ 3 სიმბოლო</span>
+      }
+    </label>
+
+    <!-- Facility -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">ობიექტი <span class="text-red-500">*</span></span>
+      <tui-textfield tuiChevron [stringify]="stringifyFacility">
+        <input tuiSelect formControlName="facility" class="georgian-text" lang="ka" />
+        <tui-data-list *tuiTextfieldDropdown>
+          @for (facility of facilities(); track facility._id) {
+            <button new tuiOption [value]="facility._id">{{ facility.name }}</button>
+          }
+        </tui-data-list>
+      </tui-textfield>
+    </label>
+
+    <!-- Type + Format -->
+    <div class="grid grid-cols-2 gap-4">
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">ტიპი <span class="text-red-500">*</span></span>
+        <tui-textfield tuiChevron [stringify]="stringifyType">
+          <input tuiSelect formControlName="type" class="georgian-text" lang="ka" />
+          <tui-data-list *tuiTextfieldDropdown>
+            @for (option of typeOptions; track option) {
+              <button new tuiOption [value]="option" class="georgian-text" lang="ka">
+                {{ stringifyType(option) }}
+              </button>
+            }
+          </tui-data-list>
+        </tui-textfield>
+      </label>
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">ფორმატი <span class="text-red-500">*</span></span>
+        <tui-textfield tuiChevron [stringify]="stringifyFormat">
+          <input tuiSelect formControlName="format" class="georgian-text" lang="ka" />
+          <tui-data-list *tuiTextfieldDropdown>
+            @for (option of formatOptions; track option) {
+              <button new tuiOption [value]="option" class="georgian-text" lang="ka">
+                {{ stringifyFormat(option) }}
+              </button>
+            }
+          </tui-data-list>
+        </tui-textfield>
+      </label>
+    </div>
+
+    <!-- Level -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">დონე</span>
+      <tui-textfield tuiChevron [stringify]="stringifyLevel">
+        <input tuiSelect formControlName="level" class="georgian-text" lang="ka" />
+        <tui-data-list *tuiTextfieldDropdown>
+          @for (option of levelOptions; track option) {
+            <button new tuiOption [value]="option" class="georgian-text" lang="ka">
+              {{ stringifyLevel(option) }}
+            </button>
+          }
+        </tui-data-list>
+      </tui-textfield>
+    </label>
+
+    <!-- Start date + time -->
+    <div class="grid grid-cols-2 gap-4">
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">დაწყების თარიღი <span class="text-red-500">*</span></span>
+        <tui-textfield>
+          <input tuiTextfield type="date" formControlName="startDate" />
+        </tui-textfield>
+      </label>
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">დაწყების დრო <span class="text-red-500">*</span></span>
+        <tui-textfield>
+          <input tuiTextfield type="time" formControlName="startTime" />
+        </tui-textfield>
+      </label>
+    </div>
+
+    <!-- End date + registration deadline -->
+    <div class="grid grid-cols-2 gap-4">
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">დასრულების თარიღი</span>
+        <tui-textfield>
+          <input tuiTextfield type="date" formControlName="endDate" />
+        </tui-textfield>
+      </label>
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">რეგისტრაციის დედლაინი</span>
+        <tui-textfield>
+          <input tuiTextfield type="datetime-local" formControlName="registrationDeadline" />
+        </tui-textfield>
+        <span class="text-xs" style="color: var(--tui-text-secondary)" lang="ka">
+          ცარიელი = დაწყების მომენტამდე
+        </span>
+      </label>
+    </div>
+
+    <!-- Fee + capacity -->
+    <div class="grid grid-cols-2 gap-4">
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">საფასური (₾) <span class="text-red-500">*</span></span>
+        <tui-textfield>
+          <input tuiTextfield type="number" min="0" step="0.5" formControlName="entryFeeGel" />
+        </tui-textfield>
+        <span class="text-xs" style="color: var(--tui-text-secondary)" lang="ka">0 = უფასო</span>
+      </label>
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">ადგილები <span class="text-red-500">*</span></span>
+        <tui-textfield>
+          <input tuiTextfield type="number" min="2" max="512" formControlName="maxParticipants" />
+        </tui-textfield>
+        <span class="text-xs" style="color: var(--tui-text-secondary)" lang="ka">
+          წყვილებისთვის — წყვილების რაოდენობა
+        </span>
+      </label>
+    </div>
+
+    <!-- Prize -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">პრიზი</span>
+      <tui-textfield>
+        <input tuiTextfield formControlName="prizeDescription" placeholder="₾1000 + თასები" />
+      </tui-textfield>
+    </label>
+
+    <!-- Description -->
+    <label tuiLabel>
+      <span class="georgian-text" lang="ka">აღწერა</span>
+      <tui-textfield>
+        <textarea tuiTextarea formControlName="description" rows="3"></textarea>
+      </tui-textfield>
+    </label>
+
+    <!-- Actions -->
+    <div class="flex justify-end gap-2 pt-2">
+      <button tuiButton type="button" appearance="flat" (click)="cancel()">
+        <span class="georgian-text" lang="ka">გაუქმება</span>
+      </button>
+      <button tuiButton type="submit" appearance="primary" [disabled]="isSaving()">
+        <span class="georgian-text" lang="ka">{{ isEditMode ? 'შენახვა' : 'შექმნა' }}</span>
+      </button>
+    </div>
+  </form>
+</div>

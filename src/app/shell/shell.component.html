@@ -61,6 +61,14 @@
         >
           <span lang="ka" class="georgian-text">ჯავშნები</span>
         </a>
+        <a
+          automation-id="tournaments"
+          iconStart="@lucide.trophy"
+          tuiAsideItem
+          routerLink="/tournaments"
+        >
+          <span lang="ka" class="georgian-text">ტურნირები</span>
+        </a>
       </tui-aside-group>
 
       @if (isSuperAdmin()) {
@@ -123,6 +131,9 @@
     </button>
     <a icon="@lucide.calendar-check" tuiTabBarItem routerLink="/reservations">
       <span lang="ka" class="georgian-text">ჯავშნები</span>
+    </a>
+    <a icon="@lucide.trophy" tuiTabBarItem routerLink="/tournaments">
+      <span lang="ka" class="georgian-text">ტურნირები</span>
     </a>
     @if (isSuperAdmin()) {
       <button

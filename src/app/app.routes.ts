@@ -49,6 +49,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'tournaments',
+        loadComponent: () =>
+          import('./pages/tournaments/tournaments.component').then(
+            (m) => m.TournamentsComponent,
+          ),
+      },
+      {
         path: 'super-admin/academies-management',
         canActivate: [superAdminGuard],
         loadComponent: () =>
