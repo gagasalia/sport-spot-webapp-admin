@@ -25,6 +25,7 @@ import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { UserManagementService } from '../../../services/http-services/user-management.service';
 import { User, UserType, FilterUsersDto } from '../../../shared/models/user.model';
 import { UserFormComponent } from './user-form/user-form.component';
+import { UserBalanceComponent } from './user-balance/user-balance.component';
 import { FormsModule } from '@angular/forms';
 import { WA_WINDOW } from '@ng-web-apis/common';
 import { DatePipe } from '@angular/common';
@@ -260,6 +261,22 @@ export class UserManagementComponent implements OnInit {
           this.loadUsers(this.buildFilters());
         }
       });
+  }
+
+  /** Opens the wallet dialog: balance, manual adjust (+/−) and the ledger. */
+  protected manageBalance(user: User): void {
+    if (!user._id) return;
+
+    this.dialogs
+      .open<void>(new PolymorpheusComponent(UserBalanceComponent, this.injector), {
+        label: 'ბალანსის მართვა',
+        size: 'l',
+        dismissible: true,
+        closable: true,
+        data: { user },
+      })
+      .pipe(take(1))
+      .subscribe();
   }
 
   protected deleteUser(user: User): void {

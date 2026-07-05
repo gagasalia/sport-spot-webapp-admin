@@ -1,0 +1,168 @@
+<div class="flex flex-col gap-4">
+  <!-- who -->
+  <p class="text-sm m-0" style="color: var(--tui-text-secondary)">
+    {{ userLabel }} · {{ user.email }}
+  </p>
+
+  <!-- balance -->
+  <div
+    class="rounded-xl border p-4 flex items-center justify-between"
+    style="border-color: var(--tui-border-normal); background: var(--tui-background-base-alt)"
+    data-testid="balance-card"
+  >
+    <span class="georgian-text text-sm" lang="ka" style="color: var(--tui-text-secondary)">
+      ბალანსი
+    </span>
+    @if (isLoading()) {
+      <span class="text-2xl font-bold">…</span>
+    } @else {
+      <span class="text-2xl font-bold" data-testid="balance-amount">{{ balanceGel() }} ₾</span>
+    }
+  </div>
+
+  <!-- adjust -->
+  <form
+    [formGroup]="form"
+    class="rounded-xl border p-4 flex flex-col gap-3"
+    style="border-color: var(--tui-border-normal)"
+  >
+    <span class="georgian-text text-sm font-semibold" lang="ka">ბალანსის ცვლილება</span>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">თანხა (₾)</span>
+        <tui-textfield>
+          <input
+            tuiTextfield
+            type="number"
+            min="0.01"
+            step="0.01"
+            formControlName="amountGel"
+            data-testid="adjust-amount"
+          />
+        </tui-textfield>
+      </label>
+
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">მიზეზი</span>
+        <tui-textfield>
+          <input
+            tuiTextfield
+            type="text"
+            formControlName="note"
+            placeholder="რატომ იცვლება ბალანსი"
+            data-testid="adjust-note"
+          />
+        </tui-textfield>
+      </label>
+    </div>
+
+    @if (form.touched && form.invalid) {
+      <p class="text-xs m-0 georgian-text" lang="ka" style="color: var(--tui-text-negative)">
+        შეიყვანე თანხა (0.01–10 000 ₾) და მიზეზი (მინ. 3 სიმბოლო)
+      </p>
+    }
+
+    <div class="flex flex-wrap gap-2 justify-end">
+      <button
+        tuiButton
+        type="button"
+        appearance="primary"
+        size="m"
+        iconStart="@tui.plus"
+        [disabled]="isSaving()"
+        (click)="adjust(1)"
+        data-testid="adjust-credit"
+      >
+        <span class="georgian-text" lang="ka">დარიცხვა</span>
+      </button>
+      <button
+        tuiButton
+        type="button"
+        appearance="destructive"
+        size="m"
+        iconStart="@tui.minus"
+        [disabled]="isSaving()"
+        (click)="adjust(-1)"
+        data-testid="adjust-debit"
+      >
+        <span class="georgian-text" lang="ka">ჩამოჭრა</span>
+      </button>
+    </div>
+  </form>
+
+  <!-- history -->
+  <div class="rounded-xl border overflow-hidden" style="border-color: var(--tui-border-normal)">
+    <div
+      class="px-4 py-3 border-b georgian-text text-sm font-semibold"
+      lang="ka"
+      style="border-color: var(--tui-border-normal); background: var(--tui-background-base-alt)"
+    >
+      ისტორია
+    </div>
+
+    @if (transactions().length === 0 && !txLoading()) {
+      <p class="px-4 py-6 text-center text-sm georgian-text m-0" lang="ka" data-testid="tx-empty">
+        ოპერაციები ჯერ არ არის
+      </p>
+    } @else {
+      <ul class="m-0 p-0 list-none" data-testid="tx-list">
+        @for (tx of transactions(); track tx._id) {
+          <li
+            class="px-4 py-3 flex items-center gap-3 border-b last:border-b-0"
+            style="border-color: var(--tui-border-normal)"
+          >
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium georgian-text" lang="ka">
+                {{ typeLabel(tx.type) }}
+              </div>
+              <div class="text-xs truncate" style="color: var(--tui-text-secondary)">
+                {{ tx.createdAt | date: 'dd/MM/yyyy HH:mm' }}
+                @if (tx.note) {
+                  · {{ tx.note }}
+                }
+                @if (tx.reference) {
+                  · {{ tx.reference }}
+                }
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <div
+                class="text-sm font-semibold"
+                [style.color]="isCredit(tx) ? 'var(--tui-text-positive)' : null"
+              >
+                {{ amountGelLabel(tx) }}
+              </div>
+              <div class="text-xs" style="color: var(--tui-text-secondary)">
+                {{ afterGelLabel(tx) }}
+              </div>
+            </div>
+          </li>
+        }
+      </ul>
+
+      @if (hasMoreTx()) {
+        <div class="p-3 flex justify-center">
+          <button
+            tuiButton
+            type="button"
+            appearance="flat"
+            size="s"
+            [disabled]="txLoading()"
+            (click)="loadTransactions()"
+            data-testid="tx-loadmore"
+          >
+            <span class="georgian-text" lang="ka">მეტის ნახვა</span>
+          </button>
+        </div>
+      }
+    }
+  </div>
+
+  <!-- footer -->
+  <div class="flex justify-end">
+    <button tuiButton type="button" appearance="flat" size="m" (click)="close()">
+      <span class="georgian-text" lang="ka">დახურვა</span>
+    </button>
+  </div>
+</div>

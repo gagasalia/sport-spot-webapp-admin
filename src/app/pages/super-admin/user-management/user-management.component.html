@@ -152,6 +152,14 @@
                     <button
                       tuiIconButton
                       appearance="flat"
+                      iconStart="@tui.wallet"
+                      size="s"
+                      aria-label="ბალანსი"
+                      (click)="manageBalance(user)"
+                    ></button>
+                    <button
+                      tuiIconButton
+                      appearance="flat"
                       iconStart="@tui.pencil"
                       size="s"
                       aria-label="რედაქტირება"
@@ -194,6 +202,14 @@
                 </p>
               </div>
               <div class="flex items-center gap-1">
+                <button
+                  tuiIconButton
+                  appearance="flat"
+                  iconStart="@tui.wallet"
+                  size="s"
+                  aria-label="ბალანსი"
+                  (click)="manageBalance(user)"
+                ></button>
                 <button
                   tuiIconButton
                   appearance="flat"
