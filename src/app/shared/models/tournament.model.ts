@@ -1,7 +1,13 @@
 /** Tournament shapes for the operator app (docs/13-tournaments-design.md). */
 
 export type TournamentType = 'singles' | 'doubles';
-export type TournamentFormat = 'knockout' | 'round_robin' | 'groups_playoffs';
+export type TournamentFormat =
+  | 'knockout'
+  | 'round_robin'
+  | 'groups_playoffs'
+  | 'championship'
+  | 'americano'
+  | 'mexicano';
 export type TournamentLevel = 'any' | 'beginner' | 'intermediate' | 'advanced';
 export type TournamentCategory = 'men' | 'women' | 'mixed';
 export type TournamentStatus = 'draft' | 'published' | 'completed' | 'cancelled';

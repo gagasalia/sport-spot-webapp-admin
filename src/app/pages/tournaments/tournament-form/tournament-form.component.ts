@@ -30,6 +30,9 @@ export const FORMAT_LABELS: Record<TournamentFormat, string> = {
   knockout: 'ნოკაუტი',
   round_robin: 'წრიული',
   groups_playoffs: 'ჯგუფები + პლეიოფი',
+  championship: 'ჩემპიონატი',
+  americano: 'ამერიკანო',
+  mexicano: 'მექსიკანო',
 };
 export const LEVEL_LABELS: Record<TournamentLevel, string> = {
   any: 'ნებისმიერი',
