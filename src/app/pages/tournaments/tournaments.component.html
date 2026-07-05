@@ -66,7 +66,7 @@
                   }
                 </td>
                 <td class="px-4 py-3 text-sm georgian-text" lang="ka">
-                  {{ typeLabel(t) }}
+                  {{ typeLabel(t) }} · {{ categoryLabel(t) }}
                   <div class="text-xs" style="color: var(--tui-text-secondary)">
                     {{ formatLabel(t) }} · {{ levelLabel(t) }}
                   </div>
@@ -180,6 +180,8 @@
             </div>
             <div class="flex flex-wrap gap-2 text-xs georgian-text mb-3" lang="ka" style="color: var(--tui-text-secondary)">
               <span>{{ typeLabel(t) }}</span>
+              <span>·</span>
+              <span>{{ categoryLabel(t) }}</span>
               <span>·</span>
               <span>{{ formatLabel(t) }}</span>
               <span>·</span>

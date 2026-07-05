@@ -3,6 +3,7 @@
 export type TournamentType = 'singles' | 'doubles';
 export type TournamentFormat = 'knockout' | 'round_robin' | 'groups_playoffs';
 export type TournamentLevel = 'any' | 'beginner' | 'intermediate' | 'advanced';
+export type TournamentCategory = 'men' | 'women' | 'mixed';
 export type TournamentStatus = 'draft' | 'published' | 'completed' | 'cancelled';
 
 export interface Tournament {
@@ -17,6 +18,7 @@ export interface Tournament {
   type: TournamentType;
   format: TournamentFormat;
   level: TournamentLevel;
+  category: TournamentCategory;
   startDate: string; // 'YYYY-MM-DD'
   startTime: string; // 'HH:mm'
   endDate?: string;
@@ -39,6 +41,7 @@ export interface CreateTournamentDto {
   type: TournamentType;
   format: TournamentFormat;
   level?: TournamentLevel;
+  category?: TournamentCategory;
   startDate: string;
   startTime: string;
   endDate?: string;

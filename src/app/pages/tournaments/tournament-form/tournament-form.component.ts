@@ -14,6 +14,7 @@ import { TenantService } from '../../../shared/services/tenant.service';
 import {
   CreateTournamentDto,
   Tournament,
+  TournamentCategory,
   TournamentFormat,
   TournamentLevel,
   TournamentType,
@@ -35,6 +36,11 @@ export const LEVEL_LABELS: Record<TournamentLevel, string> = {
   beginner: 'დამწყები',
   intermediate: 'საშუალო',
   advanced: 'გამოცდილი',
+};
+export const CATEGORY_LABELS: Record<TournamentCategory, string> = {
+  men: 'კაცები',
+  women: 'ქალები',
+  mixed: 'შერეული',
 };
 
 /** ISO instant → value for `<input type="datetime-local">` (local wall clock). */
@@ -82,6 +88,7 @@ export class TournamentFormComponent implements OnInit {
   protected readonly typeOptions = Object.keys(TYPE_LABELS) as TournamentType[];
   protected readonly formatOptions = Object.keys(FORMAT_LABELS) as TournamentFormat[];
   protected readonly levelOptions = Object.keys(LEVEL_LABELS) as TournamentLevel[];
+  protected readonly categoryOptions = Object.keys(CATEGORY_LABELS) as TournamentCategory[];
 
   protected readonly stringifyType: TuiStringHandler<TournamentType> = (v) =>
     TYPE_LABELS[v] ?? String(v);
@@ -89,6 +96,8 @@ export class TournamentFormComponent implements OnInit {
     FORMAT_LABELS[v] ?? String(v);
   protected readonly stringifyLevel: TuiStringHandler<TournamentLevel> = (v) =>
     LEVEL_LABELS[v] ?? String(v);
+  protected readonly stringifyCategory: TuiStringHandler<TournamentCategory> = (v) =>
+    CATEGORY_LABELS[v] ?? String(v);
   protected readonly stringifyFacility: TuiStringHandler<string> = (id) =>
     this.facilities().find((f) => (f._id ?? '') === id)?.name ?? '';
 
@@ -105,6 +114,7 @@ export class TournamentFormComponent implements OnInit {
       type: [t?.type ?? 'doubles', [Validators.required]],
       format: [t?.format ?? 'knockout', [Validators.required]],
       level: [t?.level ?? 'any', [Validators.required]],
+      category: [t?.category ?? 'mixed', [Validators.required]],
       startDate: [t?.startDate ?? '', [Validators.required]],
       startTime: [t?.startTime ?? '10:00', [Validators.required]],
       endDate: [t?.endDate ?? ''],
@@ -149,6 +159,7 @@ export class TournamentFormComponent implements OnInit {
       type: TournamentType;
       format: TournamentFormat;
       level: TournamentLevel;
+      category: TournamentCategory;
       startDate: string;
       startTime: string;
       endDate: string;
@@ -165,6 +176,7 @@ export class TournamentFormComponent implements OnInit {
       type: v.type,
       format: v.format,
       level: v.level,
+      category: v.category,
       startDate: v.startDate,
       startTime: v.startTime,
       endDate: v.endDate || undefined,

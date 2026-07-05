@@ -54,20 +54,35 @@
       </label>
     </div>
 
-    <!-- Level -->
-    <label tuiLabel>
-      <span class="georgian-text" lang="ka">დონე</span>
-      <tui-textfield tuiChevron [stringify]="stringifyLevel">
-        <input tuiSelect formControlName="level" class="georgian-text" lang="ka" />
-        <tui-data-list *tuiTextfieldDropdown>
-          @for (option of levelOptions; track option) {
-            <button new tuiOption [value]="option" class="georgian-text" lang="ka">
-              {{ stringifyLevel(option) }}
-            </button>
-          }
-        </tui-data-list>
-      </tui-textfield>
-    </label>
+    <!-- Level + Category -->
+    <div class="grid grid-cols-2 gap-4">
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">დონე</span>
+        <tui-textfield tuiChevron [stringify]="stringifyLevel">
+          <input tuiSelect formControlName="level" class="georgian-text" lang="ka" />
+          <tui-data-list *tuiTextfieldDropdown>
+            @for (option of levelOptions; track option) {
+              <button new tuiOption [value]="option" class="georgian-text" lang="ka">
+                {{ stringifyLevel(option) }}
+              </button>
+            }
+          </tui-data-list>
+        </tui-textfield>
+      </label>
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">კატეგორია</span>
+        <tui-textfield tuiChevron [stringify]="stringifyCategory">
+          <input tuiSelect formControlName="category" class="georgian-text" lang="ka" />
+          <tui-data-list *tuiTextfieldDropdown>
+            @for (option of categoryOptions; track option) {
+              <button new tuiOption [value]="option" class="georgian-text" lang="ka">
+                {{ stringifyCategory(option) }}
+              </button>
+            }
+          </tui-data-list>
+        </tui-textfield>
+      </label>
+    </div>
 
     <!-- Start date + time -->
     <div class="grid grid-cols-2 gap-4">

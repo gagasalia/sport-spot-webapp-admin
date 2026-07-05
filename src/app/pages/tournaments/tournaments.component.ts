@@ -24,6 +24,7 @@ import {
 } from '../../shared/models/tournament.model';
 import { tetriToGel } from '../../shared/utils/money.util';
 import {
+  CATEGORY_LABELS,
   FORMAT_LABELS,
   LEVEL_LABELS,
   TYPE_LABELS,
@@ -264,6 +265,10 @@ export class TournamentsComponent implements OnInit {
 
   protected levelLabel(t: Tournament): string {
     return LEVEL_LABELS[t.level] ?? t.level;
+  }
+
+  protected categoryLabel(t: Tournament): string {
+    return CATEGORY_LABELS[t.category] ?? t.category;
   }
 
   protected feeLabel(t: Tournament): string {

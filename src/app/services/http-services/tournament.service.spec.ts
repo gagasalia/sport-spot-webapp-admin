@@ -19,6 +19,7 @@ const mockTournament: Tournament = {
   type: 'doubles',
   format: 'knockout',
   level: 'any',
+  category: 'mixed',
   startDate: '2026-07-18',
   startTime: '10:00',
   entryFeeTetri: 5000,
