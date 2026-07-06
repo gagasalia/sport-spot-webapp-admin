@@ -44,7 +44,9 @@ export interface CreateFacilityDto {
   owner?: string;
   academyId?: string;
   name: string;
-  description: string;
+  nameEn?: string;
+  description?: string;
+  descriptionEn?: string;
   amenities: string[];
   country: string;
   city: string;
@@ -60,6 +62,7 @@ export interface Facility {
   _id?: string;
   id?: string; // kept for localStorage backward compatibility
   name?: string;
+  nameEn?: string;
   academyId?: string;
   country: string;
   city: string;
@@ -73,6 +76,7 @@ export interface Facility {
   // API fields
   media?: IMedia[];
   description: string;
+  descriptionEn?: string;
   amenities: (Amenity | string)[];
   contactInfo?: IContactInfo;
   activeState?: boolean;

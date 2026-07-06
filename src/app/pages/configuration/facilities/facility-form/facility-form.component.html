@@ -47,11 +47,32 @@
         </tui-textfield>
       </label>
 
+      <!-- Name (English) -->
+
+      <label tuiLabel>
+
+        <span>Name (English)</span>
+
+        <tui-textfield>
+
+          <input tuiTextfield formControlName="nameEn" />
+
+        </tui-textfield>
+
+      </label>
+
       <!-- Description -->
       <label tuiLabel>
         <span class="georgian-text" lang="ka">აღწერა</span>
         <tui-textfield>
           <textarea tuiTextarea formControlName="description" [min]="3" [max]="6"></textarea>
+        </tui-textfield>
+      </label>
+      <!-- Description (English) -->
+      <label tuiLabel>
+        <span>Description (English)</span>
+        <tui-textfield>
+          <textarea tuiTextarea formControlName="descriptionEn" [min]="3" [max]="6"></textarea>
         </tui-textfield>
       </label>
     </div>

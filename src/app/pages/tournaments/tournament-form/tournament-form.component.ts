@@ -113,6 +113,7 @@ export class TournamentFormComponent implements OnInit {
 
     this.form = this.fb.group({
       name: [t?.name ?? '', [Validators.required, Validators.minLength(3)]],
+      nameEn: [t?.nameEn ?? ''],
       facility: [t?.facility ?? '', [Validators.required]],
       type: [t?.type ?? 'doubles', [Validators.required]],
       format: [t?.format ?? 'knockout', [Validators.required]],
@@ -131,7 +132,9 @@ export class TournamentFormComponent implements OnInit {
         [Validators.required, Validators.min(2), Validators.max(512)],
       ],
       prizeDescription: [t?.prizeDescription ?? ''],
+      prizeDescriptionEn: [t?.prizeDescriptionEn ?? ''],
       description: [t?.description ?? ''],
+      descriptionEn: [t?.descriptionEn ?? ''],
     });
 
     // The academy's facilities feed the host-venue select.
@@ -158,6 +161,7 @@ export class TournamentFormComponent implements OnInit {
 
     const v = this.form.getRawValue() as {
       name: string;
+      nameEn: string;
       facility: string;
       type: TournamentType;
       format: TournamentFormat;
@@ -170,12 +174,15 @@ export class TournamentFormComponent implements OnInit {
       entryFeeGel: number;
       maxParticipants: number;
       prizeDescription: string;
+      prizeDescriptionEn: string;
       description: string;
+      descriptionEn: string;
     };
 
     const dto: CreateTournamentDto = {
       facility: v.facility,
       name: v.name.trim(),
+      nameEn: v.nameEn.trim() || undefined,
       type: v.type,
       format: v.format,
       level: v.level,
@@ -189,7 +196,9 @@ export class TournamentFormComponent implements OnInit {
       entryFeeTetri: gelToTetri(v.entryFeeGel),
       maxParticipants: v.maxParticipants,
       prizeDescription: v.prizeDescription.trim() || undefined,
+      prizeDescriptionEn: v.prizeDescriptionEn.trim() || undefined,
       description: v.description.trim() || undefined,
+      descriptionEn: v.descriptionEn.trim() || undefined,
     };
 
     this.isSaving.set(true);

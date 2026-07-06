@@ -10,6 +10,13 @@
         <span class="text-xs text-red-500 georgian-text" lang="ka">მინიმუმ 3 სიმბოლო</span>
       }
     </label>
+    <!-- Name (English) -->
+    <label tuiLabel>
+      <span>Name (English)</span>
+      <tui-textfield>
+        <input tuiTextfield formControlName="nameEn" placeholder="Summer Open 2026" />
+      </tui-textfield>
+    </label>
 
     <!-- Facility -->
     <label tuiLabel>
@@ -146,12 +153,26 @@
         <input tuiTextfield formControlName="prizeDescription" placeholder="₾1000 + თასები" />
       </tui-textfield>
     </label>
+    <!-- Prize (English) -->
+    <label tuiLabel>
+      <span>Prize (English)</span>
+      <tui-textfield>
+        <input tuiTextfield formControlName="prizeDescriptionEn" />
+      </tui-textfield>
+    </label>
 
     <!-- Description -->
     <label tuiLabel>
       <span class="georgian-text" lang="ka">აღწერა</span>
       <tui-textfield>
         <textarea tuiTextarea formControlName="description" rows="3"></textarea>
+      </tui-textfield>
+    </label>
+    <!-- Description (English) -->
+    <label tuiLabel>
+      <span>Description (English)</span>
+      <tui-textfield>
+        <textarea tuiTextarea formControlName="descriptionEn" rows="3"></textarea>
       </tui-textfield>
     </label>
 

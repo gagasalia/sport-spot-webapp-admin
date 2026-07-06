@@ -95,7 +95,9 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
 
     this.facilityForm = this.fb.group({
       name: [f?.name || '', Validators.required],
+      nameEn: [f?.nameEn || ''],
       description: [f?.description || ''],
+      descriptionEn: [f?.descriptionEn || ''],
       country: [{ value: 'Georgia', disabled: true }],
       city: [{ value: 'Tbilisi', disabled: true }],
       amenities: this.createAmenitiesFormArray(f?.amenities as Amenity[] | undefined),
@@ -321,7 +323,9 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
     const dto: CreateFacilityDto = {
       owner,
       name: v.name,
+      nameEn: v.nameEn || undefined,
       description: v.description || '',
+      descriptionEn: v.descriptionEn || undefined,
       amenities: this.getSelectedAmenities(),
       country: v.country,
       city: v.city,

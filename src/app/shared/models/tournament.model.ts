@@ -19,7 +19,9 @@ export interface Tournament {
   facilityName?: string;
   city?: string;
   name: string;
+  nameEn?: string;
   description?: string;
+  descriptionEn?: string;
   sportType: string;
   type: TournamentType;
   format: TournamentFormat;
@@ -33,6 +35,7 @@ export interface Tournament {
   entryFeeTetri: number;
   currency: 'GEL';
   prizeDescription?: string;
+  prizeDescriptionEn?: string;
   maxParticipants: number;
   registeredCount: number;
   status: TournamentStatus;
@@ -42,7 +45,9 @@ export interface Tournament {
 export interface CreateTournamentDto {
   facility: string;
   name: string;
+  nameEn?: string;
   description?: string;
+  descriptionEn?: string;
   sportType?: string;
   type: TournamentType;
   format: TournamentFormat;
@@ -54,6 +59,7 @@ export interface CreateTournamentDto {
   registrationDeadline?: string;
   entryFeeTetri: number;
   prizeDescription?: string;
+  prizeDescriptionEn?: string;
   maxParticipants: number;
 }
 
