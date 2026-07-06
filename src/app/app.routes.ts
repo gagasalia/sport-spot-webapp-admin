@@ -56,6 +56,11 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'matches',
+        loadComponent: () =>
+          import('./pages/matches/matches.component').then((m) => m.MatchesComponent),
+      },
+      {
         path: 'super-admin/academies-management',
         canActivate: [superAdminGuard],
         loadComponent: () =>
