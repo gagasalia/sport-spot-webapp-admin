@@ -320,6 +320,36 @@ describe('ReservationsComponent', () => {
     expect(bookingSpy.getBookings).not.toHaveBeenCalled();
   });
 
+  it('equipmentSummary: renders rented-racket and new-balls counts, hides zeros / missing snapshot', () => {
+    const equipped: Booking = {
+      ...booking,
+      equipment: {
+        sportType: 'padel',
+        racketsIncluded: 2,
+        racketsRented: 2,
+        racketRentTetri: 500,
+        balls: 1,
+        ballsPriceTetri: 1500,
+        equipmentTetri: 2500,
+      },
+    };
+    expect(component.equipmentSummary(equipped)).toBe('ჩოგანი ×2 · ბურთი ×1');
+    expect(
+      component.equipmentSummary({
+        ...equipped,
+        equipment: { ...equipped.equipment!, racketsRented: 0 },
+      }),
+    ).toBe('ბურთი ×1');
+    expect(
+      component.equipmentSummary({
+        ...equipped,
+        equipment: { ...equipped.equipment!, racketsRented: 0, balls: 0 },
+      }),
+    ).toBeNull();
+    expect(component.equipmentSummary(booking)).toBeNull();
+    expect(component.equipmentSummary(undefined)).toBeNull();
+  });
+
   it('statusChipAppearance: completed is neutral, cancelled destructive, confirmed positive', () => {
     expect(component.statusChipAppearance('completed')).toBe('neutral');
     expect(component.statusChipAppearance('cancelled')).toBe('destructive');

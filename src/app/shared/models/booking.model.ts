@@ -10,6 +10,22 @@
 /** A booking is a customer/player reservation; a block is an operator-made unbookable slot. */
 export type BookingType = 'booking' | 'block';
 
+/**
+ * Equipment snapshot frozen onto a player booking at create time: counts AND
+ * unit prices as they were when the player booked, so the calendar renders
+ * what was actually ordered/paid regardless of later rule edits.
+ * `equipmentTetri` is the rent+sale subtotal included in `priceTetri`.
+ */
+export interface BookingEquipment {
+  sportType: string;
+  racketsIncluded: number; // "included in the court price" as of booking time
+  racketsRented: number; // extra rackets rented by the player
+  racketRentTetri?: number; // unit price; absent when nothing was rentable
+  balls: number; // new-balls units bought
+  ballsPriceTetri?: number; // unit price; absent when balls weren't sold
+  equipmentTetri: number;
+}
+
 export type BookingStatus = 'confirmed' | 'cancelled' | 'completed';
 
 export type PaymentStatus = 'pay_at_venue' | 'paid';
@@ -34,7 +50,8 @@ export interface Booking {
   user?: string; // ObjectId ref User (player bookings)
   customerName?: string; // manual (phone/walk-in) booking
   customerPhone?: string;
-  priceTetri?: number; // required for type=booking (snapshot)
+  priceTetri?: number; // required for type=booking; TOTAL incl. equipment (snapshot)
+  equipment?: BookingEquipment; // player bookings with an applicable sport rule
   currency?: 'GEL';
   paymentStatus?: PaymentStatus;
   blockGroupId?: string; // groups a multi-slot block

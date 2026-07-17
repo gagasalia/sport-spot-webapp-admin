@@ -222,6 +222,15 @@
                               (keydown.space)="onCellClick(cell)"
                             >
                               <span class="block text-xs font-medium truncate">{{ cellLabel(cell) }}</span>
+                              @if (equipmentSummary(cell.booking); as equipment) {
+                                <span
+                                  class="block text-[10px] truncate georgian-text"
+                                  lang="ka"
+                                  style="color: var(--tui-text-secondary)"
+                                >
+                                  {{ equipment }}
+                                </span>
+                              }
                               <div class="flex items-center gap-1 mt-1">
                                 <tui-chip
                                   size="xs"
@@ -435,6 +444,7 @@
                   <th class="p-2 georgian-text" lang="ka">დრო</th>
                   <th class="p-2 georgian-text" lang="ka">კორტი</th>
                   <th class="p-2 georgian-text" lang="ka">მომხმარებელი</th>
+                  <th class="p-2 georgian-text" lang="ka">ინვენტარი</th>
                   <th class="p-2 georgian-text" lang="ka">ფასი</th>
                   <th class="p-2 georgian-text" lang="ka">სტატუსი</th>
                   <th class="p-2"></th>
@@ -451,6 +461,13 @@
                         <span class="georgian-text" lang="ka">დაბლოკილი</span>
                       } @else {
                         {{ b.customerName || '—' }}
+                      }
+                    </td>
+                    <td class="p-2 whitespace-nowrap georgian-text" lang="ka">
+                      @if (equipmentSummary(b); as equipment) {
+                        {{ equipment }}
+                      } @else {
+                        —
                       }
                     </td>
                     <td class="p-2 whitespace-nowrap">

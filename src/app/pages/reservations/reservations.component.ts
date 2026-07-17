@@ -634,6 +634,21 @@ export class ReservationsComponent implements OnInit {
     return booking.priceTetri != null ? tetriToGel(booking.priceTetri) : null;
   }
 
+  /**
+   * Compact equipment line for a booking: rented-racket and new-balls counts
+   * from the equipment snapshot, e.g. "ჩოგანი ×2 · ბურთი ×1". Null when the
+   * booking has no equipment order (no snapshot or both counts are zero), so
+   * templates can skip the line entirely.
+   */
+  equipmentSummary(booking: Booking | undefined): string | null {
+    const eq = booking?.equipment;
+    if (!eq) return null;
+    const parts: string[] = [];
+    if (eq.racketsRented > 0) parts.push(`ჩოგანი ×${eq.racketsRented}`);
+    if (eq.balls > 0) parts.push(`ბურთი ×${eq.balls}`);
+    return parts.length > 0 ? parts.join(' · ') : null;
+  }
+
   isPaid(cell: GridCell): boolean {
     return cell.booking?.paymentStatus === 'paid';
   }
