@@ -29,6 +29,8 @@ export interface WalletTransaction {
   currency: 'GEL';
   reference?: string;
   booking?: string;
+  /** App-support tip portion of a booking_payment debit (positive tetri). */
+  tipTetri?: number;
   /** Admin reason or a booking display snapshot. */
   note?: string;
   /** Who initiated (player or superadmin). */

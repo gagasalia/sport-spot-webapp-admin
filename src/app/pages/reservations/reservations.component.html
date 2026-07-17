@@ -436,6 +436,9 @@
                   <th class="p-2 georgian-text" lang="ka">კორტი</th>
                   <th class="p-2 georgian-text" lang="ka">მომხმარებელი</th>
                   <th class="p-2 georgian-text" lang="ka">ფასი</th>
+                  @if (isSuperAdmin()) {
+                    <th class="p-2 georgian-text" lang="ka">თიფი</th>
+                  }
                   <th class="p-2 georgian-text" lang="ka">სტატუსი</th>
                   <th class="p-2"></th>
                 </tr>
@@ -460,6 +463,20 @@
                         —
                       }
                     </td>
+                    @if (isSuperAdmin()) {
+                      <td class="p-2 whitespace-nowrap">
+                        @if (bookingTipGel(b) !== null) {
+                          <span style="color: var(--tui-text-action)">
+                            +{{ bookingTipGel(b) }} GEL
+                            @if (b.tipPercent) {
+                              ({{ b.tipPercent }}%)
+                            }
+                          </span>
+                        } @else {
+                          —
+                        }
+                      </td>
+                    }
                     <td class="p-2">
                       <tui-chip size="xs" [appearance]="statusChipAppearance(b.status)">
                         <span class="georgian-text" lang="ka">{{ statusLabels[b.status] }}</span>

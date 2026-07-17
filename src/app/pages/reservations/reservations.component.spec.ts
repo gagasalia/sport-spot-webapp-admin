@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { NO_ERRORS_SCHEMA, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -11,6 +11,7 @@ import { BookingService } from '../../services/http-services/booking.service';
 import { CourtService } from '../../services/http-services/court.service';
 import { FacilityService } from '../../services/http-services/facility.service';
 import { TenantService } from '../../shared/services/tenant.service';
+import { AuthService } from '../../shared/services/auth.service';
 import { Facility } from '../../shared/models/facility.model';
 import { Court } from '../../shared/models/court.model';
 import { Booking } from '../../shared/models/booking.model';
@@ -102,6 +103,9 @@ describe('ReservationsComponent', () => {
         { provide: CourtService, useValue: courtSpy },
         { provide: FacilityService, useValue: facilitySpy },
         { provide: TenantService, useValue: tenantSpy },
+        // Real AuthService pulls HttpClient; the component only reads the
+        // isSuperAdmin signal (tip column gating).
+        { provide: AuthService, useValue: { isSuperAdmin: signal(false) } },
         { provide: Router, useValue: routerSpy },
         { provide: ActivatedRoute, useValue: { queryParams: of({}) } },
         { provide: TuiAlertService, useValue: { open: () => of(undefined) } },

@@ -203,6 +203,11 @@ export class UserBalanceComponent implements OnInit {
     return `${tetriToGel(tx.balanceAfterTetri)} ₾`;
   }
 
+  /** App-support tip inside a booking_payment debit; '' when none. */
+  protected tipGelLabel(tx: WalletTransaction): string {
+    return tx.tipTetri ? `${tetriToGel(tx.tipTetri)} ₾` : '';
+  }
+
   protected close(): void {
     this.context.completeWith();
   }

@@ -37,6 +37,13 @@ export interface Booking {
   priceTetri?: number; // required for type=booking (snapshot)
   currency?: 'GEL';
   paymentStatus?: PaymentStatus;
+  /**
+   * Voluntary app-support tip left by the player at online payment. The API
+   * includes these fields ONLY for superadmins — plain-admin responses omit
+   * them, so the UI must also gate any tip display on `isSuperAdmin()`.
+   */
+  tipPercent?: number;
+  tipTetri?: number;
   blockGroupId?: string; // groups a multi-slot block
   note?: string; // block reason / operator note
   createdAt?: string;

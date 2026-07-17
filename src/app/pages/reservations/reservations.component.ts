@@ -26,6 +26,7 @@ import { BookingService } from '../../services/http-services/booking.service';
 import { CourtService } from '../../services/http-services/court.service';
 import { FacilityService } from '../../services/http-services/facility.service';
 import { TenantService } from '../../shared/services/tenant.service';
+import { AuthService } from '../../shared/services/auth.service';
 import { tetriToGel } from '../../shared/utils/money.util';
 import { Court } from '../../shared/models/court.model';
 import { Facility } from '../../shared/models/facility.model';
@@ -80,6 +81,9 @@ type CalendarTab = 'day' | 'week' | 'list';
 })
 export class ReservationsComponent implements OnInit {
   private readonly bookingService = inject(BookingService);
+  private readonly auth = inject(AuthService);
+  /** Tip data is superadmin-only (the API omits it for plain admins anyway). */
+  protected readonly isSuperAdmin = this.auth.isSuperAdmin;
   private readonly courtService = inject(CourtService);
   private readonly facilityService = inject(FacilityService);
   private readonly tenant = inject(TenantService);
@@ -632,6 +636,11 @@ export class ReservationsComponent implements OnInit {
 
   bookingPriceGel(booking: Booking): number | null {
     return booking.priceTetri != null ? tetriToGel(booking.priceTetri) : null;
+  }
+
+  /** App-support tip in GEL; null when none (or when the API redacted it). */
+  bookingTipGel(booking: Booking): number | null {
+    return booking.tipTetri ? tetriToGel(booking.tipTetri) : null;
   }
 
   isPaid(cell: GridCell): boolean {

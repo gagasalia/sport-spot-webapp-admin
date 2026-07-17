@@ -125,6 +125,16 @@
                   · {{ tx.reference }}
                 }
               </div>
+              @if (tipGelLabel(tx)) {
+                <div
+                  class="text-xs georgian-text"
+                  lang="ka"
+                  style="color: var(--tui-text-action)"
+                  data-testid="tx-tip"
+                >
+                  💜 თიფი: {{ tipGelLabel(tx) }}
+                </div>
+              }
             </div>
             <div class="text-right shrink-0">
               <div
