@@ -25,9 +25,19 @@ import {
   MediaUnconfiguredError,
   MediaFileTooLargeError,
 } from '../../../../services/http-services/media.service';
-import { Facility, IMedia, CreateFacilityDto } from '../../../../shared/models/facility.model';
+import {
+  Facility,
+  IMedia,
+  CreateFacilityDto,
+  SportRule,
+} from '../../../../shared/models/facility.model';
 import { Amenity, AMENITY_LABELS, AMENITY_ICONS } from '../../../../shared/enums/amenity.enum';
 import { TenantService } from '../../../../shared/services/tenant.service';
+import { SportType } from '../../../../shared/enums/court-type.enum';
+import { gelToTetri, tetriToGel } from '../../../../shared/utils/money.util';
+
+/** A padel game needs 4 rackets (docs/20) — the facility decides how many are included. */
+const PADEL_MAX_RACKETS = 4;
 
 interface CountryItem {
   readonly id: string;
@@ -67,6 +77,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
   readonly amenities = Object.values(Amenity);
   readonly amenityLabels = AMENITY_LABELS;
   readonly amenityIcons = AMENITY_ICONS;
+  readonly padelMaxRackets = PADEL_MAX_RACKETS;
 
   readonly stringifyCountry: TuiStringHandler<string> = (id) =>
     this.countries.find((item) => item.id === id)?.name ?? '';
@@ -92,6 +103,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     const f = this.context.data?.facility;
+    const padelRule = this.existingPadelRule(f);
 
     this.facilityForm = this.fb.group({
       name: [f?.name || '', Validators.required],
@@ -99,6 +111,22 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
       country: [{ value: 'Georgia', disabled: true }],
       city: [{ value: 'Tbilisi', disabled: true }],
       amenities: this.createAmenitiesFormArray(f?.amenities as Amenity[] | undefined),
+      // Padel equipment rule (docs/20, per facility): counts + GEL prices;
+      // empty price = that offer doesn't exist (rent/sale not available).
+      padelRules: this.fb.group({
+        racketsIncluded: [
+          padelRule?.racketsIncluded ?? 0,
+          [Validators.required, Validators.min(0), Validators.max(PADEL_MAX_RACKETS)],
+        ],
+        racketRentGel: [
+          padelRule?.racketRentTetri != null ? tetriToGel(padelRule.racketRentTetri) : null,
+          [Validators.min(0)],
+        ],
+        ballsPriceGel: [
+          padelRule?.ballsPriceTetri != null ? tetriToGel(padelRule.ballsPriceTetri) : null,
+          [Validators.min(0)],
+        ],
+      }),
       contactInfo: this.fb.group({
         email: [f?.contactInfo?.email || ''],
         phone: [f?.contactInfo?.phone || ''],
@@ -308,10 +336,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
     // The owner (academy id) is mandatory: a facility with an empty owner would
     // be orphaned. Block the submit and surface a Georgian error instead.
     if (!owner) {
-      this.alerts
-        .open('აკადემია ვერ მოიძებნა', { appearance: 'error' })
-        .pipe(take(1))
-        .subscribe();
+      this.alerts.open('აკადემია ვერ მოიძებნა', { appearance: 'error' }).pipe(take(1)).subscribe();
       return;
     }
 
@@ -326,6 +351,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
       country: v.country,
       city: v.city,
       media: this.mediaItems(),
+      sportRules: this.buildSportRules(editingFacility),
       contactInfo: {
         email: v.contactInfo.email || undefined,
         phone: v.contactInfo.phone || undefined,
@@ -365,5 +391,37 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
 
   onCancel(): void {
     this.context.completeWith(null);
+  }
+
+  /** The stored padel rule, if the facility has one. */
+  private existingPadelRule(f: Facility | undefined): SportRule | undefined {
+    return f?.sportRules?.find((r) => r.sportType === SportType.Padel);
+  }
+
+  /**
+   * The `sportRules` value for the payload (GEL → tetri), or undefined to OMIT
+   * the field: a facility that never had a rule and left the section untouched
+   * must not get an empty rule manufactured by an unrelated save (docs/20 §2).
+   * An empty price input means "not offered" — the key is dropped.
+   */
+  private buildSportRules(editingFacility: Facility | undefined): SportRule[] | undefined {
+    const v = this.facilityForm.getRawValue().padelRules as {
+      racketsIncluded: number | null;
+      racketRentGel: number | null;
+      ballsPriceGel: number | null;
+    };
+    const racketsIncluded = v.racketsIncluded ?? 0;
+    const touched = racketsIncluded > 0 || v.racketRentGel != null || v.ballsPriceGel != null;
+    if (!this.existingPadelRule(editingFacility) && !touched) {
+      return undefined;
+    }
+    const rule: SportRule = { sportType: SportType.Padel, racketsIncluded };
+    if (v.racketRentGel != null) {
+      rule.racketRentTetri = gelToTetri(v.racketRentGel);
+    }
+    if (v.ballsPriceGel != null) {
+      rule.ballsPriceTetri = gelToTetri(v.ballsPriceGel);
+    }
+    return [rule];
   }
 }

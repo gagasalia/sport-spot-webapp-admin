@@ -1,5 +1,6 @@
 import { Day } from '../enums/day.enum';
 import { Amenity } from '../enums/amenity.enum';
+import { SportType } from '../enums/court-type.enum';
 
 export interface AddressPin {
   lat: number;
@@ -20,6 +21,22 @@ export interface IMedia {
   type: string;
   size: number;
   metadata?: unknown;
+}
+
+/**
+ * Per-sport equipment rule (docs/20). Rules are a FACILITY property — venues
+ * of one academy can differ (all rackets included vs. all for rent). Wire
+ * prices are integer TETRI; the form edits GEL and converts at the edge
+ * (money.util). A missing price means that offer doesn't exist.
+ */
+export interface SportRule {
+  sportType: SportType;
+  /** Rackets included in the court price (padel: 0..4 of the 4 a game needs). */
+  racketsIncluded: number;
+  /** Rent per EXTRA racket per game (duration-flat), integer tetri. */
+  racketRentTetri?: number;
+  /** Sale price per new-balls unit, integer tetri. */
+  ballsPriceTetri?: number;
 }
 
 export interface IAddress {
@@ -50,6 +67,8 @@ export interface CreateFacilityDto {
   city: string;
   media: IMedia[];
   contactInfo: IContactInfo;
+  /** Sending this REPLACES the whole rule set (PUT semantics); omit = keep. */
+  sportRules?: SportRule[];
 }
 
 export type UpdateFacilityDto = CreateFacilityDto;
@@ -75,5 +94,6 @@ export interface Facility {
   description: string;
   amenities: (Amenity | string)[];
   contactInfo?: IContactInfo;
+  sportRules?: SportRule[];
   activeState?: boolean;
 }
