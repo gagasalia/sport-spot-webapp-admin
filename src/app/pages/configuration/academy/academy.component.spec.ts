@@ -20,7 +20,6 @@ const mockAcademy: Academy = {
   name: 'Sports Academy',
   admins: [],
   status: AcademyStatus.PUBLISHED,
-  color: '#3A86FF',
   descriptionGeorgian: 'სპორტული აკადემია',
   descriptionEnglish: 'Sports Academy',
   phone: '555-1234',
@@ -116,8 +115,8 @@ describe('AcademyComponent', () => {
       expect(component.academyForm.contains('name')).toBeTrue();
     });
 
-    it('should initialize the form with a color control (renamed from designPalette)', () => {
-      expect(component.academyForm.contains('color')).toBeTrue();
+    it('should NOT have a color control (facility colors removed)', () => {
+      expect(component.academyForm.contains('color')).toBeFalse();
     });
 
     it('should initialize the form with a descriptionGeorgian control', () => {
@@ -164,37 +163,12 @@ describe('AcademyComponent', () => {
       expect(component.academyForm.contains('address')).toBeFalse();
     });
 
-    it('should NOT have a designPalette control (renamed to color)', () => {
+    it('should NOT have a designPalette control (removed)', () => {
       expect(component.academyForm.contains('designPalette')).toBeFalse();
     });
 
     it('should NOT have a description control (replaced by descriptionGeorgian and descriptionEnglish)', () => {
       expect(component.academyForm.contains('description')).toBeFalse();
-    });
-  });
-
-  // ─── colorControl getter ──────────────────────────────────────────────────
-
-  describe('colorControl getter', () => {
-    beforeEach(async () => {
-      await createComponent();
-      fixture.detectChanges();
-    });
-
-    it('should return the color FormControl instance', () => {
-      const ctrl = component.colorControl;
-      expect(ctrl).toBeDefined();
-      expect(ctrl).toBe(component.academyForm.get('color') as any);
-    });
-
-    it('should reflect updates made directly to the form color control', () => {
-      component.academyForm.get('color')!.setValue('#FF0000');
-      expect(component.colorControl.value).toBe('#FF0000');
-    });
-
-    it('should return a FormControl whose value is a string', () => {
-      component.academyForm.get('color')!.setValue('#AABBCC');
-      expect(typeof component.colorControl.value).toBe('string');
     });
   });
 
@@ -212,10 +186,6 @@ describe('AcademyComponent', () => {
 
     it('should start with name as an empty string', () => {
       expect(component.academyForm.get('name')!.value).toBe('');
-    });
-
-    it('should start with color as an empty string', () => {
-      expect(component.academyForm.get('color')!.value).toBe('');
     });
 
     it('should start with descriptionGeorgian as an empty string', () => {
@@ -254,11 +224,6 @@ describe('AcademyComponent', () => {
     it('should patch the name field from the loaded academy', fakeAsync(() => {
       tick();
       expect(component.academyForm.get('name')!.value).toBe('Sports Academy');
-    }));
-
-    it('should patch the color field from the loaded academy', fakeAsync(() => {
-      tick();
-      expect(component.academyForm.get('color')!.value).toBe('#3A86FF');
     }));
 
     it('should patch descriptionGeorgian from the loaded academy', fakeAsync(() => {
@@ -333,16 +298,15 @@ describe('AcademyComponent', () => {
       expect(academyServiceSpy.updateAcademy).toHaveBeenCalled();
     }));
 
-    it('should call updateAcademy with the flat form value including color', fakeAsync(() => {
+    it('should never send a color field (facility colors removed)', fakeAsync(() => {
       tick();
       academyServiceSpy.updateAcademy.and.returnValue(of(mockAcademy));
-      component.academyForm.patchValue({ color: '#FFFFFF' });
 
       component.onSave();
       tick();
 
       const callArgs = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
-      expect(callArgs.color).toBe('#FFFFFF');
+      expect('color' in callArgs).toBeFalse();
     }));
 
     it('should call updateAcademy with both description fields', fakeAsync(() => {
@@ -425,7 +389,7 @@ describe('AcademyComponent', () => {
   // unless a real (non-empty url) logo exists.
 
   describe('onSave — payload omits empty optional fields', () => {
-    // A pristine academy: only the required name/color set, everything else empty.
+    // A pristine academy: only the required name set, everything else empty.
     const emptyAcademy: Academy = {
       _id: 'academy-id-1',
       name: 'Sports Academy',

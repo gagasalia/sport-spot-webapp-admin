@@ -40,7 +40,6 @@ const mockExistingAcademy: Academy = {
   name: 'Existing Academy',
   admins: [mockAdminUser],
   status: AcademyStatus.PUBLISHED,
-  color: '',
 };
 
 const mockSavedAcademy: Academy = {
@@ -48,7 +47,6 @@ const mockSavedAcademy: Academy = {
   name: 'New Academy',
   admins: ['admin-id-1'],
   status: AcademyStatus.UNPUBLISHED,
-  color: '',
 };
 
 // ─── Context factory ──────────────────────────────────────────────────────────

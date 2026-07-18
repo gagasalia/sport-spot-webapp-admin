@@ -11,7 +11,6 @@ export interface Academy {
   admins: (string | User)[];
   name: string;
   status: AcademyStatus;
-  color?: string;
   descriptionGeorgian?: string;
   descriptionEnglish?: string;
   logo?: IMedia;
@@ -30,7 +29,6 @@ export interface UpdateAcademyDto {
   name?: string;
   admins?: string[];
   status?: AcademyStatus;
-  color?: string;
   descriptionGeorgian?: string;
   descriptionEnglish?: string;
   phone?: string;

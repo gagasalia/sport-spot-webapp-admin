@@ -9,17 +9,10 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import {
-  FormBuilder,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-  FormControl,
-} from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { take } from 'rxjs';
 import { TuiAlertService } from '@taiga-ui/core';
-import { TuiInputColor } from '@taiga-ui/kit';
 import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { AcademyService } from '../../../services/http-services/academy.service';
 import {
@@ -33,7 +26,7 @@ import { TenantService } from '../../../shared/services/tenant.service';
 @Component({
   selector: 'app-academy',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, ReactiveFormsModule, CommonModule, TuiInputColor],
+  imports: [...SHARED_TAIGA_IMPORTS, ReactiveFormsModule, CommonModule],
   templateUrl: './academy.component.html',
   styleUrls: ['./academy.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -72,7 +65,6 @@ export class AcademyComponent implements OnInit {
   private initializeForm(): void {
     this.academyForm = this.fb.group({
       name: ['', Validators.required],
-      color: [''],
       descriptionGeorgian: [''],
       descriptionEnglish: [''],
       phone: [''],
@@ -182,14 +174,12 @@ export class AcademyComponent implements OnInit {
    *  - the logo group is dropped entirely unless a real logo exists (non-empty
    *    url) — the placeholder `{url:'',type:''}` would otherwise fail nested
    *    media validation.
-   * `name` (required) and `color` are always sent.
+   * `name` (required) is always sent.
    */
   private buildUpdatePayload(): UpdateAcademyDto {
     const v = this.academyForm.value;
 
     const payload: UpdateAcademyDto = { name: v.name };
-
-    if (v.color) payload.color = v.color;
 
     const optionalText: (keyof UpdateAcademyDto)[] = [
       'descriptionGeorgian',
@@ -306,9 +296,5 @@ export class AcademyComponent implements OnInit {
 
   get logoUrl(): string {
     return this.academyForm.get('logo.url')?.value || '';
-  }
-
-  get colorControl(): FormControl {
-    return this.academyForm.get('color') as FormControl;
   }
 }
