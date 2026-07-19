@@ -12,6 +12,7 @@ import { AcademyService } from '../../../services/http-services/academy.service'
 import { MediaService } from '../../../services/http-services/media.service';
 import { TenantService } from '../../../shared/services/tenant.service';
 import { Academy, AcademyStatus } from '../../../shared/models/academy.model';
+import { SportType } from '../../../shared/enums/court-type.enum';
 
 // ─── Test data ────────────────────────────────────────────────────────────────
 
@@ -658,6 +659,119 @@ describe('AcademyComponent', () => {
       tick();
       component.removeLogo();
       expect(component.academyForm.dirty).toBeTrue();
+    }));
+  });
+
+  // ─── Padel equipment rules (docs/20) ─────────────────────────────────────
+
+  describe('padel equipment rules section', () => {
+    const academyWithRule: Academy = {
+      ...mockAcademy,
+      sportRules: [
+        {
+          sportType: SportType.Padel,
+          racketsIncluded: 2,
+          racketRentTetri: 550,
+          ballsPriceTetri: 800,
+        },
+      ],
+    };
+
+    it('omits sportRules from the payload when no rule exists and the section is untouched', fakeAsync(async () => {
+      await createComponent(mockAcademy); // no sportRules on the academy
+      fixture.detectChanges();
+      tick();
+      academyServiceSpy.updateAcademy.and.returnValue(of(mockAcademy));
+
+      component.onSave();
+      tick();
+
+      const payload = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
+      expect('sportRules' in payload).toBeFalse();
+    }));
+
+    it('patches the section from a loaded rule (tetri → GEL)', fakeAsync(async () => {
+      await createComponent(academyWithRule);
+      fixture.detectChanges();
+      tick();
+
+      const group = component.academyForm.get('padelRules')!.value;
+      expect(group.racketsIncluded).toBe(2);
+      expect(group.racketRentGel).toBe(5.5);
+      expect(group.ballsPriceGel).toBe(8);
+    }));
+
+    it('sends the padel rule with GEL converted to integer tetri', fakeAsync(async () => {
+      await createComponent(mockAcademy);
+      fixture.detectChanges();
+      tick();
+      academyServiceSpy.updateAcademy.and.returnValue(of(mockAcademy));
+      component.academyForm.get('padelRules')!.patchValue({
+        racketsIncluded: 1,
+        racketRentGel: 5.5,
+        ballsPriceGel: 8,
+      });
+
+      component.onSave();
+      tick();
+
+      const payload = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
+      expect(payload.sportRules).toEqual([
+        {
+          sportType: SportType.Padel,
+          racketsIncluded: 1,
+          racketRentTetri: 550,
+          ballsPriceTetri: 800,
+        },
+      ]);
+    }));
+
+    it('drops empty price fields (offer does not exist) but keeps the rule', fakeAsync(async () => {
+      await createComponent(academyWithRule);
+      fixture.detectChanges();
+      tick();
+      academyServiceSpy.updateAcademy.and.returnValue(of(academyWithRule));
+      component.academyForm.get('padelRules')!.patchValue({
+        racketRentGel: null,
+        ballsPriceGel: null,
+      });
+
+      component.onSave();
+      tick();
+
+      const payload = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
+      expect(payload.sportRules).toEqual([
+        { sportType: SportType.Padel, racketsIncluded: 2 },
+      ]);
+    }));
+
+    it('still sends an existing rule even when the section is left untouched', fakeAsync(async () => {
+      await createComponent(academyWithRule);
+      fixture.detectChanges();
+      tick();
+      academyServiceSpy.updateAcademy.and.returnValue(of(academyWithRule));
+
+      component.onSave();
+      tick();
+
+      const payload = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
+      expect(payload.sportRules?.[0].racketsIncluded).toBe(2);
+    }));
+
+    it('blocks saving when racketsIncluded is outside 0..4', fakeAsync(async () => {
+      await createComponent(mockAcademy);
+      fixture.detectChanges();
+      tick();
+      component.academyForm.get('padelRules.racketsIncluded')!.setValue(5);
+
+      component.onSave();
+      tick();
+
+      expect(academyServiceSpy.updateAcademy).not.toHaveBeenCalled();
+      expect(alertServiceSpy.open).toHaveBeenCalledWith(
+        'გთხოვთ შეავსოთ ყველა სავალდებულო ველი',
+        { appearance: 'error' },
+      );
     }));
   });
 

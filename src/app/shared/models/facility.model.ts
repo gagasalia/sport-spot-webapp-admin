@@ -50,6 +50,7 @@ export interface CreateFacilityDto {
   amenities: string[];
   country: string;
   city: string;
+  district?: string;
   media: IMedia[];
   contactInfo: IContactInfo;
 }
@@ -66,6 +67,7 @@ export interface Facility {
   academyId?: string;
   country: string;
   city: string;
+  district?: string;
   // Legacy fields (localStorage-based form)
   addressPin?: AddressPin;
   addressText?: string;

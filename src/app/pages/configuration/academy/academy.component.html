@@ -192,6 +192,88 @@
           </div>
         </div>
 
+        <!-- Equipment rules — padel (docs/20) -->
+        <div class="space-y-6" formGroupName="padelRules">
+          <div>
+            <h3 class="text-lg font-semibold georgian-text" lang="ka">
+              ინვენტარის წესები — პადელი
+            </h3>
+            <p class="text-sm mt-1 georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+              პადელის თამაშს სჭირდება 4 ჩოგანი — მიუთითეთ რამდენი შედის კორტის
+              ფასში; დანარჩენის გაქირავება მოთამაშეს ჯავშნისას შეეძლება.
+            </p>
+          </div>
+
+          <!-- Rackets included in the court price -->
+          <div>
+            <label tuiLabel class="georgian-text" lang="ka">
+              <span class="block mb-3 georgian-text">
+                ფასში შემავალი ჩოგნები (0–{{ padelMaxRackets }})
+              </span>
+              <tui-textfield>
+                <input
+                  tuiTextfield
+                  type="number"
+                  min="0"
+                  [max]="padelMaxRackets"
+                  step="1"
+                  formControlName="racketsIncluded"
+                  data-testid="rackets-included"
+                />
+              </tui-textfield>
+            </label>
+            @if (
+              academyForm.get('padelRules.racketsIncluded')?.touched &&
+              academyForm.get('padelRules.racketsIncluded')?.invalid
+            ) {
+              <span class="text-xs text-red-500 georgian-text" lang="ka">
+                მიუთითეთ რიცხვი 0-დან {{ padelMaxRackets }}-მდე
+              </span>
+            }
+          </div>
+
+          <!-- Extra-racket rent (per game, duration-flat) -->
+          <div>
+            <label tuiLabel class="georgian-text" lang="ka">
+              <span class="block mb-3 georgian-text">დამატებითი ჩოგნის ქირა (₾ / თამაში)</span>
+              <tui-textfield>
+                <input
+                  tuiTextfield
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  formControlName="racketRentGel"
+                  data-testid="racket-rent"
+                />
+              </tui-textfield>
+              <span class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+                ერთი ფასი თამაშზე, ხანგრძლივობის (60/90/120 წთ) მიუხედავად ·
+                ცარიელი — არ ქირავდება
+              </span>
+            </label>
+          </div>
+
+          <!-- New balls sale price -->
+          <div>
+            <label tuiLabel class="georgian-text" lang="ka">
+              <span class="block mb-3 georgian-text">ახალი ბურთების ფასი (₾)</span>
+              <tui-textfield>
+                <input
+                  tuiTextfield
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  formControlName="ballsPriceGel"
+                  data-testid="balls-price"
+                />
+              </tui-textfield>
+              <span class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+                ცარიელი — არ იყიდება
+              </span>
+            </label>
+          </div>
+        </div>
+
         <!-- Action Buttons -->
         <div class="flex justify-end gap-3 pb-4" style="border-color: var(--tui-border-normal)">
           <button

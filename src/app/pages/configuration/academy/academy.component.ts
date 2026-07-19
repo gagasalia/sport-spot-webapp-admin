@@ -20,8 +20,18 @@ import {
   MediaUnconfiguredError,
   MediaFileTooLargeError,
 } from '../../../services/http-services/media.service';
-import { Academy, IMedia, UpdateAcademyDto } from '../../../shared/models/academy.model';
+import {
+  Academy,
+  IMedia,
+  SportRule,
+  UpdateAcademyDto,
+} from '../../../shared/models/academy.model';
 import { TenantService } from '../../../shared/services/tenant.service';
+import { SportType } from '../../../shared/enums/court-type.enum';
+import { gelToTetri, tetriToGel } from '../../../shared/utils/money.util';
+
+/** A padel game needs 4 rackets (docs/20) — the academy decides how many are included. */
+const PADEL_MAX_RACKETS = 4;
 
 @Component({
   selector: 'app-academy',
@@ -62,6 +72,8 @@ export class AcademyComponent implements OnInit {
       });
   }
 
+  readonly padelMaxRackets = PADEL_MAX_RACKETS;
+
   private initializeForm(): void {
     this.academyForm = this.fb.group({
       name: ['', Validators.required],
@@ -76,6 +88,20 @@ export class AcademyComponent implements OnInit {
         type: [''],
         size: [0],
         metadata: [null],
+      }),
+      // Padel equipment rule (docs/20): counts + GEL prices; empty price =
+      // that offer doesn't exist (rent/sale not available).
+      padelRules: this.fb.group({
+        racketsIncluded: [
+          0,
+          [
+            Validators.required,
+            Validators.min(0),
+            Validators.max(PADEL_MAX_RACKETS),
+          ],
+        ],
+        racketRentGel: [null as number | null, [Validators.min(0)]],
+        ballsPriceGel: [null as number | null, [Validators.min(0)]],
       }),
     });
   }
@@ -97,6 +123,7 @@ export class AcademyComponent implements OnInit {
           if (academy) {
             this.academy.set(academy);
             this.academyForm.patchValue(academy);
+            this.patchPadelRules(academy);
             this.isSaved.set(true);
           }
           this.isLoading.set(false);
@@ -204,7 +231,58 @@ export class AcademyComponent implements OnInit {
       payload.logo = logo;
     }
 
+    const padelRule = this.buildPadelRule();
+    if (padelRule) {
+      payload.sportRules = [padelRule];
+    }
+
     return payload;
+  }
+
+  /** The stored padel rule, if the academy has one. */
+  private get existingPadelRule(): SportRule | undefined {
+    return this.academy()?.sportRules?.find((r) => r.sportType === SportType.Padel);
+  }
+
+  /** Patches the padel-rule section from the loaded academy (tetri → GEL). */
+  private patchPadelRules(academy: Academy): void {
+    const rule = academy.sportRules?.find((r) => r.sportType === SportType.Padel);
+    if (!rule) {
+      return; // keep the pristine defaults (0 included, nothing offered)
+    }
+    this.academyForm.get('padelRules')?.patchValue({
+      racketsIncluded: rule.racketsIncluded,
+      racketRentGel: rule.racketRentTetri != null ? tetriToGel(rule.racketRentTetri) : null,
+      ballsPriceGel: rule.ballsPriceTetri != null ? tetriToGel(rule.ballsPriceTetri) : null,
+    });
+  }
+
+  /**
+   * The padel rule for the PUT payload (GEL → tetri), or undefined to OMIT the
+   * `sportRules` field: an academy that never had a rule and left the section
+   * untouched must not get an empty rule manufactured by an unrelated save
+   * (docs/20 §2). An empty price input means "not offered" — the key is dropped.
+   */
+  private buildPadelRule(): SportRule | undefined {
+    const v = this.academyForm.value.padelRules as {
+      racketsIncluded: number | null;
+      racketRentGel: number | null;
+      ballsPriceGel: number | null;
+    };
+    const racketsIncluded = v.racketsIncluded ?? 0;
+    const touched =
+      racketsIncluded > 0 || v.racketRentGel != null || v.ballsPriceGel != null;
+    if (!this.existingPadelRule && !touched) {
+      return undefined;
+    }
+    const rule: SportRule = { sportType: SportType.Padel, racketsIncluded };
+    if (v.racketRentGel != null) {
+      rule.racketRentTetri = gelToTetri(v.racketRentGel);
+    }
+    if (v.ballsPriceGel != null) {
+      rule.ballsPriceTetri = gelToTetri(v.ballsPriceGel);
+    }
+    return rule;
   }
 
   navigateToFacilities(): void {

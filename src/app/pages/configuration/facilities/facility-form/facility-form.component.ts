@@ -27,6 +27,7 @@ import {
 } from '../../../../services/http-services/media.service';
 import { Facility, IMedia, CreateFacilityDto } from '../../../../shared/models/facility.model';
 import { Amenity, AMENITY_LABELS, AMENITY_ICONS } from '../../../../shared/enums/amenity.enum';
+import { DISTRICT_OPTIONS } from '../../../../shared/enums/district.enum';
 import { TenantService } from '../../../../shared/services/tenant.service';
 
 interface CountryItem {
@@ -63,6 +64,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
 
   readonly countries: readonly CountryItem[] = [{ id: 'Georgia', name: 'საქართველო' }];
   readonly cities: readonly CityItem[] = [{ id: 'Tbilisi', name: 'თბილისი' }];
+  readonly districts = DISTRICT_OPTIONS;
 
   readonly amenities = Object.values(Amenity);
   readonly amenityLabels = AMENITY_LABELS;
@@ -73,6 +75,9 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
 
   readonly stringifyCity: TuiStringHandler<string> = (id) =>
     this.cities.find((item) => item.id === id)?.name ?? '';
+
+  readonly stringifyDistrict: TuiStringHandler<string> = (id) =>
+    this.districts.find((item) => item.id === id)?.name ?? '';
 
   private readonly context = inject(POLYMORPHEUS_CONTEXT) as TuiDialogContext<
     Facility | null,
@@ -100,6 +105,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
       descriptionEn: [f?.descriptionEn || ''],
       country: [{ value: 'Georgia', disabled: true }],
       city: [{ value: 'Tbilisi', disabled: true }],
+      district: [f?.district || ''],
       amenities: this.createAmenitiesFormArray(f?.amenities as Amenity[] | undefined),
       contactInfo: this.fb.group({
         email: [f?.contactInfo?.email || ''],
@@ -329,6 +335,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
       amenities: this.getSelectedAmenities(),
       country: v.country,
       city: v.city,
+      district: v.district || undefined,
       media: this.mediaItems(),
       contactInfo: {
         email: v.contactInfo.email || undefined,

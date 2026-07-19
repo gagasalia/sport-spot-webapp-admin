@@ -47,6 +47,19 @@
         </tui-textfield>
       </label>
 
+      <!-- District -->
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">უბანი</span>
+        <tui-textfield tuiChevron [stringify]="stringifyDistrict">
+          <input tuiSelect formControlName="district" class="georgian-text" lang="ka" />
+          <tui-data-list *tuiTextfieldDropdown>
+            @for (district of districts; track district.id) {
+              <button tuiOption [value]="district.id" new>{{ district.name }}</button>
+            }
+          </tui-data-list>
+        </tui-textfield>
+      </label>
+
       <!-- Name (English) -->
 
       <label tuiLabel>
