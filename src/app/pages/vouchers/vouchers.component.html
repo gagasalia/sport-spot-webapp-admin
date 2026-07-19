@@ -1,0 +1,246 @@
+<div class="pt-8 p-0 sm:p-8">
+  <header class="mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 min-h-16">
+      <h1 class="text-2xl font-semibold georgian-text" lang="ka">ვაუჩერები</h1>
+    </div>
+  </header>
+
+  <!-- Facility selector (identical pattern to the reservations page) -->
+  @if (facilities().length === 0) {
+    <div class="flex flex-col items-center justify-center py-16">
+      <img src="images/no-result.png" alt="No facilities" class="w-64 h-64 mb-6 opacity-50" />
+      <p class="text-lg text-gray-500 mb-6 georgian-text" lang="ka">
+        ვაუჩერების სამართავად დაამატეთ ობიექტი
+      </p>
+      <button tuiButton appearance="primary" iconStart="@tui.plus" (click)="navigateToFacilities()">
+        <span class="georgian-text" lang="ka">დაამატე ობიექტი</span>
+      </button>
+    </div>
+  } @else {
+    <div class="mb-6">
+      <label tuiLabel>
+        <span class="georgian-text" lang="ka">აირჩიეთ ობიექტი</span>
+        <tui-textfield tuiChevron [stringify]="stringifyFacility">
+          <input tuiSelect [formControl]="facilityControl" class="georgian-text" lang="ka" />
+          <tui-data-list *tuiTextfieldDropdown>
+            @for (facility of facilities(); track facility._id ?? facility.id) {
+              <button new tuiOption [value]="facility._id ?? facility.id">
+                <span class="georgian-text" lang="ka">
+                  {{ facility.name || facility.description || 'უსახელო ობიექტი' }}
+                </span>
+              </button>
+            }
+          </tui-data-list>
+        </tui-textfield>
+      </label>
+    </div>
+  }
+
+  @if (selectedFacilityId()) {
+    @if (hasError()) {
+      <div
+        class="rounded-lg p-4 mb-4 georgian-text"
+        lang="ka"
+        style="background: var(--tui-status-negative-pale); color: var(--tui-status-negative)"
+      >
+        მონაცემების ჩატვირთვა ვერ მოხერხდა. სცადეთ თავიდან.
+      </div>
+    }
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- ═══════════════ GRANT FORM ═══════════════ -->
+      <section
+        class="rounded-lg p-5"
+        style="background: var(--tui-background-neutral-1)"
+      >
+        <h2 class="text-lg font-medium mb-4 georgian-text" lang="ka">ვაუჩერის მინიჭება</h2>
+        <form [formGroup]="grantForm" (ngSubmit)="submitGrant()" class="flex flex-col gap-4">
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">ელფოსტა</span>
+            <tui-textfield>
+              <input tuiTextfield formControlName="email" type="email" autocomplete="off" />
+            </tui-textfield>
+          </label>
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">თანხა (₾)</span>
+            <tui-textfield>
+              <input tuiTextfield formControlName="amountGel" type="number" inputmode="decimal" min="0" />
+            </tui-textfield>
+          </label>
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">ვადა (არასავალდებულო)</span>
+            <tui-textfield>
+              <input tuiInputDate formControlName="expiresAt" />
+              <tui-calendar *tuiTextfieldDropdown />
+            </tui-textfield>
+          </label>
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">შენიშვნა (არასავალდებულო)</span>
+            <tui-textfield>
+              <textarea tuiTextarea formControlName="note" class="georgian-text" lang="ka"></textarea>
+            </tui-textfield>
+          </label>
+          <div class="flex justify-end">
+            <button
+              tuiButton
+              appearance="primary"
+              type="submit"
+              size="m"
+              [disabled]="grantForm.invalid || grantSubmitting()"
+            >
+              <span class="georgian-text" lang="ka">მინიჭება</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ═══════════════ BULK IMPORT ═══════════════ -->
+      <section
+        class="rounded-lg p-5"
+        style="background: var(--tui-background-neutral-1)"
+      >
+        <h2 class="text-lg font-medium mb-1 georgian-text" lang="ka">მასობრივი იმპორტი</h2>
+        <p class="text-sm text-gray-500 mb-4 georgian-text" lang="ka">
+          თითო ხაზზე: ელფოსტა,თანხა (მაგ. user&#64;mail.com,50)
+        </p>
+        <div class="flex flex-col gap-4">
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">სია</span>
+            <tui-textfield>
+              <textarea
+                tuiTextarea
+                [formControl]="importControl"
+                rows="6"
+                placeholder="user@mail.com,50"
+              ></textarea>
+            </tui-textfield>
+          </label>
+          <label tuiLabel>
+            <span class="georgian-text" lang="ka">ვადა (არასავალდებულო)</span>
+            <tui-textfield>
+              <input tuiInputDate [formControl]="importExpiry" />
+              <tui-calendar *tuiTextfieldDropdown />
+            </tui-textfield>
+          </label>
+
+          @if (importErrors().length > 0) {
+            <div
+              class="rounded-md p-3 text-sm"
+              style="background: var(--tui-status-negative-pale); color: var(--tui-status-negative)"
+            >
+              <ul class="list-disc pl-5 space-y-1">
+                @for (err of importErrors(); track err) {
+                  <li class="georgian-text" lang="ka">{{ err }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          <div class="flex justify-end">
+            <button
+              tuiButton
+              appearance="primary"
+              type="button"
+              size="m"
+              [disabled]="importSubmitting()"
+              (click)="submitImport()"
+            >
+              <span class="georgian-text" lang="ka">იმპორტი</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    @if (isLoading()) {
+      <div class="space-y-2 animate-pulse">
+        @for (n of [1, 2, 3, 4, 5]; track n) {
+          <div class="h-12 rounded" style="background: var(--tui-background-neutral-1)"></div>
+        }
+      </div>
+    } @else {
+      <!-- ═══════════════ VOUCHERS TABLE ═══════════════ -->
+      <section class="mb-8">
+        <h2 class="text-lg font-medium mb-3 georgian-text" lang="ka">ვაუჩერები</h2>
+        @if (vouchers().length === 0) {
+          <p class="text-gray-500 py-6 georgian-text" lang="ka">ვაუჩერები არ მოიძებნა</p>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-sm">
+              <thead>
+                <tr class="text-left" style="color: var(--tui-text-secondary)">
+                  <th class="p-2 georgian-text" lang="ka">მფლობელი</th>
+                  <th class="p-2 georgian-text" lang="ka">კოდი</th>
+                  <th class="p-2 georgian-text" lang="ka">ბალანსი / საწყისი</th>
+                  <th class="p-2 georgian-text" lang="ka">ვადა</th>
+                  <th class="p-2 georgian-text" lang="ka">წყარო</th>
+                  <th class="p-2 georgian-text" lang="ka">სტატუსი</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (v of vouchers(); track v._id ?? v.code) {
+                  <tr class="border-t" style="border-color: var(--tui-border-normal)">
+                    <td class="p-2">{{ ownerLabel(v) }}</td>
+                    <td class="p-2 font-mono whitespace-nowrap">{{ v.code }}</td>
+                    <td class="p-2 whitespace-nowrap">{{ balanceGel(v) }} / {{ initialGel(v) }} ₾</td>
+                    <td class="p-2 whitespace-nowrap">{{ expiryLabel(v.expiresAt) }}</td>
+                    <td class="p-2">
+                      <span class="georgian-text" lang="ka">{{ sourceLabels[v.source] }}</span>
+                    </td>
+                    <td class="p-2">
+                      <tui-chip size="xs" [appearance]="statusChipAppearance(derivedStatus(v))">
+                        <span class="georgian-text" lang="ka">{{ statusLabels[derivedStatus(v)] }}</span>
+                      </tui-chip>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+
+      <!-- ═══════════════ PENDING GRANTS TABLE ═══════════════ -->
+      <section class="mb-8">
+        <h2 class="text-lg font-medium mb-3 georgian-text" lang="ka">მოლოდინში მინიჭებები</h2>
+        @if (grants().length === 0) {
+          <p class="text-gray-500 py-6 georgian-text" lang="ka">მოლოდინში მინიჭებები არ არის</p>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-sm">
+              <thead>
+                <tr class="text-left" style="color: var(--tui-text-secondary)">
+                  <th class="p-2 georgian-text" lang="ka">ელფოსტა</th>
+                  <th class="p-2 georgian-text" lang="ka">თანხა</th>
+                  <th class="p-2 georgian-text" lang="ka">შენიშვნა</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (g of grants(); track g._id ?? g.email) {
+                  <tr class="border-t" style="border-color: var(--tui-border-normal)">
+                    <td class="p-2">{{ g.email }}</td>
+                    <td class="p-2 whitespace-nowrap">{{ grantAmountGel(g) }} ₾</td>
+                    <td class="p-2">
+                      @if (g.note) {
+                        <span class="georgian-text" lang="ka">{{ g.note }}</span>
+                      } @else {
+                        —
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </section>
+    }
+  } @else if (facilities().length > 1) {
+    <div class="flex flex-col items-center justify-center py-16">
+      <tui-icon icon="@lucide.building-2" class="w-32 h-32 opacity-50 mb-6"></tui-icon>
+      <p class="text-lg text-gray-500 georgian-text" lang="ka">
+        აირჩიეთ ობიექტი ვაუჩერების სანახავად
+      </p>
+    </div>
+  }
+</div>

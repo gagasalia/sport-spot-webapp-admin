@@ -49,6 +49,11 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'vouchers',
+        loadComponent: () =>
+          import('./pages/vouchers/vouchers.component').then((m) => m.VouchersComponent),
+      },
+      {
         path: 'tournaments',
         loadComponent: () =>
           import('./pages/tournaments/tournaments.component').then(
