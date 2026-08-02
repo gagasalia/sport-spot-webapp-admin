@@ -1,11 +1,23 @@
 <!doctype html>
-<html lang="en">
+<html lang="ka">
   <head>
     <meta charset="utf-8" />
     <title>Sport Spot Admin</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#060E0D" />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <!-- Paint the premium-dark canvas before any bundle loads (no white flash).
+         The light theme re-colors <html> via the [tuiTheme='light'] override. -->
+    <style>
+      html {
+        background: #060e0d;
+      }
+    </style>
+    <!-- Fonts: self-hosted (public/fonts, shared with the player app), loaded
+         async — metric-matched fallbacks render first, so the swap is shift-free. -->
+    <link rel="stylesheet" href="fonts/fonts.css" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="fonts/fonts.css" /></noscript>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDJ0AEw8PFCmrVwrUCfQTDfm1h7hmRXHyQ&v=weekly&loading=async&libraries=places"></script>
   </head>
   <body>

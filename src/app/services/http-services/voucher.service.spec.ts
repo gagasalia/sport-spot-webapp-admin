@@ -6,8 +6,8 @@ import { VoucherService } from './voucher.service';
 import { GrantVoucherDto, PendingGrant, Voucher } from '../../shared/models/voucher.model';
 import { environment } from '../../../environments/environment';
 
-function wrap<T>(data: T) {
-  return { result: { data }, errors: [] };
+function wrap<T>(data: T, page?: unknown) {
+  return { result: { data, page }, errors: [] };
 }
 
 const FACILITY_ID = 'fac-1';
@@ -107,35 +107,46 @@ describe('VoucherService', () => {
     req.flush(wrap({ granted: 1, pending: 0 }));
   });
 
-  it('getVouchers GETs /vouchers?facilityId= and unwraps the array', () => {
-    let emitted: Voucher[] | undefined;
-    service.getVouchers(FACILITY_ID).subscribe((v) => (emitted = v));
+  it('getVouchers GETs /vouchers with facility + page params and unwraps rows + page', () => {
+    let emitted: { data: Voucher[]; page?: { total: number } } | undefined;
+    service.getVouchers(FACILITY_ID, 2, 20).subscribe((v) => (emitted = v as never));
 
-    const req = httpMock.expectOne((r) => r.url === base && r.params.get('facilityId') === FACILITY_ID);
+    const req = httpMock.expectOne(
+      (r) =>
+        r.url === base &&
+        r.params.get('facilityId') === FACILITY_ID &&
+        r.params.get('page') === '2' &&
+        r.params.get('limit') === '20',
+    );
     expect(req.request.method).toBe('GET');
-    req.flush(wrap([mockVoucher]));
+    req.flush(wrap([mockVoucher], { page: 2, size: 20, total: 41 }));
 
-    expect(emitted).toEqual([mockVoucher]);
+    expect(emitted!.data).toEqual([mockVoucher]);
+    expect(emitted!.page?.total).toBe(41);
   });
 
   it('getVouchers defaults to an empty array when data is null', () => {
-    let emitted: Voucher[] | undefined;
-    service.getVouchers(FACILITY_ID).subscribe((v) => (emitted = v));
+    let emitted: { data: Voucher[] } | undefined;
+    service.getVouchers(FACILITY_ID).subscribe((v) => (emitted = v as never));
     const req = httpMock.expectOne((r) => r.url === base);
     req.flush(wrap(null));
-    expect(emitted).toEqual([]);
+    expect(emitted!.data).toEqual([]);
   });
 
-  it('getGrants GETs /vouchers/grants?facilityId= and unwraps the array', () => {
-    let emitted: PendingGrant[] | undefined;
-    service.getGrants(FACILITY_ID).subscribe((g) => (emitted = g));
+  it('getGrants GETs /vouchers/grants with facility + page params and unwraps', () => {
+    let emitted: { data: PendingGrant[] } | undefined;
+    service.getGrants(FACILITY_ID).subscribe((g) => (emitted = g as never));
 
     const req = httpMock.expectOne(
-      (r) => r.url === `${base}/grants` && r.params.get('facilityId') === FACILITY_ID,
+      (r) =>
+        r.url === `${base}/grants` &&
+        r.params.get('facilityId') === FACILITY_ID &&
+        r.params.get('page') === '1' &&
+        r.params.get('limit') === '20',
     );
     expect(req.request.method).toBe('GET');
     req.flush(wrap([mockGrant]));
 
-    expect(emitted).toEqual([mockGrant]);
+    expect(emitted!.data).toEqual([mockGrant]);
   });
 });

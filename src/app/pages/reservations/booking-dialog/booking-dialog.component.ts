@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { take } from 'rxjs';
+import { forkJoin, take } from 'rxjs';
 import { type MaskitoOptions } from '@maskito/core';
 import { MaskitoDirective } from '@maskito/angular';
 import {
@@ -9,57 +9,58 @@ import {
   maskitoAddOnFocusPlugin,
   maskitoRemoveOnBlurPlugin,
 } from '@maskito/kit';
-import { type TuiStringHandler } from '@taiga-ui/cdk';
-import { TuiAlertService } from '@taiga-ui/core';
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
-import { TuiDialogContext } from '@taiga-ui/experimental';
 import { HttpErrorResponse } from '@angular/common/http';
-import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { BookingService } from '../../../services/http-services/booking.service';
 import { CreateBlockDto, CreateBookingDto } from '../../../shared/models/booking.model';
 import { ScheduleService } from '../../../services/http-services/schedule.service';
+import { blockChunks, hhmmToMinutes, isBookableDuration } from '../calendar-grid';
 
-/** Slot option for the block end-slot selector (later slots than the start). */
-export interface SlotOption {
-  start: string;
-  end: string;
-}
+import { SsToastService } from '../../../shared/ui/toast.service';
+import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../../shared/ui/dialog.service';
+/** Default names per the operator's request (booking vs disable). */
+export const DEFAULT_BOOKING_NAME = 'ჯავშანი ადმინის მიერ';
+export const DEFAULT_BLOCK_NOTE = 'დაბლოკვა ადმინის მიერ';
 
-/** Data passed into the create dialog from a clicked free cell. */
+/** Data passed into the create dialog from the calendar's cell selection. */
 export interface BookingDialogData {
   facilityId: string;
   court: string; // court _id
   courtLabel: string;
   date: string; // "YYYY-MM-DD"
-  start: string; // "HH:mm" — prefilled slot start
-  end: string; // "HH:mm"
-  priceTetri?: number;
-  /** Later slots on the same court/day, for the optional multi-slot block end. */
-  laterSlots: SlotOption[];
+  start: string; // "HH:mm" — selection start
+  end: string; // "HH:mm" — selection end (exclusive)
+  durationMinutes: number; // selection span
+  priceTetri?: number; // window price (display only; server snapshots its own)
+  /** False when the span is not a bookable duration (60/90/120) — block only. */
+  allowBooking: boolean;
 }
 
 /**
- * Create dialog for the operator calendar (design §5). Toggles between a manual
- * **booking** (customer name required, Georgian phone mask, note) and a **block**
- * (note + optional multi-slot end). Court + slot are prefilled from the clicked
- * cell. On a 409 the caller refreshes the day and this dialog surfaces the
+ * Create dialog for the operator calendar. The slot range comes fully resolved
+ * from the calendar's multi-cell selection (no end-time editing here — the
+ * operator marked the range before opening). Toggles between a manual
+ * **booking** (name defaults to "ჯავშანი ადმინის მიერ", Georgian phone mask,
+ * note) and a **block** (note defaults to "დაბლოკვა ადმინის მიერ"). Booking
+ * mode is available only for 60/90/120-minute spans; other spans are created
+ * as blocks — uniform spans in one request, ragged spans (90+60k) in two (see
+ * `blockChunks`). On a 409 the caller refreshes and the dialog surfaces the
  * Georgian "slot already taken" message.
  */
 @Component({
   selector: 'app-booking-dialog',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, ReactiveFormsModule, CommonModule, MaskitoDirective],
+  imports: [ReactiveFormsModule, CommonModule, MaskitoDirective],
   templateUrl: './booking-dialog.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BookingDialogComponent implements OnInit {
-  private readonly context = inject(POLYMORPHEUS_CONTEXT) as TuiDialogContext<
+  private readonly context = inject(SS_DIALOG_CONTEXT) as SsDialogContext<
     boolean,
     BookingDialogData
   >;
   private readonly fb = inject(FormBuilder);
   private readonly bookingService = inject(BookingService);
-  private readonly alerts = inject(TuiAlertService);
+  private readonly alerts = inject(SsToastService);
 
   readonly mode = signal<'booking' | 'block'>('booking');
   readonly submitting = signal(false);
@@ -79,27 +80,30 @@ export class BookingDialogComponent implements OnInit {
   readonly priceGel = (): number | null =>
     this.data.priceTetri != null ? ScheduleService.tetriToGel(this.data.priceTetri) : null;
 
-  readonly stringifyEndSlot: TuiStringHandler<string> = (start) => {
-    const slot = this.data.laterSlots.find((s) => s.start === start);
-    return slot ? `${slot.start} – ${slot.end}` : start;
-  };
-
   ngOnInit(): void {
     this.form = this.fb.group({
-      customerName: ['', Validators.required],
+      customerName: [DEFAULT_BOOKING_NAME, Validators.required],
       customerPhone: ['', Validators.pattern(/^\+9955\d{8}$/)],
       note: [''],
-      blockEnd: [null as string | null],
     });
+    // Spans outside 60/90/120 cannot be bookings — open straight in block mode.
+    if (!this.data.allowBooking || !isBookableDuration(this.data.durationMinutes)) {
+      this.setMode('block');
+    }
   }
 
   setMode(mode: 'booking' | 'block'): void {
+    if (mode === 'booking' && !this.data.allowBooking) return;
     this.mode.set(mode);
     const name = this.form.get('customerName');
+    const note = this.form.get('note');
     if (mode === 'block') {
       name?.clearValidators();
+      // Prefill the disable reason, but never clobber operator input.
+      if (!note?.value) note?.setValue(DEFAULT_BLOCK_NOTE);
     } else {
       name?.setValidators([Validators.required]);
+      if (note?.value === DEFAULT_BLOCK_NOTE) note?.setValue('');
     }
     name?.updateValueAndValidity();
   }
@@ -126,6 +130,7 @@ export class BookingDialogComponent implements OnInit {
       court: this.data.court,
       date: this.data.date,
       start: this.data.start,
+      durationMinutes: this.data.durationMinutes,
       customerName: v.customerName,
       customerPhone: v.customerPhone ? this.extractPhoneDigits(v.customerPhone) : undefined,
       note: v.note || undefined,
@@ -142,24 +147,28 @@ export class BookingDialogComponent implements OnInit {
 
   private submitBlock(): void {
     const v = this.form.value;
-    // `blockEnd` holds the *start* of the chosen end slot (the data-list value);
-    // the contract's `end` is the EXCLUSIVE end wall-clock time, so submit that
-    // slot's END, not its start.
-    const picked = v.blockEnd as string | null;
-    const end = picked
-      ? this.data.laterSlots.find((s) => s.start === picked)?.end
-      : undefined;
-    const dto: CreateBlockDto = {
-      type: 'block',
-      court: this.data.court,
-      date: this.data.date,
-      start: this.data.start,
-      end: end || undefined,
-      note: v.note || undefined,
-    };
+    const chunks = blockChunks(hhmmToMinutes(this.data.start), hhmmToMinutes(this.data.end));
+    if (chunks.length === 0) {
+      this.alerts
+        .open('ბლოკი მინიმუმ 60 წუთია', { appearance: 'error' })
+        .pipe(take(1))
+        .subscribe();
+      return;
+    }
+    const requests = chunks.map((chunk) => {
+      const dto: CreateBlockDto = {
+        type: 'block',
+        court: this.data.court,
+        date: this.data.date,
+        start: chunk.start,
+        end: chunk.end,
+        durationMinutes: chunk.durationMinutes,
+        note: v.note || undefined,
+      };
+      return this.bookingService.createBlock(this.data.facilityId, dto);
+    });
     this.submitting.set(true);
-    this.bookingService
-      .createBlock(this.data.facilityId, dto)
+    forkJoin(requests)
       .pipe(take(1))
       .subscribe({
         next: () => this.onSuccess('სლოტი დაბლოკილია'),

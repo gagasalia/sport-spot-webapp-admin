@@ -1,8 +1,4 @@
 import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
-import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
-import { TuiDialogService } from '@taiga-ui/experimental';
-import { TuiAlertService } from '@taiga-ui/core';
-import { TUI_CONFIRM } from '@taiga-ui/kit';
 import { Court } from '../../../../shared/models/court.model';
 import {
   SportType,
@@ -15,13 +11,16 @@ import {
 } from '../../../../shared/enums/court-type.enum';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { take } from 'rxjs';
+import { defaultIfEmpty, take } from 'rxjs';
 import { CourtService } from '../../../../services/http-services/court.service';
 
+import { SsDialogService } from '../../../../shared/ui/dialog.service';
+import { SsToastService } from '../../../../shared/ui/toast.service';
+import { SsConfirmComponent, SsConfirmData } from '../../../../shared/ui/confirm.component';
 @Component({
   selector: 'app-court-card',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './court-card.component.html',
   styleUrls: ['./court-card.component.scss'],
 })
@@ -37,8 +36,8 @@ export class CourtCardComponent {
   readonly surfaceMaterialLabels = SURFACE_MATERIAL_LABELS;
   readonly surfaceColorLabels = SURFACE_COLOR_LABELS;
 
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly alerts = inject(TuiAlertService);
+  private readonly dialogs = inject(SsDialogService);
+  private readonly alerts = inject(SsToastService);
   private readonly courtService = inject(CourtService);
 
   /** Location type from API (`locationType`) or legacy (`type`). */
@@ -88,16 +87,53 @@ export class CourtCardComponent {
     return this.court.activeState;
   }
 
-  onToggleState(checked: boolean): void {
-    this.court.activeState = checked;
+  /** Display label — courts have numbers, not names (matches the card title). */
+  private get courtLabel(): string {
+    return `კორტი #${this.court.courtNumber}`;
+  }
 
+  onToggleState(checked: boolean): void {
     const facilityId = this.court.facility ?? this.court.facilityId;
     const courtId = this.court._id ?? this.court.id;
     if (!facilityId || !courtId) {
-      this.court.activeState = !checked;
       return;
     }
 
+    // The switch reflects the requested state while the confirm is open; it
+    // snaps back unless the operator confirms (dismissal counts as "no").
+    this.court.activeState = checked;
+
+    const data: SsConfirmData = checked
+      ? {
+          content: `გამოვაქვეყნოთ „${this.courtLabel}"? მოთამაშეები შეძლებენ მის დაჯავშნას.`,
+          yes: 'გამოქვეყნება',
+          no: 'გაუქმება',
+        }
+      : {
+          content: `მოვხსნათ „${this.courtLabel}" გამოქვეყნებიდან? მისი დაჯავშნა ვეღარ მოხერხდება.`,
+          yes: 'მოხსნა',
+          no: 'გაუქმება',
+          appearance: 'destructive',
+        };
+
+    this.dialogs
+      .open<boolean>(SsConfirmComponent, {
+        label: checked ? 'კორტის გამოქვეყნება' : 'გამოქვეყნების მოხსნა',
+        size: 's',
+        data,
+      })
+      .pipe(take(1), defaultIfEmpty(false))
+      .subscribe((confirmed) => {
+        if (!confirmed) {
+          this.court.activeState = !checked;
+          return;
+        }
+        this.patchState(facilityId, courtId, checked);
+      });
+  }
+
+  /** Optimistic PATCH; reverts the card state if the request fails. */
+  private patchState(facilityId: string, courtId: string, checked: boolean): void {
     this.courtService
       .setCourtStatus(facilityId, courtId, checked)
       .pipe(take(1))
@@ -120,12 +156,14 @@ export class CourtCardComponent {
   onDelete(event: Event): void {
     event.stopPropagation();
     this.dialogs
-      .open<boolean>(TUI_CONFIRM, {
-        label: 'დადასტურება',
+      .open<boolean>(SsConfirmComponent, {
+        label: 'კორტის წაშლა',
+        size: 's',
         data: {
-          content: 'ნამდვილად გსურთ კორტის წაშლა?',
+          content: `ნამდვილად წავშალოთ „${this.courtLabel}"?`,
           yes: 'წაშლა',
           no: 'გაუქმება',
+          appearance: 'destructive',
         },
       })
       .pipe(take(1))

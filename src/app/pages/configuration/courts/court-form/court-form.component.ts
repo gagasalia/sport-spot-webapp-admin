@@ -8,11 +8,6 @@ import {
 } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { take } from 'rxjs';
-import { type TuiStringHandler } from '@taiga-ui/cdk';
-import { TuiAlertService } from '@taiga-ui/core';
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
-import { TuiDialogContext } from '@taiga-ui/experimental';
-import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
 import { CourtService } from '../../../../services/http-services/court.service';
 import { Court, CreateCourtDto } from '../../../../shared/models/court.model';
 import {
@@ -26,10 +21,17 @@ import {
   SURFACE_COLOR_LABELS,
 } from '../../../../shared/enums/court-type.enum';
 
+import { SsToastService } from '../../../../shared/ui/toast.service';
+import { SS_DIALOG_CONTEXT, SsDialogContext, SsDialogService } from '../../../../shared/ui/dialog.service';
+/**
+ * Court create/edit form — Taiga-free template (ss-* kit, native selects). It
+ * still RENDERS inside a SsDialogService dialog (SS_DIALOG_CONTEXT below);
+ * the dialog shell is machinery slated for the last migration phase.
+ */
 @Component({
   selector: 'app-court-form',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule],
   templateUrl: './court-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -46,18 +48,7 @@ export class CourtFormComponent implements OnInit {
   readonly surfaceMaterialLabels = SURFACE_MATERIAL_LABELS;
   readonly surfaceColorLabels = SURFACE_COLOR_LABELS;
 
-  readonly stringifySportType: TuiStringHandler<SportType> = (id) => this.sportTypeLabels[id] || '';
-
-  readonly stringifyLocationType: TuiStringHandler<CourtLocationType> = (id) =>
-    this.locationTypeLabels[id] || '';
-
-  readonly stringifySurfaceMaterial: TuiStringHandler<SurfaceMaterial> = (id) =>
-    this.surfaceMaterialLabels[id] || '';
-
-  readonly stringifySurfaceColor: TuiStringHandler<SurfaceColor> = (id) =>
-    this.surfaceColorLabels[id] || '';
-
-  private readonly context = inject(POLYMORPHEUS_CONTEXT) as TuiDialogContext<
+  private readonly context = inject(SS_DIALOG_CONTEXT) as SsDialogContext<
     Court | null,
     { court?: Court; facilityId: string }
   >;
@@ -65,7 +56,7 @@ export class CourtFormComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly courtService = inject(CourtService);
-  private readonly alerts = inject(TuiAlertService);
+  private readonly alerts = inject(SsToastService);
 
   ngOnInit(): void {
     const editingCourt = this.context.data?.court;

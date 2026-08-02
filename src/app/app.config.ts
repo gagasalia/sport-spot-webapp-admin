@@ -1,4 +1,3 @@
-import { provideEventPlugins } from '@taiga-ui/event-plugins';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import {
   ApplicationConfig,
@@ -22,6 +21,5 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptors([authInterceptor, loadingInterceptor, errorInterceptor]),
     ),
-    provideEventPlugins(),
   ],
 };

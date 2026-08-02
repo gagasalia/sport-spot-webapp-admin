@@ -7,22 +7,18 @@ import {
   Validators,
 } from '@angular/forms';
 import { take } from 'rxjs';
-import { type TuiStringHandler } from '@taiga-ui/cdk';
-import { TuiAlertService } from '@taiga-ui/core';
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
-import { TuiDialogContext } from '@taiga-ui/experimental';
-import { TuiMultiSelect } from '@taiga-ui/kit';
-import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
 import { AcademyService } from '../../../../services/http-services/academy.service';
 import { UserManagementService } from '../../../../services/http-services/user-management.service';
 import { Academy, AcademyStatus } from '../../../../shared/models/academy.model';
 import { User, UserType } from '../../../../shared/models/user.model';
 import { arrayRequiredValidator } from '../../../../shared/validators/array-required.validator';
 
+import { SsToastService } from '../../../../shared/ui/toast.service';
+import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../../../shared/ui/dialog.service';
 @Component({
   selector: 'app-academy-form',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, ...TuiMultiSelect, ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule],
   templateUrl: './academy-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -34,12 +30,28 @@ export class AcademyFormComponent implements OnInit {
 
   protected readonly statusOptions = [AcademyStatus.PUBLISHED, AcademyStatus.UNPUBLISHED];
 
-  readonly stringifyUser: TuiStringHandler<User> = (user) => {
+  readonly stringifyUser = (user: User): string => {
     const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
     return name ? `${name} (${user.email})` : user.email;
   };
 
-  readonly stringifyStatus: TuiStringHandler<AcademyStatus> = (status) => {
+  /** Admin checkbox helpers (multi-admin selection without a multiselect widget). */
+  protected isAdminChecked(user: User): boolean {
+    const current: User[] = this.academyForm.get('admins')?.value ?? [];
+    return current.some((u) => u._id === user._id);
+  }
+
+  protected toggleAdmin(user: User): void {
+    const control = this.academyForm.get('admins');
+    const current: User[] = control?.value ?? [];
+    const next = current.some((u) => u._id === user._id)
+      ? current.filter((u) => u._id !== user._id)
+      : [...current, user];
+    control?.setValue(next);
+    control?.markAsTouched();
+  }
+
+  readonly stringifyStatus = (status: AcademyStatus): string => {
     switch (status) {
       case AcademyStatus.PUBLISHED:
         return 'გამოქვეყნებული';
@@ -50,14 +62,14 @@ export class AcademyFormComponent implements OnInit {
     }
   };
 
-  private readonly context = inject(POLYMORPHEUS_CONTEXT) as TuiDialogContext<
+  private readonly context = inject(SS_DIALOG_CONTEXT) as SsDialogContext<
     Academy | null,
     { academy?: Academy }
   >;
   private readonly fb = inject(FormBuilder);
   private readonly academyService = inject(AcademyService);
   private readonly userService = inject(UserManagementService);
-  private readonly alerts = inject(TuiAlertService);
+  private readonly alerts = inject(SsToastService);
 
   protected get isEditMode(): boolean {
     return !!this.context.data?.academy;

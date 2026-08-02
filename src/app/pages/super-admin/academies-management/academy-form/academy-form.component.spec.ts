@@ -4,8 +4,6 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { of, throwError } from 'rxjs';
 import { provideAnimations } from '@angular/platform-browser/animations';
 
-import { TuiAlertService } from '@taiga-ui/core';
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
 
 import { AcademyFormComponent } from './academy-form.component';
 import { AcademyService } from '../../../../services/http-services/academy.service';
@@ -13,6 +11,8 @@ import { UserManagementService } from '../../../../services/http-services/user-m
 import { Academy, AcademyStatus } from '../../../../shared/models/academy.model';
 import { User, UserType } from '../../../../shared/models/user.model';
 
+import { SsToastService } from '../../../../shared/ui/toast.service';
+import { SS_DIALOG_CONTEXT } from '../../../../shared/ui/dialog.service';
 // ─── Test data ────────────────────────────────────────────────────────────────
 
 const mockAdminUser: User = {
@@ -65,7 +65,7 @@ describe('AcademyFormComponent', () => {
   let fixture: ComponentFixture<AcademyFormComponent>;
   let academyServiceSpy: jasmine.SpyObj<AcademyService>;
   let userServiceSpy: jasmine.SpyObj<UserManagementService>;
-  let alertServiceSpy: jasmine.SpyObj<TuiAlertService>;
+  let alertServiceSpy: jasmine.SpyObj<SsToastService>;
   let contextSpy: ReturnType<typeof makeContext>;
 
   // Helper: create and compile the TestBed with the given context
@@ -77,7 +77,7 @@ describe('AcademyFormComponent', () => {
       'updateAcademy',
     ]);
     userServiceSpy = jasmine.createSpyObj('UserManagementService', ['findAllUsers']);
-    alertServiceSpy = jasmine.createSpyObj('TuiAlertService', ['open']);
+    alertServiceSpy = jasmine.createSpyObj('SsToastService', ['open']);
 
     // Defaults
     userServiceSpy.findAllUsers.and.returnValue(of({ data: mockAdminUsers }) as any);
@@ -87,10 +87,10 @@ describe('AcademyFormComponent', () => {
       imports: [AcademyFormComponent],
       providers: [
         provideAnimations(),
-        { provide: POLYMORPHEUS_CONTEXT, useValue: contextSpy },
+        { provide: SS_DIALOG_CONTEXT, useValue: contextSpy },
         { provide: AcademyService, useValue: academyServiceSpy },
         { provide: UserManagementService, useValue: userServiceSpy },
-        { provide: TuiAlertService, useValue: alertServiceSpy },
+        { provide: SsToastService, useValue: alertServiceSpy },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     })

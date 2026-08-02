@@ -10,6 +10,18 @@
 /** A booking is a customer/player reservation; a block is an operator-made unbookable slot. */
 export type BookingType = 'booking' | 'block';
 
+/**
+ * Populated player identity on operator booking reads (`user` is populated
+ * server-side with a minimal projection so the calendar can show WHO booked
+ * and link to /customers/:id). Manual bookings have no user at all.
+ */
+export interface BookingUserRef {
+  _id: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+}
+
 export type BookingStatus = 'confirmed' | 'cancelled' | 'completed';
 
 export type PaymentStatus = 'pay_at_venue' | 'paid';
@@ -31,7 +43,8 @@ export interface Booking {
   start: string; // "HH:mm" slot start
   end: string; // "HH:mm" slot end
   status: BookingStatus;
-  user?: string; // ObjectId ref User (player bookings)
+  /** Player bookings: populated identity on operator reads (see BookingUserRef). */
+  user?: string | BookingUserRef;
   customerName?: string; // manual (phone/walk-in) booking
   customerPhone?: string;
   priceTetri?: number; // required for type=booking (snapshot)
@@ -95,6 +108,8 @@ export interface CreateBookingDto {
   court: string;
   date: string; // "YYYY-MM-DD"
   start: string; // "HH:mm"
+  /** 60 | 90 | 120; omitted → facility default duration. */
+  durationMinutes?: number;
   customerName: string;
   customerPhone?: string;
   note?: string;
@@ -106,7 +121,9 @@ export interface CreateBlockDto {
   court: string;
   date: string; // "YYYY-MM-DD"
   start: string; // "HH:mm"
-  end?: string; // "HH:mm" — optional end slot for a multi-slot block
+  end?: string; // "HH:mm" — EXCLUSIVE end; span must divide by durationMinutes
+  /** Slot size the block expands in (60 | 90 | 120); omitted → facility default. */
+  durationMinutes?: number;
   note?: string;
 }
 

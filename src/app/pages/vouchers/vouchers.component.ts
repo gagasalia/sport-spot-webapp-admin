@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   OnInit,
+  computed,
   inject,
   signal,
 } from '@angular/core';
@@ -11,15 +12,10 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin, take } from 'rxjs';
-import { TuiAlertService } from '@taiga-ui/core';
-import { type TuiStringHandler, TuiDay } from '@taiga-ui/cdk';
-import { TuiInputDate } from '@taiga-ui/kit/components/input-date';
-import { SHARED_TAIGA_IMPORTS } from '../../shared/shared.module';
 import { VoucherService } from '../../services/http-services/voucher.service';
 import { FacilityService } from '../../services/http-services/facility.service';
 import { TenantService } from '../../shared/services/tenant.service';
 import { gelToTetri, tetriToGel } from '../../shared/utils/money.util';
-import { tuiDayToIso } from '../reservations/calendar-date.util';
 import { Facility } from '../../shared/models/facility.model';
 import {
   GrantVoucherDto,
@@ -31,6 +27,7 @@ import {
   isVoucher,
 } from '../../shared/models/voucher.model';
 
+import { SsToastService } from '../../shared/ui/toast.service';
 /** Result of parsing the bulk-import textarea: valid entries + per-line errors. */
 interface ParsedImport {
   entries: ImportEntry[];
@@ -40,15 +37,18 @@ interface ParsedImport {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Admin voucher page (design section 21.6). Facility selector (same pattern as
- * the reservations page) gates three blocks: a single grant form, a bulk-import
- * textarea, and two tables (facility vouchers + pending grants). Amounts are
- * entered/shown in GEL and converted to integer tetri at the wire edge.
+ * Admin voucher page (design section 21.6). Taiga-free (ss-* kit): a facility
+ * chip rail (first selected by default, ?facilityId= override) gates three
+ * blocks — a single grant form, a bulk-import textarea, and two tables
+ * (facility vouchers + pending grants). Expiry dates use native date inputs
+ * ('YYYY-MM-DD' strings). Amounts are entered/shown in GEL and converted to
+ * integer tetri at the wire edge. SsToastService remains for toasts until the
+ * kit grows its own (machinery is the last migration phase).
  */
 @Component({
   selector: 'app-vouchers',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, CommonModule, ReactiveFormsModule, ...TuiInputDate],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './vouchers.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -56,7 +56,7 @@ export class VouchersComponent implements OnInit {
   private readonly voucherService = inject(VoucherService);
   private readonly facilityService = inject(FacilityService);
   private readonly tenant = inject(TenantService);
-  private readonly alerts = inject(TuiAlertService);
+  private readonly alerts = inject(SsToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -64,11 +64,21 @@ export class VouchersComponent implements OnInit {
   // facility selection
   readonly facilities = signal<Facility[]>([]);
   readonly selectedFacilityId = signal<string | null>(null);
-  readonly facilityControl = new FormControl<string | null>(null);
 
-  // lists
+  // lists (each paginated independently — imports can make both grow)
   readonly vouchers = signal<Voucher[]>([]);
   readonly grants = signal<PendingGrant[]>([]);
+  readonly vouchersPage = signal(1);
+  readonly vouchersTotal = signal(0);
+  readonly grantsPage = signal(1);
+  readonly grantsTotal = signal(0);
+  readonly listLimit = 20;
+  readonly vouchersPages = computed(() =>
+    Math.max(1, Math.ceil(this.vouchersTotal() / this.listLimit)),
+  );
+  readonly grantsPages = computed(() =>
+    Math.max(1, Math.ceil(this.grantsTotal() / this.listLimit)),
+  );
 
   // ui state
   readonly isLoading = signal(false);
@@ -77,7 +87,7 @@ export class VouchersComponent implements OnInit {
   readonly importSubmitting = signal(false);
   readonly importErrors = signal<string[]>([]);
 
-  // grant form
+  // grant form — expiresAt is a native-date 'YYYY-MM-DD' string ('' = none)
   readonly grantForm = new FormGroup({
     email: new FormControl<string>('', {
       nonNullable: true,
@@ -86,13 +96,13 @@ export class VouchersComponent implements OnInit {
     amountGel: new FormControl<number | null>(null, {
       validators: [Validators.required, Validators.min(0.01)],
     }),
-    expiresAt: new FormControl<TuiDay | null>(null),
+    expiresAt: new FormControl<string>('', { nonNullable: true }),
     note: new FormControl<string>('', { nonNullable: true }),
   });
 
   // import form
   readonly importControl = new FormControl<string>('', { nonNullable: true });
-  readonly importExpiry = new FormControl<TuiDay | null>(null);
+  readonly importExpiry = new FormControl<string>('', { nonNullable: true });
 
   readonly statusLabels: Record<VoucherDerivedStatus, string> = {
     active: 'აქტიური',
@@ -112,16 +122,8 @@ export class VouchersComponent implements OnInit {
     return f._id ?? f.id ?? null;
   }
 
-  readonly stringifyFacility: TuiStringHandler<string> = (id) => {
-    const facility = this.facilities().find((f) => this.facilityIdOf(f) === id);
-    if (!facility) return '';
-    return facility.name || facility.description || 'უსახელო ობიექტი';
-  };
-
-  constructor() {
-    this.facilityControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((id) => {
-      this.onFacilityChange(id);
-    });
+  facilityLabel(f: Facility): string {
+    return f.name || f.description || 'უსახელო ობიექტი';
   }
 
   ngOnInit(): void {
@@ -151,38 +153,36 @@ export class VouchersComponent implements OnInit {
       });
   }
 
+  /** The first chip is selected by default; a valid ?facilityId= overrides it. */
   private resolveSelection(facilities: Facility[]): void {
     this.route.queryParams.pipe(take(1)).subscribe((params) => {
-      const fromQuery = params['facilityId'];
       if (facilities.length === 0) {
         this.selectFacility(null);
-      } else if (facilities.length === 1) {
-        const fId = this.facilityIdOf(facilities[0]);
-        this.facilityControl.setValue(fId, { emitEvent: false });
-        if (fromQuery !== fId) this.updateQueryParam(fId);
-        this.selectFacility(fId);
-      } else if (fromQuery) {
-        const facility = facilities.find((f) => this.facilityIdOf(f) === fromQuery);
-        const fId = facility ? this.facilityIdOf(facility) : null;
-        this.facilityControl.setValue(fId, { emitEvent: false });
-        if (!facility) this.updateQueryParam(null);
-        this.selectFacility(fId);
-      } else {
-        this.facilityControl.setValue(null, { emitEvent: false });
-        this.selectFacility(null);
+        return;
       }
+      const fromQuery = params['facilityId'];
+      const match = facilities.find((f) => this.facilityIdOf(f) === fromQuery);
+      const fId = match ? this.facilityIdOf(match) : this.facilityIdOf(facilities[0]);
+      if (fromQuery !== fId) this.updateQueryParam(fId);
+      this.selectFacility(fId);
     });
   }
 
-  onFacilityChange(facilityId: string | null): void {
-    this.updateQueryParam(facilityId);
-    this.selectFacility(facilityId);
+  onFacilityChipClick(facility: Facility): void {
+    const fId = this.facilityIdOf(facility);
+    if (fId === this.selectedFacilityId()) return;
+    this.updateQueryParam(fId);
+    this.selectFacility(fId);
   }
 
   private selectFacility(facilityId: string | null): void {
     this.selectedFacilityId.set(facilityId);
     this.vouchers.set([]);
     this.grants.set([]);
+    this.vouchersPage.set(1);
+    this.vouchersTotal.set(0);
+    this.grantsPage.set(1);
+    this.grantsTotal.set(0);
     this.importErrors.set([]);
     if (facilityId) {
       this.loadLists(facilityId);
@@ -204,14 +204,24 @@ export class VouchersComponent implements OnInit {
     // A hard failure of either list surfaces the error banner (the reservations
     // pattern); a successful pair replaces both signals atomically.
     forkJoin({
-      vouchers: this.voucherService.getVouchers(facilityId),
-      grants: this.voucherService.getGrants(facilityId),
+      vouchers: this.voucherService.getVouchers(
+        facilityId,
+        this.vouchersPage(),
+        this.listLimit,
+      ),
+      grants: this.voucherService.getGrants(
+        facilityId,
+        this.grantsPage(),
+        this.listLimit,
+      ),
     })
       .pipe(take(1))
       .subscribe({
         next: ({ vouchers, grants }) => {
-          this.vouchers.set(vouchers);
-          this.grants.set(grants);
+          this.vouchers.set(vouchers.data);
+          this.vouchersTotal.set(vouchers.page?.total ?? vouchers.data.length);
+          this.grants.set(grants.data);
+          this.grantsTotal.set(grants.page?.total ?? grants.data.length);
           this.isLoading.set(false);
         },
         error: () => {
@@ -221,7 +231,22 @@ export class VouchersComponent implements OnInit {
       });
   }
 
-  private refreshLists(): void {
+  onVouchersPageChange(page: number): void {
+    this.vouchersPage.set(page);
+    this.refreshLists();
+  }
+
+  onGrantsPageChange(page: number): void {
+    this.grantsPage.set(page);
+    this.refreshLists();
+  }
+
+  /** Fresh writes land on top of page 1 — jump back so they are visible. */
+  private refreshLists(resetToFirstPage = false): void {
+    if (resetToFirstPage) {
+      this.vouchersPage.set(1);
+      this.grantsPage.set(1);
+    }
     const facilityId = this.selectedFacilityId();
     if (facilityId) this.loadLists(facilityId);
   }
@@ -239,7 +264,7 @@ export class VouchersComponent implements OnInit {
       facilityId,
       amountTetri: gelToTetri(amountGel ?? 0),
     };
-    if (expiresAt) dto.expiresAt = tuiDayToIso(expiresAt);
+    if (expiresAt) dto.expiresAt = expiresAt;
     if (note.trim()) dto.note = note.trim();
 
     this.grantSubmitting.set(true);
@@ -258,7 +283,7 @@ export class VouchersComponent implements OnInit {
               .subscribe();
           }
           this.resetGrantForm();
-          this.refreshLists();
+          this.refreshLists(true);
         },
         error: () => {
           this.grantSubmitting.set(false);
@@ -271,7 +296,7 @@ export class VouchersComponent implements OnInit {
   }
 
   private resetGrantForm(): void {
-    this.grantForm.reset({ email: '', amountGel: null, expiresAt: null, note: '' });
+    this.grantForm.reset({ email: '', amountGel: null, expiresAt: '', note: '' });
   }
 
   // bulk import
@@ -322,7 +347,7 @@ export class VouchersComponent implements OnInit {
       return;
     }
     this.importErrors.set([]);
-    const expiresAt = this.importExpiry.value ? tuiDayToIso(this.importExpiry.value) : undefined;
+    const expiresAt = this.importExpiry.value || undefined;
 
     this.importSubmitting.set(true);
     this.voucherService
@@ -336,8 +361,8 @@ export class VouchersComponent implements OnInit {
             .pipe(take(1))
             .subscribe();
           this.importControl.reset('');
-          this.importExpiry.reset(null);
-          this.refreshLists();
+          this.importExpiry.reset('');
+          this.refreshLists(true);
         },
         error: () => {
           this.importSubmitting.set(false);
@@ -358,18 +383,17 @@ export class VouchersComponent implements OnInit {
     return 'active';
   }
 
-  statusChipAppearance(
-    status: VoucherDerivedStatus,
-  ): 'positive' | 'neutral' | 'destructive' | 'warning' {
+  /** ss-badge modifier class for a derived voucher status. */
+  statusBadgeClass(status: VoucherDerivedStatus): string {
     switch (status) {
       case 'active':
-        return 'positive';
+        return 'ss-badge ss-badge--positive';
       case 'depleted':
-        return 'neutral';
+        return 'ss-badge ss-badge--neutral';
       case 'expired':
-        return 'destructive';
+        return 'ss-badge ss-badge--negative';
       case 'pending_activation':
-        return 'warning';
+        return 'ss-badge ss-badge--warning';
     }
   }
 

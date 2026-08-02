@@ -1,0 +1,412 @@
+<div class="pt-8 p-0 sm:p-8 pb-28">
+  <header class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <h1 class="text-2xl font-semibold georgian-text" lang="ka">სტატისტიკა</h1>
+    <button
+      automation-id="stats-export"
+      class="ss-btn ss-btn--outline ss-btn--s"
+      type="button"
+      (click)="exportCsv()"
+    >
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/download.svg')"></i>
+      <span class="georgian-text" lang="ka">CSV ექსპორტი</span>
+    </button>
+  </header>
+
+  <!-- ── global filters ── -->
+  <div class="ss-card filter-card mb-5">
+    <div class="filter-row">
+      <div class="chip-rail" role="tablist" aria-label="პერიოდი">
+        @for (p of presets; track p.key) {
+          <button
+            type="button"
+            class="pick-chip"
+            [class.is-active]="preset() === p.key"
+            (click)="applyPreset(p.key)"
+          >
+            <span class="georgian-text" lang="ka">{{ p.label }}</span>
+          </button>
+        }
+      </div>
+      <div class="filter-dates">
+        <input
+          automation-id="stats-from"
+          type="date"
+          class="ss-input"
+          [ngModel]="from()"
+          (ngModelChange)="onFromChange($event)"
+          [attr.max]="to()"
+          aria-label="დან"
+        />
+        <span class="date-sep">—</span>
+        <input
+          automation-id="stats-to"
+          type="date"
+          class="ss-input"
+          [ngModel]="to()"
+          (ngModelChange)="onToChange($event)"
+          [attr.min]="from()"
+          aria-label="მდე"
+        />
+      </div>
+    </div>
+
+    <div class="filter-row filter-selects">
+      @if (isSuperAdmin()) {
+        <label class="filter-field">
+          <span class="ss-label georgian-text" lang="ka">აკადემია</span>
+          <select
+            class="ss-input"
+            [ngModel]="academyId()"
+            (ngModelChange)="onAcademyChange($event)"
+          >
+            <option value="">ყველა აკადემია</option>
+            @for (academy of academies(); track academy._id) {
+              <option [value]="academy._id">{{ academy.name }}</option>
+            }
+          </select>
+        </label>
+      }
+      <label class="filter-field">
+        <span class="ss-label georgian-text" lang="ka">ობიექტი</span>
+        <select
+          class="ss-input"
+          [ngModel]="facilityId()"
+          (ngModelChange)="onFacilityChange($event)"
+          [disabled]="facilities().length === 0"
+        >
+          <option value="">ყველა ობიექტი</option>
+          @for (facility of facilities(); track facilityIdOf(facility)) {
+            <option [value]="facilityIdOf(facility)">{{ facility.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="filter-field">
+        <span class="ss-label georgian-text" lang="ka">კორტი</span>
+        <select
+          class="ss-input"
+          [ngModel]="courtId()"
+          (ngModelChange)="courtId.set($event)"
+          [disabled]="courts().length === 0"
+        >
+          <option value="">ყველა კორტი</option>
+          @for (court of courts(); track courtIdOf(court)) {
+            <option [value]="courtIdOf(court)">კორტი #{{ court.courtNumber }}</option>
+          }
+        </select>
+      </label>
+      <label class="filter-field">
+        <span class="ss-label georgian-text" lang="ka">სპორტი</span>
+        <select
+          class="ss-input"
+          [ngModel]="sportType()"
+          (ngModelChange)="sportType.set($event)"
+        >
+          <option value="">ყველა სპორტი</option>
+          @for (sport of sports; track sport.value) {
+            <option [value]="sport.value">{{ sport.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <!-- ── view tabs ── -->
+  <div class="seg-tabs seg-tabs--wrap mb-5" role="tablist">
+    @for (t of tabs; track t.key) {
+      <button
+        type="button"
+        class="seg-tab"
+        role="tab"
+        [attr.automation-id]="'stats-tab-' + t.key"
+        [class.is-active]="tab() === t.key"
+        [attr.aria-selected]="tab() === t.key"
+        (click)="setTab(t.key)"
+      >
+        <i class="ss-ic seg-ic" [style.--ss-ic]="'url(assets/taiga-ui/icons/' + t.icon + ')'"></i>
+        <span class="georgian-text" lang="ka">{{ t.label }}</span>
+      </button>
+    }
+  </div>
+
+  @if (granular()) {
+    <div class="chip-rail mb-5" role="tablist" aria-label="დაჯგუფება">
+      <button type="button" class="pick-chip" [class.is-active]="granularity() === 'day'" (click)="setGranularity('day')">
+        <span class="georgian-text" lang="ka">დღე</span>
+      </button>
+      <button type="button" class="pick-chip" [class.is-active]="granularity() === 'week'" (click)="setGranularity('week')">
+        <span class="georgian-text" lang="ka">კვირა</span>
+      </button>
+      <button type="button" class="pick-chip" [class.is-active]="granularity() === 'month'" (click)="setGranularity('month')">
+        <span class="georgian-text" lang="ka">თვე</span>
+      </button>
+    </div>
+  }
+
+  @if (hasError()) {
+    <div class="error-banner georgian-text" lang="ka">
+      მონაცემების ჩატვირთვა ვერ მოხერხდა.
+      <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="retry()">
+        <span class="georgian-text" lang="ka">თავიდან ცდა</span>
+      </button>
+    </div>
+  } @else if (isLoading()) {
+    <div class="loading-block">
+      <div class="ss-spinner" aria-label="იტვირთება"></div>
+    </div>
+  } @else {
+    @switch (tab()) {
+      <!-- ── overview ── -->
+      @case ('overview') {
+        @if (overview(); as data) {
+          <div class="kpi-grid">
+            <ss-kpi-card
+              label="დატვირთვა"
+              [value]="pct(data.current.occupancy)"
+              [delta]="delta(data.current.occupancy, data.previous.occupancy)"
+              [hint]="'წინა: ' + pct(data.previous.occupancy)"
+            />
+            <ss-kpi-card
+              label="წმინდა შემოსავალი"
+              [value]="gel(data.current.netRevenueTetri)"
+              [delta]="delta(data.current.netRevenueTetri, data.previous.netRevenueTetri)"
+              [hint]="'წინა: ' + gel(data.previous.netRevenueTetri)"
+            />
+            <ss-kpi-card
+              label="ჯავშნები"
+              [value]="num(data.current.totalBookings)"
+              [delta]="delta(data.current.totalBookings, data.previous.totalBookings)"
+              [hint]="'წინა: ' + num(data.previous.totalBookings)"
+            />
+            <ss-kpi-card
+              label="გაუქმების წილი"
+              [value]="pct(data.current.cancelRate)"
+              [delta]="delta(data.current.cancelRate, data.previous.cancelRate)"
+              [invert]="true"
+              [hint]="'წინა: ' + pct(data.previous.cancelRate)"
+            />
+            <ss-kpi-card
+              label="ახალი მომხმარებლები"
+              [value]="num(data.current.newUsers)"
+              [delta]="delta(data.current.newUsers, data.previous.newUsers)"
+              [hint]="'წინა: ' + num(data.previous.newUsers)"
+            />
+            <ss-kpi-card
+              label="დაბრუნებული"
+              [value]="num(data.current.returningUsers)"
+              [delta]="delta(data.current.returningUsers, data.previous.returningUsers)"
+              [hint]="'წინა: ' + num(data.previous.returningUsers)"
+            />
+          </div>
+          <p class="compare-note georgian-text" lang="ka">
+            შედარება წინა პერიოდთან: {{ data.previousRange.from }} — {{ data.previousRange.to }}
+          </p>
+        }
+      }
+
+      <!-- ── occupancy ── -->
+      @case ('occupancy') {
+        @if (occupancy(); as data) {
+          @if (data.courts.length === 0) {
+            <div class="empty-block georgian-text" lang="ka">
+              <i class="ss-ic empty-ic" style="--ss-ic: url('assets/taiga-ui/icons/chart-column.svg')"></i>
+              ამ ფილტრებით კორტები ვერ მოიძებნა
+            </div>
+          } @else {
+            <div class="chart-grid">
+              <div class="ss-card chart-card">
+                <h3 class="chart-title georgian-text" lang="ka">დატვირთვა ობიექტების მიხედვით</h3>
+                <ss-bar-list [rows]="occupancyByFacility()" />
+                <div class="chart-foot georgian-text" lang="ka">
+                  ჯამური დატვირთვა: <b class="ss-num">{{ pct(data.total.occupancy) }}</b>
+                </div>
+              </div>
+            </div>
+            <div class="ss-card table-card mt-4">
+              <div class="table-scroll">
+                <table class="ss-table">
+                  <thead>
+                    <tr>
+                      <th class="georgian-text" lang="ka">ობიექტი</th>
+                      <th class="georgian-text" lang="ka">კორტი</th>
+                      <th class="georgian-text" lang="ka">დაჯავშნილი</th>
+                      <th class="georgian-text" lang="ka">ბლოკირებული</th>
+                      <th class="georgian-text" lang="ka">ხელმისაწვდომი</th>
+                      <th class="georgian-text" lang="ka">დატვირთვა</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of data.courts; track row.courtId) {
+                      <tr>
+                        <td class="georgian-text" lang="ka">{{ row.facilityName }}</td>
+                        <td class="georgian-text whitespace-nowrap" lang="ka">კორტი #{{ row.courtNumber }}</td>
+                        <td class="ss-num">{{ hoursOf(row.bookedMinutes) }}</td>
+                        <td class="ss-num">{{ hoursOf(row.blockedMinutes) }}</td>
+                        <td class="ss-num">{{ hoursOf(row.availableMinutes) }}</td>
+                        <td>
+                          @if (row.occupancy === null) {
+                            <span class="ss-badge ss-badge--neutral georgian-text" lang="ka" title="სამუშაო საათები არ არის კონფიგურირებული">—</span>
+                          } @else {
+                            <span class="occ-meter">
+                              <span class="occ-track"><span class="occ-fill" [style.width.%]="occupancyWidth(row.occupancy)"></span></span>
+                              <span class="ss-num occ-val">{{ pct(row.occupancy) }}</span>
+                            </span>
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        }
+      }
+
+      <!-- ── heatmap ── -->
+      @case ('heatmap') {
+        @if (heatmap(); as data) {
+          @if (data.cells.length === 0) {
+            <div class="empty-block georgian-text" lang="ka">
+              <i class="ss-ic empty-ic" style="--ss-ic: url('assets/taiga-ui/icons/clock.svg')"></i>
+              ამ პერიოდში ჯავშნები არ არის
+            </div>
+          } @else {
+            <div class="ss-card chart-card">
+              <h3 class="chart-title georgian-text" lang="ka">
+                პიკის საათები — ჯავშნები დღის საათისა და კვირის დღის მიხედვით
+              </h3>
+              <ss-heatmap-grid [cells]="data.cells" [max]="data.max" />
+              <div class="heat-legend georgian-text" lang="ka">
+                <span>ნაკლები</span>
+                <span class="heat-scale"></span>
+                <span>მეტი (მაქს. {{ data.max }})</span>
+              </div>
+            </div>
+          }
+        }
+      }
+
+      <!-- ── revenue ── -->
+      @case ('revenue') {
+        @if (revenue(); as data) {
+          <div class="kpi-grid kpi-grid--3">
+            <ss-kpi-card label="მიღებული" [value]="gel(data.totals.capturedTetri)" />
+            <ss-kpi-card label="დაბრუნებული" [value]="gel(data.totals.refundedTetri)" [invert]="true" />
+            <ss-kpi-card label="წმინდა შემოსავალი" [value]="gel(data.totals.netTetri)" />
+          </div>
+          @if (data.series.length === 0) {
+            <div class="empty-block georgian-text" lang="ka">
+              <i class="ss-ic empty-ic" style="--ss-ic: url('assets/taiga-ui/icons/wallet.svg')"></i>
+              ამ პერიოდში გადახდები არ არის
+            </div>
+          } @else {
+            <div class="ss-card chart-card mt-4">
+              <h3 class="chart-title georgian-text" lang="ka">წმინდა შემოსავალი დროში</h3>
+              <ss-line-chart [points]="revenueSeries()" />
+            </div>
+            <div class="chart-grid mt-4">
+              <div class="ss-card chart-card">
+                <h3 class="chart-title georgian-text" lang="ka">ობიექტების მიხედვით</h3>
+                <ss-bar-list [rows]="revenueByFacility()" />
+              </div>
+              <div class="ss-card chart-card">
+                <h3 class="chart-title georgian-text" lang="ka">საათობრივი ზოლები</h3>
+                <ss-bar-list [rows]="revenueByHour()" />
+              </div>
+              <div class="ss-card chart-card">
+                <h3 class="chart-title georgian-text" lang="ka">სპორტის მიხედვით</h3>
+                <ss-bar-list [rows]="revenueBySport()" />
+              </div>
+            </div>
+          }
+        }
+      }
+
+      <!-- ── users ── -->
+      @case ('users') {
+        @if (users(); as data) {
+          <div class="kpi-grid">
+            <ss-kpi-card label="აქტიური" [value]="num(data.totals.activeUsers)" />
+            <ss-kpi-card label="ახალი" [value]="num(data.totals.newUsers)" />
+            <ss-kpi-card label="დაბრუნებული" [value]="num(data.totals.returningUsers)" />
+            <ss-kpi-card label="შენარჩუნება" [value]="pct(data.totals.retentionRate)" />
+            <ss-kpi-card label="მედიანა · ჯავშნები" [value]="num(data.totals.medianBookingsPerUser)" />
+            <ss-kpi-card label="ARPU" [value]="gel(data.totals.arpuTetri)" />
+            <ss-kpi-card label="LTV" [value]="gel(data.totals.ltvTetri)" />
+          </div>
+          @if (data.trend.length === 0) {
+            <div class="empty-block georgian-text" lang="ka">
+              <i class="ss-ic empty-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
+              ამ პერიოდში მომხმარებლის აქტივობა არ არის
+            </div>
+          } @else {
+            <div class="chart-grid mt-4">
+              <div class="ss-card chart-card">
+                <h3 class="chart-title georgian-text" lang="ka">ახალი vs დაბრუნებული</h3>
+                <ss-stack-bars [rows]="usersTrend()" />
+              </div>
+              <div class="ss-card chart-card">
+                <h3 class="chart-title georgian-text" lang="ka">სეგმენტები (მომხმარებლები · შემოსავალი)</h3>
+                <ss-bar-list [rows]="userSegments()" />
+              </div>
+            </div>
+          }
+        }
+      }
+
+      <!-- ── cancellations ── -->
+      @case ('cancellations') {
+        @if (cancellations(); as data) {
+          <div class="kpi-grid kpi-grid--3">
+            <ss-kpi-card label="სულ ჯავშნები" [value]="num(data.totals.total)" />
+            <ss-kpi-card label="გაუქმების წილი" [value]="pct(data.totals.cancelRate)" [invert]="true" />
+            <ss-kpi-card label="გამოუცხადებლობა" [value]="pct(data.totals.noShowRate)" [invert]="true" />
+          </div>
+          @if (data.totals.total === 0) {
+            <div class="empty-block georgian-text" lang="ka">
+              <i class="ss-ic empty-ic" style="--ss-ic: url('assets/taiga-ui/icons/calendar-off.svg')"></i>
+              ამ პერიოდში ჯავშნები არ არის
+            </div>
+          } @else {
+            <div class="chart-grid mt-4">
+              <div class="ss-card chart-card">
+                <h3 class="chart-title georgian-text" lang="ka">დინამიკა</h3>
+                <ss-stack-bars [rows]="cancellationsTrend()" />
+              </div>
+              <div class="ss-card chart-card">
+                <h3 class="chart-title georgian-text" lang="ka">გაუქმება სლოტამდე დარჩენილი დროით</h3>
+                <ss-bar-list [rows]="leadBuckets()" />
+              </div>
+            </div>
+            <div class="ss-card table-card mt-4">
+              <div class="table-scroll">
+                <table class="ss-table">
+                  <thead>
+                    <tr>
+                      <th class="georgian-text" lang="ka">ობიექტი</th>
+                      <th class="georgian-text" lang="ka">ჯავშნები</th>
+                      <th class="georgian-text" lang="ka">გაუქმებული</th>
+                      <th class="georgian-text" lang="ka">გამოუცხადებელი</th>
+                      <th class="georgian-text" lang="ka">გაუქმების წილი</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of data.perFacility; track row.facilityId) {
+                      <tr>
+                        <td class="georgian-text" lang="ka">{{ row.facilityName }}</td>
+                        <td class="ss-num">{{ num(row.total) }}</td>
+                        <td class="ss-num">{{ num(row.cancelled) }}</td>
+                        <td class="ss-num">{{ num(row.noShow) }}</td>
+                        <td class="ss-num">{{ pct(row.cancelRate) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          }
+        }
+      }
+    }
+  }
+</div>

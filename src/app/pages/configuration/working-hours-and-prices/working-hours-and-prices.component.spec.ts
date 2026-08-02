@@ -2,8 +2,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { TuiAlertService } from '@taiga-ui/core';
-import { TuiDay } from '@taiga-ui/cdk';
 
 import { WorkingHoursAndPricesComponent } from './working-hours-and-prices.component';
 import { ScheduleService } from '../../../services/http-services/schedule.service';
@@ -13,6 +11,7 @@ import { Facility } from '../../../shared/models/facility.model';
 import { FacilityScheduleDTO, HolidayDTO } from '../../../shared/models/schedule.model';
 import { Day } from '../../../shared/enums/day.enum';
 
+import { SsToastService } from '../../../shared/ui/toast.service';
 const facility: Facility = {
   _id: 'fac-1',
   name: 'Padel House',
@@ -45,7 +44,7 @@ describe('WorkingHoursAndPricesComponent', () => {
   let scheduleSpy: jasmine.SpyObj<ScheduleService>;
   let facilitySpy: jasmine.SpyObj<FacilityService>;
   let tenantSpy: jasmine.SpyObj<TenantService>;
-  let alertsSpy: jasmine.SpyObj<TuiAlertService>;
+  let alertsSpy: jasmine.SpyObj<SsToastService>;
 
   async function setup() {
     scheduleSpy = jasmine.createSpyObj<ScheduleService>('ScheduleService', [
@@ -70,7 +69,7 @@ describe('WorkingHoursAndPricesComponent', () => {
     scheduleSpy.addHoliday.and.returnValue(of(schedule));
     scheduleSpy.deleteHoliday.and.returnValue(of(schedule));
 
-    alertsSpy = jasmine.createSpyObj<TuiAlertService>('TuiAlertService', ['open']);
+    alertsSpy = jasmine.createSpyObj<SsToastService>('SsToastService', ['open']);
     alertsSpy.open.and.returnValue(of(undefined) as never);
 
     const routerSpy = jasmine.createSpyObj<Router>('Router', ['navigate']);
@@ -83,7 +82,7 @@ describe('WorkingHoursAndPricesComponent', () => {
         { provide: TenantService, useValue: tenantSpy },
         { provide: Router, useValue: routerSpy },
         { provide: ActivatedRoute, useValue: { queryParams: of({}) } },
-        { provide: TuiAlertService, useValue: alertsSpy },
+        { provide: SsToastService, useValue: alertsSpy },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     })
@@ -172,16 +171,10 @@ describe('WorkingHoursAndPricesComponent', () => {
     const WARN_ALERT =
       'ზოგიერთი დასვენების დღის წაშლა ვერ მოხერხდა — გვერდი შესაძლოა არ ემთხვეოდეს სერვერს.';
 
-    /** Seeds the private server-holiday list and the picked TuiDay[] directly. */
-    function seedHolidays(server: HolidayDTO[], picked: TuiDay[]): void {
+    /** Seeds the private server-holiday list and the picked ISO strings directly. */
+    function seedHolidays(server: HolidayDTO[], picked: string[]): void {
       (component as unknown as { serverHolidays: HolidayDTO[] }).serverHolidays = server;
       component.holidays = picked;
-    }
-
-    /** TuiDay for an ISO "YYYY-MM-DD" string (month is 0-based in TuiDay). */
-    function day(iso: string): TuiDay {
-      const [y, m, d] = iso.split('-').map(Number);
-      return new TuiDay(y, m - 1, d);
     }
 
     beforeEach(() => {
@@ -199,7 +192,7 @@ describe('WorkingHoursAndPricesComponent', () => {
     });
 
     it('(b) adding a new date posts that holiday payload', () => {
-      seedHolidays([], [day('2026-03-08')]);
+      seedHolidays([], ['2026-03-08']);
 
       component.onSaveHolidays();
 
@@ -211,7 +204,7 @@ describe('WorkingHoursAndPricesComponent', () => {
     });
 
     it('(c) no changes calls neither add nor delete (but still confirms success)', () => {
-      seedHolidays([{ _id: 'hol-1', date: '2026-01-01', isClosed: true }], [day('2026-01-01')]);
+      seedHolidays([{ _id: 'hol-1', date: '2026-01-01', isClosed: true }], ['2026-01-01']);
 
       component.onSaveHolidays();
 
@@ -222,7 +215,7 @@ describe('WorkingHoursAndPricesComponent', () => {
 
     it('partial failure: first op errors → error alert, no success alert', () => {
       // Two ops: delete hol-1 (fails) + add 2026-03-08. The error short-circuits.
-      seedHolidays([{ _id: 'hol-1', date: '2026-01-01', isClosed: true }], [day('2026-03-08')]);
+      seedHolidays([{ _id: 'hol-1', date: '2026-01-01', isClosed: true }], ['2026-03-08']);
       scheduleSpy.deleteHoliday.and.returnValue(throwError(() => new Error('boom')));
 
       component.onSaveHolidays();

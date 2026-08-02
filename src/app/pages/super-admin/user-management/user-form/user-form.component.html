@@ -1,31 +1,32 @@
 <div class="h-[80vh] overflow-y-auto p-1">
   <form [formGroup]="userForm" (ngSubmit)="onSubmit()" class="space-y-4">
     <!-- Email -->
-    <label tuiLabel>
-      <span class="georgian-text" lang="ka">ელ. ფოსტა <span class="text-red-500">*</span></span>
-      <tui-textfield>
-        <input tuiTextfield type="email" formControlName="email" />
-      </tui-textfield>
+    <label class="ss-field">
+      <span class="ss-label georgian-text" lang="ka">
+        ელ. ფოსტა <span class="text-red-500">*</span>
+      </span>
+      <input
+        class="ss-input"
+        [class.ss-input--invalid]="userForm.get('email')?.touched && userForm.get('email')?.invalid"
+        type="email"
+        formControlName="email"
+      />
       @if (userForm.get('email')?.touched && userForm.get('email')?.hasError('email')) {
-        <span class="text-xs text-red-500 georgian-text" lang="ka"
-          >არასწორი ელ. ფოსტის ფორმატი</span
-        >
+        <span class="ss-error georgian-text" lang="ka">არასწორი ელ. ფოსტის ფორმატი</span>
       }
     </label>
 
     <!-- Password -->
-    <label tuiLabel>
-      <span class="georgian-text" lang="ka">
+    <label class="ss-field">
+      <span class="ss-label georgian-text" lang="ka">
         პაროლი
         @if (!isEditMode) {
           <span class="text-red-500">*</span>
         }
       </span>
-      <tui-textfield>
-        <input tuiTextfield type="password" formControlName="password" />
-      </tui-textfield>
+      <input class="ss-input" type="password" formControlName="password" />
       @if (isEditMode) {
-        <span class="text-xs" style="color: var(--tui-text-secondary)">
+        <span class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
           დატოვეთ ცარიელი თუ არ გსურთ შეცვლა
         </span>
       }
@@ -33,95 +34,86 @@
 
     <!-- First Name & Last Name -->
     <div class="grid grid-cols-2 gap-4">
-      <label tuiLabel>
-        <span class="georgian-text" lang="ka">სახელი</span>
-        <tui-textfield>
-          <input tuiTextfield formControlName="firstName" />
-        </tui-textfield>
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">სახელი</span>
+        <input class="ss-input georgian-text" lang="ka" formControlName="firstName" />
       </label>
-      <label tuiLabel>
-        <span class="georgian-text" lang="ka">გვარი</span>
-        <tui-textfield>
-          <input tuiTextfield formControlName="lastName" />
-        </tui-textfield>
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">გვარი</span>
+        <input class="ss-input georgian-text" lang="ka" formControlName="lastName" />
       </label>
     </div>
 
     <!-- Phone -->
-    <label tuiLabel>
-      <span class="georgian-text" lang="ka">ტელეფონი <span class="text-red-500">*</span></span>
-      <tui-textfield>
-        <input
-          tuiTextfield
-          type="tel"
-          formControlName="phone"
-          [maskito]="phoneMask"
-          placeholder="+9955XXXXXXXX"
-        />
-      </tui-textfield>
+    <label class="ss-field">
+      <span class="ss-label georgian-text" lang="ka">
+        ტელეფონი <span class="text-red-500">*</span>
+      </span>
+      <input
+        class="ss-input"
+        [class.ss-input--invalid]="userForm.get('phone')?.touched && userForm.get('phone')?.invalid"
+        type="tel"
+        formControlName="phone"
+        [maskito]="phoneMask"
+        placeholder="+9955XXXXXXXX"
+      />
       @if (userForm.get('phone')?.touched && userForm.get('phone')?.hasError('required')) {
-        <span class="text-xs text-red-500 georgian-text" lang="ka"
-          >ტელეფონის ნომერი სავალდებულოა</span
-        >
+        <span class="ss-error georgian-text" lang="ka">ტელეფონის ნომერი სავალდებულოა</span>
       }
       @if (userForm.get('phone')?.touched && userForm.get('phone')?.hasError('pattern')) {
-        <span class="text-xs text-red-500 georgian-text" lang="ka"
-          >ნომერი უნდა იწყებოდეს 5-ით და იყოს 9 ციფრი</span
-        >
+        <span class="ss-error georgian-text" lang="ka">
+          ნომერი უნდა იწყებოდეს 5-ით და იყოს 9 ციფრი
+        </span>
       }
     </label>
 
     <!-- PID -->
-    <label tuiLabel>
-      <span class="georgian-text" lang="ka">პირადი ნომერი</span>
-      <tui-textfield>
-        <input tuiTextfield formControlName="pid" [maskito]="pidMask" placeholder="XXXXXXXXXXX" />
-      </tui-textfield>
+    <label class="ss-field">
+      <span class="ss-label georgian-text" lang="ka">პირადი ნომერი</span>
+      <input
+        class="ss-input"
+        formControlName="pid"
+        [maskito]="pidMask"
+        placeholder="XXXXXXXXXXX"
+      />
       @if (userForm.get('pid')?.touched && userForm.get('pid')?.hasError('pattern')) {
-        <span class="text-xs text-red-500 georgian-text" lang="ka"
-          >პირადი ნომერი უნდა იყოს 11 ციფრი</span
-        >
+        <span class="ss-error georgian-text" lang="ka">პირადი ნომერი უნდა იყოს 11 ციფრი</span>
       }
     </label>
 
     <!-- Date of Birth -->
-    <label tuiLabel>
-      <span class="georgian-text" lang="ka">დაბადების თარიღი</span>
-      <tui-textfield>
-        <input tuiInputDate formControlName="dateOfBirth" />
-        <tui-calendar *tuiTextfieldDropdown />
-      </tui-textfield>
+    <label class="ss-field">
+      <span class="ss-label georgian-text" lang="ka">დაბადების თარიღი</span>
+      <input class="ss-input" type="date" formControlName="dateOfBirth" />
     </label>
 
     <!-- User Type (multi-select — a user can hold several roles) -->
-    <label tuiLabel>
-      <span class="georgian-text" lang="ka">როლი <span class="text-red-500">*</span></span>
-      <tui-textfield multi tuiChevron [stringify]="stringifyUserType">
-        <select
-          tuiMultiSelect
-          formControlName="userType"
-          class="georgian-text"
-          lang="ka"
-        ></select>
-        <tui-data-list *tuiTextfieldDropdown>
-          @for (type of userTypes; track type) {
-            <button tuiOption [value]="type" new>
-              <span class="georgian-text" lang="ka">{{ userTypeLabels[type] }}</span>
-            </button>
-          }
-        </tui-data-list>
-      </tui-textfield>
+    <div class="ss-field">
+      <span class="ss-label georgian-text" lang="ka">როლი <span class="text-red-500">*</span></span>
+      <div class="flex flex-wrap gap-3 mt-1">
+        @for (type of userTypes; track type) {
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              class="ss-checkbox"
+              type="checkbox"
+              [checked]="isRoleChecked(type)"
+              (change)="toggleRole(type)"
+            />
+            <span class="georgian-text text-sm" lang="ka">{{ userTypeLabels[type] }}</span>
+          </label>
+        }
+      </div>
       @if (userForm.get('userType')?.touched && userForm.get('userType')?.hasError('required')) {
-        <span class="text-xs text-red-500 georgian-text" lang="ka">როლი სავალდებულოა</span>
+        <span class="ss-error georgian-text" lang="ka">როლი სავალდებულოა</span>
       }
-    </label>
+    </div>
 
     <!-- Action Buttons -->
     <div class="flex justify-end gap-2 mt-6">
-      <button tuiButton appearance="flat" type="button" (click)="onCancel()">
+      <button class="ss-btn ss-btn--flat" type="button" (click)="onCancel()">
         <span class="georgian-text" lang="ka">გაუქმება</span>
       </button>
-      <button tuiButton appearance="primary" type="submit" [disabled]="!userForm.valid">
+      <button class="ss-btn ss-btn--primary" type="submit" [disabled]="!userForm.valid">
         <span class="georgian-text" lang="ka">{{ isEditMode ? 'განახლება' : 'დამატება' }}</span>
       </button>
     </div>

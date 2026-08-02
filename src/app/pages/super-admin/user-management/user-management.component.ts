@@ -7,7 +7,6 @@ import {
   HostListener,
   OnInit,
   DestroyRef,
-  Injector,
   effect,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -16,42 +15,36 @@ import { Location } from '@angular/common';
 import { HttpContext } from '@angular/common/http';
 import { Subject, filter, switchMap, take, debounceTime } from 'rxjs';
 import { SKIP_LOADING } from '../../../shared/interceptors/loading.interceptor';
-import { TuiAlertService } from '@taiga-ui/core';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { TuiDialogService } from '@taiga-ui/experimental';
-import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit/components/confirm';
-import { TuiPagination } from '@taiga-ui/kit';
-import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { UserManagementService } from '../../../services/http-services/user-management.service';
 import { User, UserType, FilterUsersDto } from '../../../shared/models/user.model';
 import { UserFormComponent } from './user-form/user-form.component';
 import { UserBalanceComponent } from './user-balance/user-balance.component';
 import { FormsModule } from '@angular/forms';
-import { WA_WINDOW } from '@ng-web-apis/common';
 import { DatePipe } from '@angular/common';
 
+import { SsToastService } from '../../../shared/ui/toast.service';
+import { SsDialogService } from '../../../shared/ui/dialog.service';
+import { SsConfirmComponent, SsConfirmData } from '../../../shared/ui/confirm.component';
 const DEFAULT_PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, DatePipe, FormsModule, TuiPagination],
+  imports: [DatePipe, FormsModule],
   templateUrl: './user-management.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserManagementComponent implements OnInit {
   private readonly userService = inject(UserManagementService);
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly alerts = inject(TuiAlertService);
-  private readonly injector = inject(Injector);
-  private readonly window = inject(WA_WINDOW);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly dialogs = inject(SsDialogService);
+  private readonly alerts = inject(SsToastService);
+    private readonly destroyRef = inject(DestroyRef);
   private readonly route = inject(ActivatedRoute);
   private readonly location = inject(Location);
 
   protected readonly users = signal<User[]>([]);
   protected readonly isLoading = signal(true);
-  protected readonly isMobile = signal(this.window.innerWidth <= 768);
+  protected readonly isMobile = signal(window.innerWidth <= 768);
 
   protected readonly filterName = signal('');
   protected readonly filterEmail = signal('');
@@ -109,7 +102,7 @@ export class UserManagementComponent implements OnInit {
 
   @HostListener('window:resize')
   protected onResize(): void {
-    this.isMobile.set(this.window.innerWidth <= 768);
+    this.isMobile.set(window.innerWidth <= 768);
   }
 
   ngOnInit(): void {
@@ -231,7 +224,7 @@ export class UserManagementComponent implements OnInit {
 
   protected addUser(): void {
     this.dialogs
-      .open<User | null>(new PolymorpheusComponent(UserFormComponent, this.injector), {
+      .open<User | null>(UserFormComponent, {
         label: 'მომხმარებლის დამატება',
         size: 'l',
         dismissible: true,
@@ -248,7 +241,7 @@ export class UserManagementComponent implements OnInit {
 
   protected editUser(user: User): void {
     this.dialogs
-      .open<User | null>(new PolymorpheusComponent(UserFormComponent, this.injector), {
+      .open<User | null>(UserFormComponent, {
         label: 'მომხმარებლის რედაქტირება',
         size: 'l',
         dismissible: true,
@@ -268,7 +261,7 @@ export class UserManagementComponent implements OnInit {
     if (!user._id) return;
 
     this.dialogs
-      .open<void>(new PolymorpheusComponent(UserBalanceComponent, this.injector), {
+      .open<void>(UserBalanceComponent, {
         label: 'ბალანსის მართვა',
         size: 'l',
         dismissible: true,
@@ -285,14 +278,14 @@ export class UserManagementComponent implements OnInit {
     const name = this.getFullName(user);
 
     this.dialogs
-      .open<boolean>(TUI_CONFIRM, {
+      .open<boolean>(SsConfirmComponent, {
         label: 'მომხმარებლის წაშლა',
         size: 's',
         data: {
           content: `ნამდვილად გსურთ ${name} - ის წაშლა?`,
           yes: 'წაშლა',
           no: 'გაუქმება',
-        } as TuiConfirmData,
+        } as SsConfirmData,
       })
       .pipe(
         take(1),

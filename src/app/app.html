@@ -1,5 +1,7 @@
-<tui-root [attr.tuiTheme]="darkMode() ? 'dark' : null">
-  <tui-loader [showLoader]="loading()">
-    <router-outlet />
-  </tui-loader>
-</tui-root>
+<router-outlet />
+<ss-ui-outlet />
+@if (loading()) {
+  <div class="ss-loading-overlay" role="progressbar" aria-label="იტვირთება">
+    <div class="ss-spinner"></div>
+  </div>
+}

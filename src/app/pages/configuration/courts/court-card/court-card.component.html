@@ -1,24 +1,24 @@
 <div
-  class="card-bg rounded-xl overflow-hidden border transition-shadow hover:shadow-lg flex flex-col h-full"
+  class="ss-card overflow-hidden transition-shadow hover:shadow-lg flex flex-col h-full"
 >
   <!-- Header with Toggle and Status -->
-  <div class="card-header-bg flex items-center justify-between p-4 border-b h-[72px]">
+  <div
+    class="flex items-center justify-between p-4 border-b h-[72px]"
+    style="border-color: var(--tui-border-normal); background: var(--tui-background-neutral-1)"
+  >
     <div class="flex items-center gap-3">
       <input
-        tuiSwitch
+        class="ss-switch"
         type="checkbox"
         [ngModel]="isPublished"
         (ngModelChange)="onToggleState($event)"
+        [attr.aria-label]="'გამოქვეყნება'"
       />
 
       @if (court.activeState) {
-        <tui-chip appearance="success" size="m" lang="ka">
-          <span class="georgian-text"> გამოქვეყნებული </span>
-        </tui-chip>
+        <span class="ss-badge ss-badge--positive georgian-text" lang="ka">გამოქვეყნებული</span>
       } @else {
-        <tui-chip appearance="neutral" size="m" lang="ka">
-          <span class="georgian-text"> მონახაზი </span>
-        </tui-chip>
+        <span class="ss-badge ss-badge--neutral georgian-text" lang="ka">მონახაზი</span>
       }
     </div>
   </div>
@@ -26,66 +26,43 @@
   <!-- Content Section -->
   <div class="p-4 flex flex-col flex-1">
     <!-- Court Number Title -->
-    <h3 class="title-text text-lg font-bold m-0 georgian-text h-7 line-clamp-1 mb-4" lang="ka">
+    <h3 class="text-lg font-bold m-0 georgian-text h-7 line-clamp-1 mb-4" lang="ka">
       კორტი #{{ court.courtNumber }}
     </h3>
 
     <!-- Information Badges -->
     <div class="flex flex-wrap gap-2 mb-4">
-      <!-- Sport Type Badge -->
-      <tui-badge appearance="primary" size="l" class="georgian-text" lang="ka">
-        <span class="px-1 py-15">
-          {{ sportTypeName }}
-        </span>
-      </tui-badge>
-
-      <!-- Location Type Badge -->
-      <tui-badge appearance="info" size="l" class="georgian-text" lang="ka">
-        <span class="px-1 py-15">
-          {{ locationTypeName }}
-        </span>
-      </tui-badge>
-
-      <!-- Surface Material Badge -->
-      <tui-badge appearance="neutral" size="l" class="georgian-text" lang="ka">
-        <span class="px-1 py-15">
-          {{ surfaceMaterialName }}
-        </span>
-      </tui-badge>
-
-      <!-- Surface Color Badge -->
-      <tui-badge appearance="neutral" size="l" class="georgian-text" lang="ka">
-        <span class="px-1 py-15">
-          {{ surfaceColorName }}
-        </span>
-      </tui-badge>
+      <span class="ss-badge ss-badge--accent georgian-text" lang="ka">{{ sportTypeName }}</span>
+      <span class="ss-badge ss-badge--info georgian-text" lang="ka">{{ locationTypeName }}</span>
+      <span class="ss-badge ss-badge--neutral georgian-text" lang="ka">{{ surfaceMaterialName }}</span>
+      <span class="ss-badge ss-badge--neutral georgian-text" lang="ka">{{ surfaceColorName }}</span>
     </div>
 
     <!-- Action Buttons -->
     <div class="flex gap-2 mt-auto items-center">
       <!-- Edit button -->
       <button
-        tuiButton
-        appearance="secondary"
-        size="m"
-        class="flex-1 flex items-center justify-center gap-1.5 text-sm sm:text-base px-3 py-2 min-w-0"
+        class="ss-btn ss-btn--outline ss-btn--s flex-1 min-w-0"
+        type="button"
         (click)="onEdit($event)"
         [attr.aria-label]="'რედაქტირება'"
       >
-        <tui-icon icon="@lucide.edit" class="w-4 h-4 shrink-0"></tui-icon>
-        <span class="georgian-text truncate ml-2" lang="ka">რედაქტირება</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true" class="shrink-0">
+          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+        </svg>
+        <span class="georgian-text truncate" lang="ka">რედაქტირება</span>
       </button>
 
       <!-- Delete button -->
       <button
-        tuiIconButton
-        appearance="flat"
-        size="m"
-        class="w-10 h-10 flex items-center justify-center text-red-600 hover:bg-red-50"
+        class="ss-icon-btn ss-icon-btn--danger"
+        type="button"
         (click)="onDelete($event)"
         [attr.aria-label]="'წაშლა'"
       >
-        <tui-icon icon="@lucide.trash-2" class="w-4 h-4"></tui-icon>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
+        </svg>
       </button>
     </div>
   </div>

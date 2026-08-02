@@ -41,10 +41,12 @@
   font-display: swap;
 }
 
-/* Global font settings for Georgian text */
+/* Global font settings — the player app's stack (Noto Sans Georgian + Inter,
+   self-hosted in public/fonts); MarkGEO stays as a Georgian fallback. */
 :root {
   --font-family-georgian:
-    'MarkGEO', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    'Noto Sans Georgian', 'Noto Sans Georgian Fallback', 'Inter', 'Inter Fallback', 'MarkGEO',
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Apply MarkGEO font to Georgian text elements */
@@ -61,30 +63,9 @@ body {
 }
 
 /* Specific styling for Georgian text in navigation */
-.tui-aside-item span[tuiFade]:lang(ka),
 .georgian-nav-text {
   font-family: 'MarkGEO', sans-serif;
   font-weight: 400;
-}
-
-/* Ensure Taiga dialogs, confirmations and alerts use Georgian font */
-.tui-dialog,
-.tui-dialog__content,
-.tui-dialog__inner,
-.tui-popup,
-.tui-popup__content,
-.tui-alert,
-.tui-alert__content,
-.tui-alert__message,
-.tui-portal,
-.tui-portal * {
-  font-family: var(--font-family-georgian) !important;
-}
-
-/* Ensure Georgian font applies to Taiga UI text inputs */
-tui-textfield input,
-tui-textfield textarea {
-  font-family: var(--font-family-georgian) !important;
 }
 
 /* Responsive grid for facilities list: 1 column below 768px, 2 columns >=768px, 3 columns >1366px */
@@ -105,30 +86,3 @@ tui-textfield textarea {
   }
 }
 
-/* Mobile dialog padding (less than 768px) */
-@media (max-width: 768px) {
-  tui-dialog[new][data-appearance~='taiga'] {
-    padding: 1rem !important;
-  }
-}
-
-/* Mobile TabBar: reserve space and pin the bar to the bottom of the shell */
-@media (max-width: 768px) {
-  main[tuiNavigationMain] {
-    padding-bottom: 80px; /* space for the fixed TabBar */
-  }
-
-  [tuiTabBar] {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 1000;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  /* Position dropdowns above the TabBar */
-  tui-dropdown {
-    bottom: 64px !important;
-  }
-}

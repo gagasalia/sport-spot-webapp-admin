@@ -29,31 +29,27 @@
     <span class="georgian-text text-sm font-semibold" lang="ka">ბალანსის ცვლილება</span>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <label tuiLabel>
-        <span class="georgian-text" lang="ka">თანხა (₾)</span>
-        <tui-textfield>
-          <input
-            tuiTextfield
-            type="number"
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">თანხა (₾)</span>
+        <input
+          class="ss-input"
+          type="number"
             min="0.01"
             step="0.01"
             formControlName="amountGel"
             data-testid="adjust-amount"
           />
-        </tui-textfield>
       </label>
 
-      <label tuiLabel>
-        <span class="georgian-text" lang="ka">მიზეზი</span>
-        <tui-textfield>
-          <input
-            tuiTextfield
-            type="text"
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">მიზეზი</span>
+        <input
+          class="ss-input"
+          type="text"
             formControlName="note"
             placeholder="რატომ იცვლება ბალანსი"
             data-testid="adjust-note"
           />
-        </tui-textfield>
       </label>
     </div>
 
@@ -65,11 +61,8 @@
 
     <div class="flex flex-wrap gap-2 justify-end">
       <button
-        tuiButton
+        class="ss-btn ss-btn--primary"
         type="button"
-        appearance="primary"
-        size="m"
-        iconStart="@tui.plus"
         [disabled]="isSaving()"
         (click)="adjust(1)"
         data-testid="adjust-credit"
@@ -77,11 +70,8 @@
         <span class="georgian-text" lang="ka">დარიცხვა</span>
       </button>
       <button
-        tuiButton
+        class="ss-btn ss-btn--danger"
         type="button"
-        appearance="destructive"
-        size="m"
-        iconStart="@tui.minus"
         [disabled]="isSaving()"
         (click)="adjust(-1)"
         data-testid="adjust-debit"
@@ -154,10 +144,8 @@
       @if (hasMoreTx()) {
         <div class="p-3 flex justify-center">
           <button
-            tuiButton
+            class="ss-btn ss-btn--flat ss-btn--s"
             type="button"
-            appearance="flat"
-            size="s"
             [disabled]="txLoading()"
             (click)="loadTransactions()"
             data-testid="tx-loadmore"
@@ -171,7 +159,7 @@
 
   <!-- footer -->
   <div class="flex justify-end">
-    <button tuiButton type="button" appearance="flat" size="m" (click)="close()">
+    <button class="ss-btn ss-btn--flat" type="button" (click)="close()">
       <span class="georgian-text" lang="ka">დახურვა</span>
     </button>
   </div>

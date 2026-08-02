@@ -11,21 +11,28 @@
       </h3>
 
       <!-- Name -->
-      <label tuiLabel>
-        <span class="georgian-text" lang="ka">სახელი <span class="text-red-500">*</span></span>
-        <tui-textfield>
-          <input tuiTextfield formControlName="name" />
-        </tui-textfield>
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">
+          სახელი <span class="text-red-500">*</span>
+        </span>
+        <input
+          class="ss-input georgian-text"
+          lang="ka"
+          [class.ss-input--invalid]="
+            academyForm.get('name')?.touched && academyForm.get('name')?.invalid
+          "
+          formControlName="name"
+        />
         @if (academyForm.get('name')?.touched && academyForm.get('name')?.hasError('required')) {
-          <span class="text-xs text-red-500 georgian-text" lang="ka">სახელი სავალდებულოა</span>
+          <span class="ss-error georgian-text" lang="ka">სახელი სავალდებულოა</span>
         }
       </label>
 
-      <!-- Admins (both modes) -->
-      <!-- Caption for the multi-select admin picker rendered conditionally below. -->
-      <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-      <label tuiLabel>
-        <span class="georgian-text" lang="ka">ადმინ(ებ)ი <span class="text-red-500">*</span></span>
+      <!-- Admins (both modes) — checkbox list over admin/superadmin users -->
+      <div class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">
+          ადმინ(ებ)ი <span class="text-red-500">*</span>
+        </span>
         @if (isLoadingUsers()) {
           <div
             class="text-sm georgian-text py-2"
@@ -35,61 +42,56 @@
             იტვირთება...
           </div>
         } @else {
-          <tui-textfield multi tuiChevron [stringify]="stringifyUser">
-            <select
-              tuiMultiSelect
-              formControlName="admins"
-              class="georgian-text"
-              lang="ka"
-            ></select>
-            <tui-data-list *tuiTextfieldDropdown>
-              @for (user of adminUsers(); track user._id) {
-                <button tuiOption [value]="user" new>
-                  <span>{{ stringifyUser(user) }}</span>
-                </button>
-              } @empty {
-                <div
-                  class="px-4 py-2 text-sm georgian-text"
-                  style="color: var(--tui-text-secondary)"
-                  lang="ka"
-                >
-                  ადმინები ვერ მოიძებნა
-                </div>
-              }
-            </tui-data-list>
-          </tui-textfield>
+          <div class="flex flex-col gap-2 mt-1 max-h-48 overflow-y-auto pr-1">
+            @for (user of adminUsers(); track user._id) {
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  class="ss-checkbox"
+                  type="checkbox"
+                  [checked]="isAdminChecked(user)"
+                  (change)="toggleAdmin(user)"
+                />
+                <span class="text-sm">{{ stringifyUser(user) }}</span>
+              </label>
+            } @empty {
+              <div
+                class="text-sm georgian-text py-2"
+                style="color: var(--tui-text-secondary)"
+                lang="ka"
+              >
+                ადმინები ვერ მოიძებნა
+              </div>
+            }
+          </div>
         }
         @if (
           academyForm.get('admins')?.touched && academyForm.get('admins')?.hasError('required')
         ) {
-          <span class="text-xs text-red-500 georgian-text" lang="ka">ადმინ(ებ)ი სავალდებულოა</span>
+          <span class="ss-error georgian-text" lang="ka">ადმინ(ებ)ი სავალდებულოა</span>
         }
-      </label>
+      </div>
 
       <!-- Status (edit mode only — academies start unpublished server-side) -->
       @if (isEditMode) {
-        <label tuiLabel>
-          <span class="georgian-text" lang="ka">სტატუსი <span class="text-red-500">*</span></span>
-          <tui-textfield tuiChevron [stringify]="stringifyStatus">
-            <input tuiSelect formControlName="status" class="georgian-text" lang="ka" />
-            <tui-data-list *tuiTextfieldDropdown>
-              @for (option of statusOptions; track option) {
-                <button tuiOption [value]="option" new>
-                  <span class="georgian-text" lang="ka">{{ stringifyStatus(option) }}</span>
-                </button>
-              }
-            </tui-data-list>
-          </tui-textfield>
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">
+            სტატუსი <span class="text-red-500">*</span>
+          </span>
+          <select class="ss-input georgian-text" lang="ka" formControlName="status">
+            @for (option of statusOptions; track option) {
+              <option [ngValue]="option">{{ stringifyStatus(option) }}</option>
+            }
+          </select>
         </label>
       }
     </div>
 
     <!-- Action Buttons -->
     <div class="flex justify-end gap-2 pt-2">
-      <button tuiButton appearance="flat" type="button" (click)="onCancel()">
+      <button class="ss-btn ss-btn--flat" type="button" (click)="onCancel()">
         <span class="georgian-text" lang="ka">გაუქმება</span>
       </button>
-      <button tuiButton appearance="primary" type="submit" [disabled]="!academyForm.valid">
+      <button class="ss-btn ss-btn--primary" type="submit" [disabled]="!academyForm.valid">
         <span class="georgian-text" lang="ka">{{ isEditMode ? 'განახლება' : 'დამატება' }}</span>
       </button>
     </div>

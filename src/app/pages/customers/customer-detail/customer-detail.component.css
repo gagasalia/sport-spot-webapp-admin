@@ -1,0 +1,131 @@
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--tui-text-secondary);
+  text-decoration: none;
+}
+.back-link:hover {
+  color: var(--tui-text-primary);
+}
+
+/* ── moderation banners ──────────────────────────────────────────────────── */
+.mod-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+.mod-banner .ss-ic {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+.mod-banner--danger {
+  background: color-mix(in srgb, var(--danger, #f4626e) 12%, transparent);
+  border-color: color-mix(in srgb, var(--danger, #f4626e) 40%, transparent);
+  color: var(--tui-text-primary);
+}
+.mod-banner--danger .ss-ic {
+  color: var(--danger, #f4626e);
+}
+.mod-banner--warning {
+  background: color-mix(in srgb, var(--warning, #f7b955) 12%, transparent);
+  border-color: color-mix(in srgb, var(--warning, #f7b955) 40%, transparent);
+}
+.mod-banner--warning .ss-ic {
+  color: var(--warning, #f7b955);
+}
+
+/* ── profile head ────────────────────────────────────────────────────────── */
+.profile-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--tui-text-secondary);
+}
+/* Long emails must wrap, not widen the card on narrow screens. */
+.profile-meta span {
+  overflow-wrap: anywhere;
+}
+.profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── KPI grid (same rhythm as the statistics page) ───────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+/* ── two-column body: history + moderation log ───────────────────────────── */
+.detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+/* minmax(0, …) everywhere: a bare `1fr` has an implicit `auto` minimum, so the
+   history table's min-content width would push the column past the viewport
+   and give the whole PAGE a horizontal scrollbar. With a 0 minimum the table
+   scrolls inside its own .overflow-x-auto card instead. */
+@media (max-width: 900px) {
+  .detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.history-card,
+.modlog-card {
+  min-width: 0;
+}
+
+/* ── moderation log timeline ─────────────────────────────────────────────── */
+.modlog {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.modlog-entry {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--tui-background-neutral-1);
+  border-left: 3px solid var(--tui-background-accent-1);
+}
+.modlog-entry.is-danger {
+  border-left-color: var(--danger, #f4626e);
+}
+.modlog-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+}
+.modlog-date {
+  font-size: 12px;
+  color: var(--tui-text-secondary);
+  white-space: nowrap;
+}
+.modlog-actor {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--tui-text-secondary);
+}

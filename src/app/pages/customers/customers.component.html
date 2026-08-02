@@ -1,0 +1,226 @@
+<div class="pt-8 p-0 sm:p-8">
+  <header class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-semibold georgian-text" lang="ka">მომხმარებლები</h1>
+  </header>
+
+  <!-- Filters -->
+  <div class="ss-card p-4 mb-6">
+    <div class="filter-row">
+      <label class="ss-field search-field">
+        <span class="ss-label georgian-text" lang="ka">ძებნა</span>
+        <input
+          automation-id="customers-search"
+          class="ss-input"
+          type="text"
+          placeholder="სახელი, ელ. ფოსტა ან ტელეფონი"
+          [ngModel]="q()"
+          (ngModelChange)="onSearchChange($event)"
+        />
+      </label>
+
+      @if (isSuperAdmin()) {
+        <label class="ss-field academy-field">
+          <span class="ss-label georgian-text" lang="ka">აკადემია</span>
+          <select
+            automation-id="customers-academy"
+            class="ss-input georgian-text"
+            lang="ka"
+            [ngModel]="academyId()"
+            (ngModelChange)="onAcademyChange($event)"
+          >
+            <option value="">ყველა</option>
+            @for (academy of academies(); track academy._id) {
+              <option [value]="academy._id">{{ academy.name }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      <div class="chip-rail">
+        <button
+          type="button"
+          class="pick-chip"
+          [class.is-active]="flag() === null"
+          (click)="setFlag(null)"
+        >
+          <span class="georgian-text" lang="ka">ყველა</span>
+        </button>
+        <button
+          automation-id="customers-flag-flagged"
+          type="button"
+          class="pick-chip"
+          [class.is-active]="flag() === 'flagged'"
+          (click)="setFlag('flagged')"
+        >
+          <span class="georgian-text" lang="ka">მონიშნული</span>
+        </button>
+        <button
+          automation-id="customers-flag-banned"
+          type="button"
+          class="pick-chip"
+          [class.is-active]="flag() === 'banned'"
+          (click)="setFlag('banned')"
+        >
+          <span class="georgian-text" lang="ka">დაბლოკილი</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (hasError()) {
+    <div class="ss-card p-6 text-center">
+      <p class="georgian-text mb-3" lang="ka">მონაცემების ჩატვირთვა ვერ მოხერხდა</p>
+      <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="retry()">
+        <span class="georgian-text" lang="ka">თავიდან ცდა</span>
+      </button>
+    </div>
+  } @else if (isLoading()) {
+    <div class="space-y-2 animate-pulse">
+      @for (n of [1, 2, 3, 4, 5, 6]; track n) {
+        <div class="h-12 rounded" style="background: var(--tui-background-neutral-1)"></div>
+      }
+    </div>
+  } @else {
+    <!-- Desktop table -->
+    @if (!isMobile()) {
+      <div class="ss-card overflow-x-auto">
+        <table class="ss-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="georgian-text" lang="ka">მომხმარებელი</th>
+              <th class="georgian-text" lang="ka">ტელეფონი</th>
+              <th class="georgian-text num-col" lang="ka">ჯავშნები</th>
+              <th class="georgian-text num-col" lang="ka">გაუქმება</th>
+              <th class="georgian-text num-col" lang="ka">არ გამოცხადდა</th>
+              <th class="georgian-text num-col" lang="ka">დახარჯული</th>
+              <th class="georgian-text" lang="ka">ბოლო ჯავშანი</th>
+              <th class="georgian-text" lang="ka">სტატუსი</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.userId) {
+              <tr
+                class="customer-row"
+                [class.is-open]="!!row.email"
+                (click)="open(row)"
+              >
+                <td>
+                  <span class="ss-avatar">{{ initials(row) }}</span>
+                </td>
+                <td>
+                  <div class="font-medium">{{ fullName(row) }}</div>
+                  @if (row.email) {
+                    <div class="text-sm" style="color: var(--tui-text-secondary)">
+                      {{ row.email }}
+                    </div>
+                  }
+                </td>
+                <td class="text-sm whitespace-nowrap">{{ row.phone || '—' }}</td>
+                <td class="num-col">{{ row.bookings }}</td>
+                <td class="num-col">{{ row.cancelled }}</td>
+                <td class="num-col">{{ row.noShows }}</td>
+                <td class="num-col whitespace-nowrap">{{ gel(row.spentTetri) }}</td>
+                <td class="text-sm whitespace-nowrap">
+                  {{ row.lastBookingAt ? (row.lastBookingAt | date: 'dd/MM/yyyy') : '—' }}
+                </td>
+                <td>
+                  <div class="flex flex-wrap gap-1">
+                    @if (row.banned) {
+                      <span class="ss-badge ss-badge--negative" [attr.title]="row.banReason || null">
+                        <span class="georgian-text" lang="ka">დაბლოკილი</span>
+                      </span>
+                    }
+                    @if (row.flagged) {
+                      <span class="ss-badge ss-badge--warning" [attr.title]="row.flagReason || null">
+                        <span class="georgian-text" lang="ka">მონიშნული</span>
+                      </span>
+                    }
+                    @if (!row.banned && !row.flagged) {
+                      <span class="ss-badge ss-badge--positive">
+                        <span class="georgian-text" lang="ka">აქტიური</span>
+                      </span>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="px-4 py-8 text-center georgian-text" lang="ka">
+                  @if (q().trim() || flag()) {
+                    ამ ფილტრით მომხმარებლები ვერ მოიძებნა
+                  } @else {
+                    მომხმარებლები ჯერ არ არიან
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- Mobile cards -->
+    @if (isMobile()) {
+      <div class="flex flex-col gap-4">
+        @for (row of rows(); track row.userId) {
+          <div class="ss-card p-4" (click)="open(row)">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="ss-avatar ss-avatar--m">{{ initials(row) }}</span>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-semibold truncate">{{ fullName(row) }}</h3>
+                <p class="text-sm truncate" style="color: var(--tui-text-secondary)">
+                  {{ row.phone || row.email || '—' }}
+                </p>
+              </div>
+              @if (row.banned) {
+                <span class="ss-badge ss-badge--negative">
+                  <span class="georgian-text" lang="ka">დაბლოკილი</span>
+                </span>
+              } @else if (row.flagged) {
+                <span class="ss-badge ss-badge--warning">
+                  <span class="georgian-text" lang="ka">მონიშნული</span>
+                </span>
+              }
+            </div>
+            <div class="grid grid-cols-2 gap-1 text-sm">
+              <span class="georgian-text" lang="ka">ჯავშნები: {{ row.bookings }}</span>
+              <span class="georgian-text" lang="ka">გაუქმება: {{ row.cancelled }}</span>
+              <span class="georgian-text" lang="ka">არ გამოცხადდა: {{ row.noShows }}</span>
+              <span class="georgian-text" lang="ka">დახარჯული: {{ gel(row.spentTetri) }}</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="ss-card p-6 text-center">
+            <p class="georgian-text" lang="ka">მომხმარებლები ვერ მოიძებნა</p>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() === 1"
+          (click)="onPageChange(page() - 1)"
+        >
+          <span class="georgian-text" lang="ka">წინა</span>
+        </button>
+        <span class="text-sm" style="color: var(--tui-text-secondary)">
+          {{ page() }} / {{ totalPages() }}
+        </span>
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() >= totalPages()"
+          (click)="onPageChange(page() + 1)"
+        >
+          <span class="georgian-text" lang="ka">შემდეგი</span>
+        </button>
+      </div>
+    }
+  }
+</div>

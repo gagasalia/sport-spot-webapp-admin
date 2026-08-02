@@ -9,21 +9,20 @@ import {
   OnChanges,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
-import { TuiDialogService } from '@taiga-ui/experimental';
-import { TuiAlertService } from '@taiga-ui/core';
-import { TUI_CONFIRM } from '@taiga-ui/kit';
 import { Facility } from '../../../../shared/models/facility.model';
 import { AMENITY_LABELS, AMENITY_ICONS } from '../../../../shared/enums/amenity.enum';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { take } from 'rxjs';
+import { defaultIfEmpty, take } from 'rxjs';
 import { FacilityService } from '../../../../services/http-services/facility.service';
 
+import { SsDialogService } from '../../../../shared/ui/dialog.service';
+import { SsToastService } from '../../../../shared/ui/toast.service';
+import { SsConfirmComponent, SsConfirmData } from '../../../../shared/ui/confirm.component';
 @Component({
   selector: 'app-facility-card',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './facility-card.component.html',
   styleUrls: ['./facility-card.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -44,8 +43,8 @@ export class FacilityCardComponent implements OnChanges {
     this.activeState.set(this.facility.activeState ?? false);
   }
 
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly alerts = inject(TuiAlertService);
+  private readonly dialogs = inject(SsDialogService);
+  private readonly alerts = inject(SsToastService);
   private readonly facilityService = inject(FacilityService);
 
   get primaryPhoto(): string {
@@ -68,15 +67,46 @@ export class FacilityCardComponent implements OnChanges {
   readonly countryName = 'საქართველო';
 
   onToggleState(checked: boolean): void {
-    // Optimistic update on the local mirror; revert if the PATCH fails.
-    this.activeState.set(checked);
-
     const facilityId = this.facility._id ?? this.facility.id;
     if (!facilityId) {
-      this.activeState.set(!checked);
       return;
     }
 
+    // The switch reflects the requested state while the confirm is open; it
+    // snaps back unless the operator confirms (dismissal counts as "no").
+    this.activeState.set(checked);
+
+    const data: SsConfirmData = checked
+      ? {
+          content: `გამოვაქვეყნოთ „${this.facility.name}"? ის ხილული გახდება მოთამაშეებისთვის.`,
+          yes: 'გამოქვეყნება',
+          no: 'გაუქმება',
+        }
+      : {
+          content: `მოვხსნათ „${this.facility.name}" გამოქვეყნებიდან? მოთამაშეები მას ვეღარ ნახავენ.`,
+          yes: 'მოხსნა',
+          no: 'გაუქმება',
+          appearance: 'destructive',
+        };
+
+    this.dialogs
+      .open<boolean>(SsConfirmComponent, {
+        label: checked ? 'ობიექტის გამოქვეყნება' : 'გამოქვეყნების მოხსნა',
+        size: 's',
+        data,
+      })
+      .pipe(take(1), defaultIfEmpty(false))
+      .subscribe((confirmed) => {
+        if (!confirmed) {
+          this.activeState.set(!checked);
+          return;
+        }
+        this.patchState(facilityId, checked);
+      });
+  }
+
+  /** Optimistic PATCH; reverts the mirror if the request fails. */
+  private patchState(facilityId: string, checked: boolean): void {
     this.facilityService
       .setFacilityStatus(facilityId, checked)
       .pipe(take(1))
@@ -100,12 +130,14 @@ export class FacilityCardComponent implements OnChanges {
   onDelete(event: Event): void {
     event.stopPropagation();
     this.dialogs
-      .open<boolean>(TUI_CONFIRM, {
-        label: 'დადასტურება',
+      .open<boolean>(SsConfirmComponent, {
+        label: 'ობიექტის წაშლა',
+        size: 's',
         data: {
-          content: 'ნამდვილად გსურთ ობიექტის წაშლა?',
+          content: `ნამდვილად წავშალოთ „${this.facility.name}"?`,
           yes: 'წაშლა',
           no: 'გაუქმება',
+          appearance: 'destructive',
         },
       })
       .pipe(take(1))

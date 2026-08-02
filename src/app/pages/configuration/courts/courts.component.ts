@@ -5,37 +5,36 @@ import {
   OnInit,
   signal,
   inject,
-  Injector,
-} from '@angular/core';
+  } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { take } from 'rxjs';
-import { TuiAlertService } from '@taiga-ui/core';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { type TuiStringHandler } from '@taiga-ui/cdk';
 import { CourtService } from '../../../services/http-services/court.service';
 import { FacilityService } from '../../../services/http-services/facility.service';
 import { TenantService } from '../../../shared/services/tenant.service';
 import { Court } from '../../../shared/models/court.model';
 import { Facility } from '../../../shared/models/facility.model';
-import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { CourtFormComponent } from './court-form/court-form.component';
 import { CourtCardComponent } from './court-card/court-card.component';
-import { TuiDialogService } from '@taiga-ui/experimental';
 import { CommonModule } from '@angular/common';
 
+import { SsToastService } from '../../../shared/ui/toast.service';
+import { SsDialogService } from '../../../shared/ui/dialog.service';
+/**
+ * Courts page, Taiga-free in the template (ss-* kit): facility chip rail
+ * (first selected by default) + court cards. The add/edit dialog still opens
+ * through SsDialogService — dialog machinery is the last migration phase.
+ */
 @Component({
   selector: 'app-courts',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, CourtCardComponent, CommonModule, ReactiveFormsModule],
+  imports: [CourtCardComponent, CommonModule],
   templateUrl: './courts.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CourtsComponent implements OnInit {
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly alerts = inject(TuiAlertService);
-  private readonly injector = inject(Injector);
+  private readonly dialogs = inject(SsDialogService);
+  private readonly alerts = inject(SsToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly courtService = inject(CourtService);
@@ -49,23 +48,13 @@ export class CourtsComponent implements OnInit {
   isLoadingCourts = signal<boolean>(false);
   isLoadingFacilities = signal<boolean>(false);
 
-  facilityControl = new FormControl<string | null>(null);
-
   /** Resolve a facility's id from either API (`_id`) or legacy (`id`) shape. */
   private facilityId(f: Facility): string | null {
     return f._id ?? f.id ?? null;
   }
 
-  readonly stringifyFacility: TuiStringHandler<string> = (id) => {
-    const facility = this.facilities().find((f) => this.facilityId(f) === id);
-    if (!facility) return '';
-    return facility.name || facility.description || 'უსახელო ობიექტი';
-  };
-
-  constructor() {
-    this.facilityControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((facilityId) => {
-      this.onFacilityChange(facilityId);
-    });
+  facilityLabel(f: Facility): string {
+    return f.name || f.description || 'უსახელო ობიექტი';
   }
 
   ngOnInit(): void {
@@ -103,45 +92,29 @@ export class CourtsComponent implements OnInit {
       });
   }
 
+  /** The first chip is selected by default; a valid ?facilityId= overrides it. */
   private resolveSelection(facilities: Facility[]): void {
     this.route.queryParams.pipe(take(1)).subscribe((params) => {
-      const facilityIdFromQuery = params['facilityId'];
-
       if (facilities.length === 0) {
         this.selectedFacilityId.set(null);
-        this.facilityControl.setValue(null, { emitEvent: false });
-      } else if (facilities.length === 1) {
-        const fId = this.facilityId(facilities[0]);
-        this.selectedFacilityId.set(fId);
-        this.facilityControl.setValue(fId, { emitEvent: false });
-        if (facilityIdFromQuery !== fId) {
-          this.updateQueryParam(fId);
-        }
-        if (fId) this.loadCourts(fId);
-      } else if (facilityIdFromQuery) {
-        const facility = facilities.find((f) => this.facilityId(f) === facilityIdFromQuery);
-        if (facility) {
-          const fId = this.facilityId(facility);
-          this.selectedFacilityId.set(fId);
-          this.facilityControl.setValue(fId, { emitEvent: false });
-          if (fId) this.loadCourts(fId);
-        } else {
-          this.selectedFacilityId.set(null);
-          this.facilityControl.setValue(null, { emitEvent: false });
-          this.updateQueryParam(null);
-        }
-      } else {
-        this.selectedFacilityId.set(null);
-        this.facilityControl.setValue(null, { emitEvent: false });
+        return;
       }
+      const fromQuery = params['facilityId'];
+      const match = facilities.find((f) => this.facilityId(f) === fromQuery);
+      const fId = match ? this.facilityId(match) : this.facilityId(facilities[0]);
+      if (fromQuery !== fId) this.updateQueryParam(fId);
+      this.selectedFacilityId.set(fId);
+      if (fId) this.loadCourts(fId);
     });
   }
 
-  onFacilityChange(facilityId: string | null): void {
-    this.selectedFacilityId.set(facilityId);
-    this.updateQueryParam(facilityId);
-    if (facilityId) {
-      this.loadCourts(facilityId);
+  onFacilityChipClick(facility: Facility): void {
+    const fId = this.facilityId(facility);
+    if (fId === this.selectedFacilityId()) return;
+    this.selectedFacilityId.set(fId);
+    this.updateQueryParam(fId);
+    if (fId) {
+      this.loadCourts(fId);
     } else {
       this.courts.set([]);
     }
@@ -178,7 +151,7 @@ export class CourtsComponent implements OnInit {
     if (!facilityId) return;
 
     this.dialogs
-      .open(new PolymorpheusComponent(CourtFormComponent, this.injector), {
+      .open(CourtFormComponent, {
         label: 'კორტის დამატება',
         size: 'l',
         dismissible: true,
@@ -212,7 +185,7 @@ export class CourtsComponent implements OnInit {
   onEditCourt(court: Court): void {
     const facilityId = court.facility ?? court.facilityId ?? this.selectedFacilityId();
     this.dialogs
-      .open(new PolymorpheusComponent(CourtFormComponent, this.injector), {
+      .open(CourtFormComponent, {
         label: 'რედაქტირება',
         size: 'l',
         dismissible: true,

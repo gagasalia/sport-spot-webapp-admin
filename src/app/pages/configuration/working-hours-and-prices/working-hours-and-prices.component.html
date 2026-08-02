@@ -3,7 +3,7 @@
     <h1 class="text-2xl font-semibold georgian-text" lang="ka">სამუშაო საათები და ფასები</h1>
   </header>
 
-  <!-- Facility Selector -->
+  <!-- Facility chips (single-select, first selected by default) -->
   @if (!isLoadingFacilities()) {
     @if (facilities().length === 0) {
       <!-- No facilities available -->
@@ -12,36 +12,24 @@
         <p class="text-lg text-gray-500 mb-6 georgian-text" lang="ka">
           სამუშაო საათებისა და ფასების დასაყენებლად დაამატეთ ობიექტი
         </p>
-        <button
-          tuiButton
-          appearance="primary"
-          iconStart="@tui.plus"
-          (click)="navigateToFacilities()"
-        >
+        <button class="ss-btn ss-btn--primary" type="button" (click)="navigateToFacilities()">
           <span class="georgian-text" lang="ka">დაამატე ობიექტი</span>
         </button>
       </div>
     } @else {
-      <!-- Show selector for one or more facilities -->
-      <div class="mb-6">
-        <label tuiLabel>
-          <span class="georgian-text" lang="ka">აირჩიეთ ობიექტი</span>
-          <tui-textfield tuiChevron [stringify]="stringifyFacility">
-            <input tuiSelect [formControl]="facilityControl" class="georgian-text" lang="ka" />
-            <tui-data-list *tuiTextfieldDropdown>
-              <button
-                *ngFor="let facility of facilities()"
-                new
-                tuiOption
-                [value]="facility._id ?? facility.id"
-              >
-                <span class="georgian-text" lang="ka">
-                  {{ facility.name || facility.description || 'უსახელო ობიექტი' }}
-                </span>
-              </button>
-            </tui-data-list>
-          </tui-textfield>
-        </label>
+      <div class="ss-chip-rail mb-6" role="tablist" aria-label="ობიექტები">
+        @for (facility of facilities(); track facility._id ?? facility.id) {
+          <button
+            type="button"
+            class="ss-chip"
+            role="tab"
+            [class.is-active]="(facility._id ?? facility.id) === selectedFacilityId()"
+            [attr.aria-selected]="(facility._id ?? facility.id) === selectedFacilityId()"
+            (click)="onFacilityChipClick(facility)"
+          >
+            <span class="georgian-text" lang="ka">{{ facilityLabel(facility) }}</span>
+          </button>
+        }
       </div>
     }
   }
@@ -56,7 +44,7 @@
       <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <!-- Working Hours Column -->
         <div class="space-y-4">
-          <div class="card-bg rounded-xl border p-6 working-hours-card">
+          <div class="ss-card p-6">
             <h2 class="text-lg font-semibold georgian-text mb-4" lang="ka">სამუშაო საათები</h2>
             <form [formGroup]="scheduleForm" class="space-y-4">
               @for (group of dayGroups; track group.key) {
@@ -71,47 +59,17 @@
                   >
                     <!-- Start Time -->
                     <div class="flex items-center gap-2">
-                      <label tuiLabel class="mb-0!">
-                        <tui-textfield
-                          tuiChevron
-                          [stringify]="stringifyHour"
-                          [tuiTextfieldCleaner]="false"
-                          style="width: 100px"
-                        >
-                          <input
-                            tuiSelect
-                            formControlName="startHour"
-                            class="georgian-text"
-                            lang="ka"
-                          />
-                          <tui-data-list *tuiTextfieldDropdown>
-                            <button *ngFor="let hour of hours" new tuiOption [value]="hour">
-                              {{ stringifyHour(hour) }}
-                            </button>
-                          </tui-data-list>
-                        </tui-textfield>
-                      </label>
+                      <select class="ss-input time-select" formControlName="startHour">
+                        @for (hour of hours; track hour) {
+                          <option [ngValue]="hour">{{ stringifyHour(hour) }}</option>
+                        }
+                      </select>
                       <span class="text-base font-medium">:</span>
-                      <label tuiLabel class="mb-0!">
-                        <tui-textfield
-                          tuiChevron
-                          [stringify]="stringifyMinute"
-                          [tuiTextfieldCleaner]="false"
-                          style="width: 100px"
-                        >
-                          <input
-                            tuiSelect
-                            formControlName="startMinute"
-                            class="georgian-text"
-                            lang="ka"
-                          />
-                          <tui-data-list *tuiTextfieldDropdown>
-                            <button *ngFor="let minute of minutes" new tuiOption [value]="minute">
-                              {{ stringifyMinute(minute) }}
-                            </button>
-                          </tui-data-list>
-                        </tui-textfield>
-                      </label>
+                      <select class="ss-input time-select" formControlName="startMinute">
+                        @for (minute of minutes; track minute) {
+                          <option [ngValue]="minute">{{ stringifyMinute(minute) }}</option>
+                        }
+                      </select>
                     </div>
 
                     <span class="text-base font-medium hidden lg:inline">-</span>
@@ -119,59 +77,33 @@
 
                     <!-- End Time -->
                     <div class="flex items-center gap-2">
-                      <label tuiLabel class="mb-0!">
-                        <tui-textfield
-                          tuiChevron
-                          [stringify]="stringifyHour"
-                          [tuiTextfieldCleaner]="false"
-                          style="width: 100px"
-                        >
-                          <input
-                            tuiSelect
-                            formControlName="endHour"
-                            class="georgian-text"
-                            lang="ka"
-                          />
-                          <tui-data-list *tuiTextfieldDropdown>
-                            <button *ngFor="let hour of hours" new tuiOption [value]="hour">
-                              {{ stringifyHour(hour) }}
-                            </button>
-                          </tui-data-list>
-                        </tui-textfield>
-                      </label>
+                      <select class="ss-input time-select" formControlName="endHour">
+                        @for (hour of hours; track hour) {
+                          <option [ngValue]="hour">{{ stringifyHour(hour) }}</option>
+                        }
+                      </select>
                       <span class="text-base font-medium">:</span>
-                      <label tuiLabel class="mb-0!">
-                        <tui-textfield
-                          tuiChevron
-                          [stringify]="stringifyMinute"
-                          [tuiTextfieldCleaner]="false"
-                          style="width: 100px"
-                        >
-                          <input
-                            tuiSelect
-                            formControlName="endMinute"
-                            class="georgian-text"
-                            lang="ka"
-                          />
-                          <tui-data-list *tuiTextfieldDropdown>
-                            <button *ngFor="let minute of minutes" new tuiOption [value]="minute">
-                              {{ stringifyMinute(minute) }}
-                            </button>
-                          </tui-data-list>
-                        </tui-textfield>
-                      </label>
+                      <select class="ss-input time-select" formControlName="endMinute">
+                        @for (minute of minutes; track minute) {
+                          <option [ngValue]="minute">{{ stringifyMinute(minute) }}</option>
+                        }
+                      </select>
                     </div>
                   </div>
+                  @if (scheduleForm.get(group.key)?.hasError('endNotAfterStart')) {
+                    <span class="ss-error georgian-text" lang="ka">
+                      დასრულება უნდა იყოს დაწყების შემდეგ
+                    </span>
+                  }
                 </div>
               }
             </form>
 
             <!-- Action Buttons -->
-            <div class="flex justify-end mt-6 pt-4 border-t border-color">
+            <div class="flex justify-end mt-6 pt-4 border-t" style="border-color: var(--tui-border-normal)">
               <button
-                tuiButton
-                appearance="primary"
-                size="m"
+                class="ss-btn ss-btn--primary"
+                type="button"
                 (click)="onSave()"
                 [disabled]="!scheduleForm.valid"
               >
@@ -182,27 +114,49 @@
         </div>
 
         <!-- Holidays Column -->
-        <div class="card-bg rounded-xl border p-6 working-hours-card">
+        <div class="ss-card p-6">
           <h2 class="text-lg font-semibold georgian-text mb-4" lang="ka">დასვენების დღეები</h2>
 
-          <label tuiLabel class="georgian-text" lang="ka">
-            <span class="block mb-3">აირჩიეთ დასვენების დღეები</span>
-            <tui-textfield multi>
-              <input tuiInputDateMulti [(ngModel)]="holidays" class="georgian-text" lang="ka" />
+          <div class="flex items-end gap-2">
+            <label class="ss-field flex-1">
+              <span class="ss-label georgian-text" lang="ka">დაამატეთ დასვენების დღე</span>
+              <input class="ss-input" type="date" [(ngModel)]="holidayInput" />
+            </label>
+            <button
+              class="ss-btn ss-btn--outline"
+              type="button"
+              (click)="addHoliday()"
+              [disabled]="!holidayInput"
+            >
+              <span class="georgian-text" lang="ka">დამატება</span>
+            </button>
+          </div>
 
-              <tui-calendar *tuiTextfieldDropdown [markerHandler]="markerHandler" />
-
-              <tui-input-chip
-                *tuiItem="let context"
-                [appearance]="'negative'"
-                [iconStart]="'@lucide.x'"
-              />
-            </tui-textfield>
-          </label>
+          @if (holidays.length > 0) {
+            <div class="flex flex-wrap gap-2 mt-4">
+              @for (iso of holidays; track iso) {
+                <span class="ss-badge ss-badge--negative">
+                  {{ iso }}
+                  <button
+                    type="button"
+                    class="hol-x"
+                    (click)="removeHoliday(iso)"
+                    [attr.aria-label]="'წაშლა ' + iso"
+                  >
+                    ×
+                  </button>
+                </span>
+              }
+            </div>
+          } @else {
+            <p class="text-sm mt-4 georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+              დასვენების დღეები არ არის მითითებული
+            </p>
+          }
 
           <!-- Holiday Actions -->
-          <div class="flex justify-end mt-6 pt-4 border-t border-color">
-            <button tuiButton appearance="primary" size="m" (click)="onSaveHolidays()">
+          <div class="flex justify-end mt-6 pt-4 border-t" style="border-color: var(--tui-border-normal)">
+            <button class="ss-btn ss-btn--primary" type="button" (click)="onSaveHolidays()">
               <span class="georgian-text" lang="ka">შენახვა</span>
             </button>
           </div>
@@ -210,84 +164,44 @@
 
         <!-- Prices Column -->
         <div>
-          <div class="card-bg rounded-xl border p-6 working-hours-card">
+          <div class="ss-card p-6">
             <h2 class="text-lg font-semibold georgian-text mb-1" lang="ka">ფასები</h2>
-            <p class="text-sm text-gray-500 georgian-text mb-4" lang="ka">
+            <p class="text-sm georgian-text mb-4" lang="ka" style="color: var(--tui-text-secondary)">
               ფასები მითითებულია ერთ საათზე — ჯავშნის ღირებულება ითვლება ხანგრძლივობის მიხედვით
             </p>
 
             <form [formGroup]="pricesForm" class="space-y-6">
               <!-- General Price -->
-              <div>
-                <label tuiLabel class="georgian-text" lang="ka">
-                  <span class="block mb-3">ზოგადი ფასი (საათში)</span>
-                  <tui-textfield>
-                    <input
-                      tuiTextfield
-                      type="number"
-                      formControlName="generalPrice"
-                      class="georgian-text"
-                      lang="ka"
-                      placeholder="0"
-                    />
-                  </tui-textfield>
-                </label>
-              </div>
+              <label class="ss-field">
+                <span class="ss-label georgian-text" lang="ka">ზოგადი ფასი (საათში)</span>
+                <input
+                  class="ss-input"
+                  type="number"
+                  formControlName="generalPrice"
+                  placeholder="0"
+                />
+              </label>
 
               <!-- Off-Peak Hours -->
               <div class="space-y-3">
                 <h3 class="text-base font-semibold georgian-text" lang="ka">არაპიკური საათები</h3>
 
                 <div class="space-y-3">
-                  <!-- Caption for the start/end time-range group below. -->
-                  <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-                  <label class="georgian-text text-sm font-medium block mb-3" lang="ka"
-                    >დროის შუალედი</label
-                  >
+                  <span class="ss-label georgian-text" lang="ka">დროის შუალედი</span>
                   <div class="flex flex-wrap lg:flex-nowrap items-center gap-3">
                     <!-- Off-Peak Start Time -->
                     <div class="flex items-center gap-2">
-                      <label tuiLabel class="mb-0!">
-                        <tui-textfield
-                          tuiChevron
-                          [stringify]="stringifyHour"
-                          [tuiTextfieldCleaner]="false"
-                          style="width: 100px"
-                        >
-                          <input
-                            tuiSelect
-                            formControlName="offPeakStartHour"
-                            class="georgian-text"
-                            lang="ka"
-                          />
-                          <tui-data-list *tuiTextfieldDropdown>
-                            <button *ngFor="let hour of hours" new tuiOption [value]="hour">
-                              {{ stringifyHour(hour) }}
-                            </button>
-                          </tui-data-list>
-                        </tui-textfield>
-                      </label>
+                      <select class="ss-input time-select" formControlName="offPeakStartHour">
+                        @for (hour of hours; track hour) {
+                          <option [ngValue]="hour">{{ stringifyHour(hour) }}</option>
+                        }
+                      </select>
                       <span class="text-base font-medium">:</span>
-                      <label tuiLabel class="mb-0!">
-                        <tui-textfield
-                          tuiChevron
-                          [stringify]="stringifyMinute"
-                          [tuiTextfieldCleaner]="false"
-                          style="width: 100px"
-                        >
-                          <input
-                            tuiSelect
-                            formControlName="offPeakStartMinute"
-                            class="georgian-text"
-                            lang="ka"
-                          />
-                          <tui-data-list *tuiTextfieldDropdown>
-                            <button *ngFor="let minute of minutes" new tuiOption [value]="minute">
-                              {{ stringifyMinute(minute) }}
-                            </button>
-                          </tui-data-list>
-                        </tui-textfield>
-                      </label>
+                      <select class="ss-input time-select" formControlName="offPeakStartMinute">
+                        @for (minute of minutes; track minute) {
+                          <option [ngValue]="minute">{{ stringifyMinute(minute) }}</option>
+                        }
+                      </select>
                     </div>
 
                     <span class="text-base font-medium hidden lg:inline">-</span>
@@ -295,76 +209,39 @@
 
                     <!-- Off-Peak End Time -->
                     <div class="flex items-center gap-2">
-                      <label tuiLabel class="mb-0!">
-                        <tui-textfield
-                          tuiChevron
-                          [stringify]="stringifyHour"
-                          [tuiTextfieldCleaner]="false"
-                          style="width: 100px"
-                        >
-                          <input
-                            tuiSelect
-                            formControlName="offPeakEndHour"
-                            class="georgian-text"
-                            lang="ka"
-                          />
-                          <tui-data-list *tuiTextfieldDropdown>
-                            <button *ngFor="let hour of hours" new tuiOption [value]="hour">
-                              {{ stringifyHour(hour) }}
-                            </button>
-                          </tui-data-list>
-                        </tui-textfield>
-                      </label>
+                      <select class="ss-input time-select" formControlName="offPeakEndHour">
+                        @for (hour of hours; track hour) {
+                          <option [ngValue]="hour">{{ stringifyHour(hour) }}</option>
+                        }
+                      </select>
                       <span class="text-base font-medium">:</span>
-                      <label tuiLabel class="mb-0!">
-                        <tui-textfield
-                          tuiChevron
-                          [stringify]="stringifyMinute"
-                          [tuiTextfieldCleaner]="false"
-                          style="width: 100px"
-                        >
-                          <input
-                            tuiSelect
-                            formControlName="offPeakEndMinute"
-                            class="georgian-text"
-                            lang="ka"
-                          />
-                          <tui-data-list *tuiTextfieldDropdown>
-                            <button *ngFor="let minute of minutes" new tuiOption [value]="minute">
-                              {{ stringifyMinute(minute) }}
-                            </button>
-                          </tui-data-list>
-                        </tui-textfield>
-                      </label>
+                      <select class="ss-input time-select" formControlName="offPeakEndMinute">
+                        @for (minute of minutes; track minute) {
+                          <option [ngValue]="minute">{{ stringifyMinute(minute) }}</option>
+                        }
+                      </select>
                     </div>
                   </div>
                 </div>
 
                 <!-- Off-Peak Price -->
-                <div>
-                  <label tuiLabel class="georgian-text" lang="ka">
-                    <span class="block mb-3">არაპიკური ფასი (საათში)</span>
-                    <tui-textfield>
-                      <input
-                        tuiTextfield
-                        type="number"
-                        formControlName="offPeakPrice"
-                        class="georgian-text"
-                        lang="ka"
-                        placeholder="0"
-                      />
-                    </tui-textfield>
-                  </label>
-                </div>
+                <label class="ss-field">
+                  <span class="ss-label georgian-text" lang="ka">არაპიკური ფასი (საათში)</span>
+                  <input
+                    class="ss-input"
+                    type="number"
+                    formControlName="offPeakPrice"
+                    placeholder="0"
+                  />
+                </label>
               </div>
             </form>
 
             <!-- Price Actions -->
-            <div class="flex justify-end mt-6 pt-4 border-t border-color">
+            <div class="flex justify-end mt-6 pt-4 border-t" style="border-color: var(--tui-border-normal)">
               <button
-                tuiButton
-                appearance="primary"
-                size="m"
+                class="ss-btn ss-btn--primary"
+                type="button"
                 (click)="onSavePrices()"
                 [disabled]="!pricesForm.valid"
               >
@@ -374,21 +251,15 @@
           </div>
         </div>
         <!-- Working Days Section - Below Holidays -->
-        <div class="card-bg rounded-xl border p-6 working-hours-card">
+        <div class="ss-card p-6">
           <h2 class="text-lg font-semibold georgian-text mb-4" lang="ka">კვირის სამუშაო დღეები</h2>
           <div
             class="grid grid-cols-1 min-[450px]:grid-cols-2 min-[766px]:grid-cols-3 min-[1550px]:grid-cols-4 gap-3"
           >
             @for (day of days; track day) {
-              <label
-                class="flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors hover:border-green-500"
-                [class.bg-green-50]="workingDays[day]"
-                [class.border-green-500]="workingDays[day]"
-                [class.dark:bg-green-900/20]="workingDays[day]"
-                style="border-color: var(--tui-border-normal)"
-              >
+              <label class="day-pill" [class.is-on]="workingDays[day]">
                 <input
-                  tuiCheckbox
+                  class="ss-checkbox"
                   type="checkbox"
                   [checked]="workingDays[day]"
                   (change)="toggleWorkingDay(day)"
@@ -401,21 +272,13 @@
           </div>
 
           <!-- Action Button -->
-          <div class="flex justify-end mt-6 pt-4 border-t border-color">
-            <button tuiButton appearance="primary" size="m" (click)="onSaveWorkingDays()">
+          <div class="flex justify-end mt-6 pt-4 border-t" style="border-color: var(--tui-border-normal)">
+            <button class="ss-btn ss-btn--primary" type="button" (click)="onSaveWorkingDays()">
               <span class="georgian-text" lang="ka">შენახვა</span>
             </button>
           </div>
         </div>
       </div>
     }
-  } @else if (!selectedFacilityId() && facilities().length > 1) {
-    <!-- Show message to select a facility when there are multiple and none selected -->
-    <div class="flex flex-col items-center justify-center py-16">
-      <tui-icon icon="@lucide.building-2" class="w-32 h-32 opacity-50 mb-6"></tui-icon>
-      <p class="text-lg text-gray-500 georgian-text" lang="ka">
-        აირჩიეთ ობიექტი სამუშაო საათებისა და ფასების სანახავად
-      </p>
-    </div>
   }
 </div>

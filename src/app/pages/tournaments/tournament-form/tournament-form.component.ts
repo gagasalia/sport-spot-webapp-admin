@@ -3,11 +3,6 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { take } from 'rxjs';
-import { type TuiStringHandler } from '@taiga-ui/cdk';
-import { TuiAlertService } from '@taiga-ui/core';
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
-import { TuiDialogContext } from '@taiga-ui/experimental';
-import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { TournamentService } from '../../../services/http-services/tournament.service';
 import { FacilityService } from '../../../services/http-services/facility.service';
 import { TenantService } from '../../../shared/services/tenant.service';
@@ -22,6 +17,8 @@ import {
 import { Facility } from '../../../shared/models/facility.model';
 import { gelToTetri, tetriToGel } from '../../../shared/utils/money.util';
 
+import { SsToastService } from '../../../shared/ui/toast.service';
+import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../../shared/ui/dialog.service';
 export const TYPE_LABELS: Record<TournamentType, string> = {
   singles: 'სინგლები',
   doubles: 'წყვილები',
@@ -68,14 +65,14 @@ function isoToLocalInput(iso: string | undefined): string {
 @Component({
   selector: 'app-tournament-form',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './tournament-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TournamentFormComponent implements OnInit {
   form!: FormGroup;
 
-  private readonly context = inject(POLYMORPHEUS_CONTEXT) as TuiDialogContext<
+  private readonly context = inject(SS_DIALOG_CONTEXT) as SsDialogContext<
     Tournament | null,
     { tournament?: Tournament }
   >;
@@ -83,26 +80,24 @@ export class TournamentFormComponent implements OnInit {
   private readonly tournamentService = inject(TournamentService);
   private readonly facilityService = inject(FacilityService);
   private readonly tenant = inject(TenantService);
-  private readonly alerts = inject(TuiAlertService);
+  private readonly alerts = inject(SsToastService);
 
   protected readonly facilities = signal<Facility[]>([]);
   protected readonly isSaving = signal(false);
+  /** Mirrors the `facility` control for the chip rail (OnPush-friendly). */
+  protected readonly selectedFacilityId = signal<string>('');
 
   protected readonly typeOptions = Object.keys(TYPE_LABELS) as TournamentType[];
   protected readonly formatOptions = Object.keys(FORMAT_LABELS) as TournamentFormat[];
   protected readonly levelOptions = Object.keys(LEVEL_LABELS) as TournamentLevel[];
   protected readonly categoryOptions = Object.keys(CATEGORY_LABELS) as TournamentCategory[];
 
-  protected readonly stringifyType: TuiStringHandler<TournamentType> = (v) =>
-    TYPE_LABELS[v] ?? String(v);
-  protected readonly stringifyFormat: TuiStringHandler<TournamentFormat> = (v) =>
+  protected readonly stringifyType = (v: TournamentType): string => TYPE_LABELS[v] ?? String(v);
+  protected readonly stringifyFormat = (v: TournamentFormat): string =>
     FORMAT_LABELS[v] ?? String(v);
-  protected readonly stringifyLevel: TuiStringHandler<TournamentLevel> = (v) =>
-    LEVEL_LABELS[v] ?? String(v);
-  protected readonly stringifyCategory: TuiStringHandler<TournamentCategory> = (v) =>
+  protected readonly stringifyLevel = (v: TournamentLevel): string => LEVEL_LABELS[v] ?? String(v);
+  protected readonly stringifyCategory = (v: TournamentCategory): string =>
     CATEGORY_LABELS[v] ?? String(v);
-  protected readonly stringifyFacility: TuiStringHandler<string> = (id) =>
-    this.facilities().find((f) => (f._id ?? '') === id)?.name ?? '';
 
   protected get isEditMode(): boolean {
     return !!this.context.data?.tournament;
@@ -137,7 +132,10 @@ export class TournamentFormComponent implements OnInit {
       descriptionEn: [t?.descriptionEn ?? ''],
     });
 
-    // The academy's facilities feed the host-venue select.
+    this.selectedFacilityId.set(t?.facility ?? '');
+
+    // The academy's facilities feed the host-venue chip rail; when creating,
+    // the first facility is preselected so the required control starts valid.
     this.tenant
       .ensure()
       .pipe(take(1))
@@ -149,8 +147,23 @@ export class TournamentFormComponent implements OnInit {
         this.facilityService
           .getFacilitiesByAcademy(academyId)
           .pipe(take(1))
-          .subscribe((facilities) => this.facilities.set(facilities));
+          .subscribe((facilities) => {
+            this.facilities.set(facilities);
+            if (!this.selectedFacilityId() && facilities.length > 0) {
+              this.selectFacility(this.facilityId(facilities[0]));
+            }
+          });
       });
+  }
+
+  protected facilityId(facility: Facility): string {
+    return facility._id ?? facility.id ?? '';
+  }
+
+  protected selectFacility(id: string): void {
+    this.selectedFacilityId.set(id);
+    this.form.get('facility')?.setValue(id);
+    this.form.get('facility')?.markAsDirty();
   }
 
   protected onSubmit(): void {

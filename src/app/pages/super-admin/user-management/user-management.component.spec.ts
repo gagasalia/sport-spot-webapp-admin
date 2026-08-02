@@ -6,9 +6,6 @@ import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of, throwError, Subject } from 'rxjs';
 import { provideAnimations } from '@angular/platform-browser/animations';
 
-import { WA_WINDOW } from '@ng-web-apis/common';
-import { TuiAlertService } from '@taiga-ui/core';
-import { TuiDialogService } from '@taiga-ui/experimental';
 
 import { UserManagementComponent } from './user-management.component';
 import {
@@ -17,6 +14,8 @@ import {
 } from '../../../services/http-services/user-management.service';
 import { User, UserType, FilterUsersDto } from '../../../shared/models/user.model';
 
+import { SsToastService } from '../../../shared/ui/toast.service';
+import { SsDialogService } from '../../../shared/ui/dialog.service';
 // ─── Test data ───────────────────────────────────────────────────────────────
 
 const mockUsers: User[] = [
@@ -42,27 +41,11 @@ function page(data: User[], total = data.length, pageNum = 1, size = 20): Pagina
   return { data, page: { page: pageNum, size, total } };
 }
 
-// ─── Mock window ─────────────────────────────────────────────────────────────
+// ─── Mock window width ───────────────────────────────────────────────────────
 
-// Use a Proxy over the real window so Taiga UI can access browser globals
-// (HTMLInputElement, HTMLTextAreaElement, addEventListener, etc.) while
-// allowing innerWidth to be overridden in individual tests.
+// The component reads the global `window.innerWidth`; a property spy (installed
+// in beforeEach) redirects it here so individual tests can flip mobile mode.
 let mockInnerWidth = 1024;
-const mockWindow = new Proxy(window, {
-  get(target, prop) {
-    if (prop === 'innerWidth') return mockInnerWidth;
-    const val = (target as any)[prop];
-    return typeof val === 'function' ? val.bind(target) : val;
-  },
-  set(target, prop, value) {
-    if (prop === 'innerWidth') {
-      mockInnerWidth = value;
-      return true;
-    }
-    (target as any)[prop] = value;
-    return true;
-  },
-}) as any;
 
 // ─── Suite ───────────────────────────────────────────────────────────────────
 
@@ -70,8 +53,8 @@ describe('UserManagementComponent', () => {
   let component: UserManagementComponent;
   let fixture: ComponentFixture<UserManagementComponent>;
   let userServiceSpy: jasmine.SpyObj<UserManagementService>;
-  let dialogServiceSpy: jasmine.SpyObj<TuiDialogService>;
-  let alertServiceSpy: jasmine.SpyObj<TuiAlertService>;
+  let dialogServiceSpy: jasmine.SpyObj<SsDialogService>;
+  let alertServiceSpy: jasmine.SpyObj<SsToastService>;
   let location: SpyLocation;
 
   // Flush queued Angular effects (the filter-change effect). detectChanges runs the
@@ -79,14 +62,16 @@ describe('UserManagementComponent', () => {
   const flushEffects = () => fixture.detectChanges();
 
   beforeEach(async () => {
+    mockInnerWidth = 1024;
+    spyOnProperty(window, 'innerWidth', 'get').and.callFake(() => mockInnerWidth);
     userServiceSpy = jasmine.createSpyObj('UserManagementService', [
       'findAllUsers',
       'createUser',
       'updateUser',
       'deleteUser',
     ]);
-    dialogServiceSpy = jasmine.createSpyObj('TuiDialogService', ['open']);
-    alertServiceSpy = jasmine.createSpyObj('TuiAlertService', ['open']);
+    dialogServiceSpy = jasmine.createSpyObj('SsDialogService', ['open']);
+    alertServiceSpy = jasmine.createSpyObj('SsToastService', ['open']);
 
     // Default: findAllUsers returns the mock list wrapped with page metadata
     userServiceSpy.findAllUsers.and.returnValue(of(page(mockUsers)));
@@ -102,9 +87,8 @@ describe('UserManagementComponent', () => {
         provideRouter([]),
         provideLocationMocks(),
         { provide: UserManagementService, useValue: userServiceSpy },
-        { provide: TuiDialogService, useValue: dialogServiceSpy },
-        { provide: TuiAlertService, useValue: alertServiceSpy },
-        { provide: WA_WINDOW, useValue: mockWindow },
+        { provide: SsDialogService, useValue: dialogServiceSpy },
+        { provide: SsToastService, useValue: alertServiceSpy },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     })
@@ -643,8 +627,8 @@ describe('UserManagementComponent — URL-seeded filters', () => {
       'updateUser',
       'deleteUser',
     ]);
-    const dialogServiceSpy = jasmine.createSpyObj('TuiDialogService', ['open']);
-    const alertServiceSpy = jasmine.createSpyObj('TuiAlertService', ['open']);
+    const dialogServiceSpy = jasmine.createSpyObj('SsDialogService', ['open']);
+    const alertServiceSpy = jasmine.createSpyObj('SsToastService', ['open']);
 
     userServiceSpy.findAllUsers.and.returnValue(of(page(mockUsers)));
     dialogServiceSpy.open.and.returnValue(new Subject<any>());
@@ -657,9 +641,8 @@ describe('UserManagementComponent — URL-seeded filters', () => {
         provideLocationMocks(),
         { provide: ActivatedRoute, useValue: buildRoute(params) },
         { provide: UserManagementService, useValue: userServiceSpy },
-        { provide: TuiDialogService, useValue: dialogServiceSpy },
-        { provide: TuiAlertService, useValue: alertServiceSpy },
-        { provide: WA_WINDOW, useValue: mockWindow },
+        { provide: SsDialogService, useValue: dialogServiceSpy },
+        { provide: SsToastService, useValue: alertServiceSpy },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     })

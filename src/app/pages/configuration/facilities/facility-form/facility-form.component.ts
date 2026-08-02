@@ -14,11 +14,6 @@ import {
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormArray } from '@angular/forms';
 import { GoogleMap, MapMarker } from '@angular/google-maps';
 import { take } from 'rxjs';
-import { type TuiStringHandler } from '@taiga-ui/cdk';
-import { TuiAlertService } from '@taiga-ui/core';
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
-import { TuiDialogContext } from '@taiga-ui/experimental';
-import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
 import { FacilityService } from '../../../../services/http-services/facility.service';
 import {
   MediaService,
@@ -30,6 +25,8 @@ import { Amenity, AMENITY_LABELS, AMENITY_ICONS } from '../../../../shared/enums
 import { DISTRICT_OPTIONS } from '../../../../shared/enums/district.enum';
 import { TenantService } from '../../../../shared/services/tenant.service';
 
+import { SsToastService } from '../../../../shared/ui/toast.service';
+import { SS_DIALOG_CONTEXT, SsDialogContext, SsDialogService } from '../../../../shared/ui/dialog.service';
 interface CountryItem {
   readonly id: string;
   readonly name: string;
@@ -40,10 +37,15 @@ interface CityItem {
   readonly name: string;
 }
 
+/**
+ * Facility create/edit form — Taiga-free template (ss-* kit, native selects,
+ * ss-checkbox amenities, ss-ic mask icons). Renders inside the SsDialogService
+ * shell (SS_DIALOG_CONTEXT); Google Maps + Places autocomplete unchanged.
+ */
 @Component({
   selector: 'app-facility-form',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, ReactiveFormsModule, CommonModule, GoogleMap, MapMarker],
+  imports: [ReactiveFormsModule, CommonModule, GoogleMap, MapMarker],
   templateUrl: './facility-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -70,16 +72,13 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
   readonly amenityLabels = AMENITY_LABELS;
   readonly amenityIcons = AMENITY_ICONS;
 
-  readonly stringifyCountry: TuiStringHandler<string> = (id) =>
-    this.countries.find((item) => item.id === id)?.name ?? '';
+  /** assets/taiga-ui/icons URL for a '@lucide.xxx' / '@tui.xxx' icon name. */
+  amenityIconUrl(amenity: Amenity): string {
+    const name = (this.amenityIcons[amenity] ?? '').replace(/^@[a-z]+\./, '');
+    return `url('assets/taiga-ui/icons/${name}.svg')`;
+  }
 
-  readonly stringifyCity: TuiStringHandler<string> = (id) =>
-    this.cities.find((item) => item.id === id)?.name ?? '';
-
-  readonly stringifyDistrict: TuiStringHandler<string> = (id) =>
-    this.districts.find((item) => item.id === id)?.name ?? '';
-
-  private readonly context = inject(POLYMORPHEUS_CONTEXT) as TuiDialogContext<
+  private readonly context = inject(SS_DIALOG_CONTEXT) as SsDialogContext<
     Facility | null,
     { facility?: Facility }
   >;
@@ -93,7 +92,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
   private readonly fb = inject(FormBuilder);
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly facilityService = inject(FacilityService);
-  private readonly alerts = inject(TuiAlertService);
+  private readonly alerts = inject(SsToastService);
 
   ngOnInit(): void {
     const f = this.context.data?.facility;

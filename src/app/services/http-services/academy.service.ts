@@ -1,9 +1,14 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Academy, CreateAcademyDto, UpdateAcademyDto } from '../../shared/models/academy.model';
-import { ApiResponse } from '../../shared/models/api-response.model';
+import { ApiPage, ApiResponse } from '../../shared/models/api-response.model';
+
+export interface PaginatedAcademies {
+  data: Academy[];
+  page?: ApiPage;
+}
 
 @Injectable({
   providedIn: 'root',
@@ -18,8 +23,17 @@ export class AcademyService {
       .pipe(map((res) => res.result.data));
   }
 
+  /** Every academy in one response — for filter dropdowns (stats/customers). */
   getAllAcademies(): Observable<Academy[]> {
     return this.http.get<ApiResponse<Academy[]>>(this.apiUrl).pipe(map((res) => res.result.data));
+  }
+
+  /** Paginated variant for the management table (same endpoint, page params). */
+  getAcademiesPage(page = 1, limit = 20): Observable<PaginatedAcademies> {
+    const params = new HttpParams().set('page', page).set('limit', limit);
+    return this.http
+      .get<ApiResponse<Academy[]>>(this.apiUrl, { params })
+      .pipe(map((res) => ({ data: res.result.data, page: res.result.page })));
   }
 
   getAcademyById(id: string): Observable<Academy> {

@@ -1,15 +1,13 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { take } from 'rxjs';
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
-import { TuiDialogContext } from '@taiga-ui/experimental';
-import { SHARED_TAIGA_IMPORTS } from '../../shared/shared.module';
 import { TournamentService } from '../../services/http-services/tournament.service';
 import {
   Tournament,
   TournamentRegistration,
 } from '../../shared/models/tournament.model';
 
+import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../shared/ui/dialog.service';
 const PAYMENT_LABELS: Record<string, string> = {
   pay_at_venue: 'ადგილზე',
   paid: 'გადახდილი',
@@ -20,7 +18,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-registrations-dialog',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-h-[70vh] overflow-y-auto">
@@ -51,14 +49,14 @@ const PAYMENT_LABELS: Record<string, string> = {
                 </div>
               </div>
               <span
-                class="inline-block px-2 py-0.5 rounded-full text-xs font-medium georgian-text"
+                class="georgian-text"
                 lang="ka"
                 [class]="
                   reg.status === 'cancelled'
-                    ? 'bg-red-100 text-red-700'
+                    ? 'ss-badge ss-badge--negative'
                     : reg.paymentStatus === 'paid'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-blue-100 text-blue-700'
+                      ? 'ss-badge ss-badge--positive'
+                      : 'ss-badge ss-badge--info'
                 "
               >
                 {{ reg.status === 'cancelled' ? 'გაუქმებული' : paymentLabel(reg) }}
@@ -71,7 +69,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   `,
 })
 export class RegistrationsDialogComponent implements OnInit {
-  private readonly context = inject(POLYMORPHEUS_CONTEXT) as TuiDialogContext<
+  private readonly context = inject(SS_DIALOG_CONTEXT) as SsDialogContext<
     void,
     { tournament: Tournament }
   >;

@@ -1,0 +1,1204 @@
+/* ============================================================================
+   Sport Spot — Admin theme · PREMIUM DARK design system
+   The player app's design language (sport-spot-webapp-user/src/styles.css)
+   applied to the admin: dark-first, brand teal #0F3B38 surfaces, restrained
+   violet #7C6CF6 accent, hairline borders, soft expensive elevation, pill
+   CTAs with a glow, calm motion. Georgian-first type (Noto Sans Georgian +
+   Inter numerals).
+
+   Two token families live here:
+   - user-app aliases (--bg/--surface/--accent/--hairline/…) — the kit below
+     is written against these, verbatim from the player app;
+   - --tui-* tokens — kept for the page-level CSS written during the Taiga
+     exit; values match the aliases so both express the same palette.
+   Dark is the default (:root); [tuiTheme='light'] (stamped on <html> by
+   SsThemeService) overrides both families.
+   ========================================================================= */
+
+/* ── shape, motion, type (theme-independent) ──────────────────────────────── */
+:root {
+  /* Type */
+  --font:
+    'Noto Sans Georgian', 'Noto Sans Georgian Fallback', 'Inter', 'Inter Fallback', 'MarkGEO',
+    'Segoe UI', system-ui, -apple-system, Roboto, sans-serif;
+  --font-num:
+    'Inter', 'Inter Fallback', 'Noto Sans Georgian', 'Noto Sans Georgian Fallback', 'Segoe UI',
+    system-ui, sans-serif;
+  --tui-font-heading: var(--font);
+  --tui-font-text: var(--font);
+
+  /* Radius — refined */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-2xl: 26px;
+  --r-pill: 999px;
+  --tui-radius-xs: 6px;
+  --tui-radius-s: 8px;
+  --tui-radius-m: 12px;
+  --tui-radius-l: 16px;
+  --tui-radius-xl: 20px;
+
+  /* Motion — calm, expensive */
+  --dur-1: 140ms;
+  --dur-2: 240ms;
+  --dur-3: 380ms;
+  --dur-4: 560ms;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-emph: cubic-bezier(0.34, 1.2, 0.5, 1);
+  --tui-duration: 240ms;
+}
+
+/* ── DARK (default) — the premium-dark palette ────────────────────────────── */
+:root {
+  color-scheme: dark;
+
+  /* Brand */
+  --brand: #0f3b38;
+  --brand-light: #1a5651;
+
+  /* Accent — violet, used sparingly */
+  --accent: #7c6cf6;
+  --accent-hover: #8e80f8;
+  --accent-press: #6a58f0;
+  --on-accent: #ffffff;
+  --accent-soft: rgba(124, 108, 246, 0.16);
+  --accent-line: rgba(124, 108, 246, 0.4);
+
+  /* Dark surfaces — each step clearly lighter so elevation reads */
+  --bg: #060e0d;
+  --bg-2: #0a1514;
+  --surface: #10201d;
+  --surface-2: #16302b;
+  --surface-3: #1e403a;
+  --glass: rgba(16, 32, 29, 0.66);
+
+  /* Text */
+  --text: #edf4f1;
+  --text-muted: #93a8a2;
+  --text-faint: #5e7772;
+
+  /* Hairlines + focus */
+  --hairline: rgba(255, 255, 255, 0.09);
+  --hairline-2: rgba(255, 255, 255, 0.15);
+  --ring: rgba(124, 108, 246, 0.5);
+
+  /* Semantic */
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+
+  /* Elevation — soft, expensive */
+  --shadow-sm: 0 2px 10px -6px rgba(0, 0, 0, 0.7);
+  --shadow: 0 18px 44px -20px rgba(0, 0, 0, 0.8), 0 0 0 1px var(--hairline);
+  --shadow-lg: 0 34px 70px -28px rgba(0, 0, 0, 0.85);
+  --glow: 0 12px 30px -10px rgba(124, 108, 246, 0.45);
+  --ss-glow: var(--glow);
+
+  /* ── --tui-* (page-level CSS from the Taiga exit) ── */
+  --tui-background-base: #0a1514;
+  --tui-background-base-alt: #060e0d;
+  --tui-background-neutral-1: rgba(237, 244, 241, 0.07);
+  --tui-background-neutral-1-hover: rgba(237, 244, 241, 0.1);
+  --tui-background-neutral-1-pressed: rgba(237, 244, 241, 0.13);
+  --tui-background-neutral-2: rgba(237, 244, 241, 0.14);
+  --tui-background-neutral-2-hover: rgba(237, 244, 241, 0.18);
+  --tui-background-neutral-2-pressed: rgba(237, 244, 241, 0.22);
+  --tui-background-elevation-1: #10201d;
+  --tui-background-elevation-2: #10201d;
+  --tui-background-elevation-3: #16302b;
+
+  --tui-background-accent-1: #7c6cf6;
+  --tui-background-accent-1-hover: #8e80f8;
+  --tui-background-accent-1-pressed: #6a58f0;
+  --tui-background-accent-2: #1a5651;
+  --tui-background-accent-2-hover: #216760;
+  --tui-background-accent-2-pressed: #14504a;
+  --tui-background-accent-opposite: #edf4f1;
+  --tui-background-accent-opposite-hover: #d9e6e2;
+  --tui-background-accent-opposite-pressed: #c4d6d0;
+  --tui-background-accent-1-pale: rgba(124, 108, 246, 0.16);
+
+  --tui-service-autofill-background: #16302b;
+  --tui-service-backdrop: rgba(2, 8, 7, 0.72);
+  --tui-service-selection-background: rgba(124, 108, 246, 0.35);
+
+  --tui-text-primary: #edf4f1;
+  --tui-text-secondary: #93a8a2;
+  --tui-text-tertiary: #5e7772;
+  --tui-text-primary-on-accent-1: #ffffff;
+  --tui-text-primary-on-accent-2: #ffffff;
+  --tui-text-action: #8e80f8;
+  --tui-text-action-hover: #a29af9;
+  --tui-text-positive: #34d399;
+  --tui-text-positive-hover: #6ee7b7;
+  --tui-text-negative: #f87171;
+  --tui-text-negative-hover: #fca5a5;
+
+  --tui-border-normal: rgba(255, 255, 255, 0.09);
+  --tui-border-hover: rgba(255, 255, 255, 0.15);
+  --tui-border-focus: #7c6cf6;
+
+  --tui-status-negative: #f87171;
+  --tui-status-negative-pale: rgba(248, 113, 113, 0.14);
+  --tui-status-negative-pale-hover: rgba(248, 113, 113, 0.2);
+  --tui-status-positive: #34d399;
+  --tui-status-positive-pale: rgba(52, 211, 153, 0.14);
+  --tui-status-positive-pale-hover: rgba(52, 211, 153, 0.2);
+  --tui-status-warning: #fbbf24;
+  --tui-status-warning-pale: rgba(251, 191, 36, 0.14);
+  --tui-status-warning-pale-hover: rgba(251, 191, 36, 0.2);
+  --tui-status-info: #60a5fa;
+  --tui-status-info-pale: rgba(96, 165, 250, 0.14);
+  --tui-status-info-pale-hover: rgba(96, 165, 250, 0.2);
+  --tui-status-neutral: #93a8a2;
+
+  --tui-shadow-small: 0 2px 10px -6px rgba(0, 0, 0, 0.7);
+  --tui-shadow-small-hover: 0 10px 26px -12px rgba(0, 0, 0, 0.75);
+  --tui-shadow-medium: 0 18px 44px -20px rgba(0, 0, 0, 0.8);
+  --tui-shadow-medium-hover: 0 22px 52px -20px rgba(0, 0, 0, 0.85);
+  --tui-shadow-popup: 0 34px 70px -28px rgba(0, 0, 0, 0.85);
+}
+
+/* ── LIGHT ([tuiTheme='light']) ───────────────────────────────────────────── */
+[tuiTheme='light'] {
+  color-scheme: light;
+
+  --accent-soft: rgba(124, 108, 246, 0.14);
+
+  --bg: #f1f5f3;
+  --bg-2: #e8eeeb;
+  --surface: #ffffff;
+  --surface-2: #f1f6f4;
+  --surface-3: #e5eeea;
+  --glass: rgba(255, 255, 255, 0.7);
+
+  --text: #08201c;
+  --text-muted: #4c665f;
+  --text-faint: #85a099;
+
+  --hairline: rgba(8, 32, 28, 0.1);
+  --hairline-2: rgba(8, 32, 28, 0.18);
+
+  --success: #059669;
+  --warning: #d97706;
+  --danger: #dc2626;
+
+  --shadow-sm: 0 2px 10px -7px rgba(6, 30, 27, 0.22);
+  --shadow: 0 18px 44px -24px rgba(6, 30, 27, 0.26), 0 0 0 1px var(--hairline);
+  --shadow-lg: 0 34px 70px -30px rgba(6, 30, 27, 0.3);
+  --glow: 0 12px 28px -12px rgba(124, 108, 246, 0.4);
+
+  /* ── --tui-* ── */
+  --tui-background-base: #ffffff;
+  --tui-background-base-alt: #f1f5f3;
+  --tui-background-neutral-1: rgba(8, 32, 28, 0.06);
+  --tui-background-neutral-1-hover: rgba(8, 32, 28, 0.09);
+  --tui-background-neutral-1-pressed: rgba(8, 32, 28, 0.12);
+  --tui-background-neutral-2: rgba(8, 32, 28, 0.12);
+  --tui-background-neutral-2-hover: rgba(8, 32, 28, 0.16);
+  --tui-background-neutral-2-pressed: rgba(8, 32, 28, 0.2);
+  --tui-background-elevation-1: #ffffff;
+  --tui-background-elevation-2: #ffffff;
+  --tui-background-elevation-3: #ffffff;
+
+  --tui-background-accent-1: #7c6cf6;
+  --tui-background-accent-1-hover: #8e80f8;
+  --tui-background-accent-1-pressed: #6a58f0;
+  --tui-background-accent-2: #0f3b38;
+  --tui-background-accent-2-hover: #1a5651;
+  --tui-background-accent-2-pressed: #0b2d2a;
+  --tui-background-accent-opposite: #08201c;
+  --tui-background-accent-opposite-hover: #123832;
+  --tui-background-accent-opposite-pressed: #1a4740;
+  --tui-background-accent-1-pale: rgba(124, 108, 246, 0.14);
+
+  --tui-service-autofill-background: #eef2f0;
+  --tui-service-backdrop: rgba(8, 32, 28, 0.42);
+  --tui-service-selection-background: rgba(124, 108, 246, 0.24);
+
+  --tui-text-primary: #08201c;
+  --tui-text-secondary: #4c665f;
+  --tui-text-tertiary: #85a099;
+  --tui-text-primary-on-accent-1: #ffffff;
+  --tui-text-primary-on-accent-2: #ffffff;
+  --tui-text-action: #6a58f0;
+  --tui-text-action-hover: #5d4ce0;
+  --tui-text-positive: #059669;
+  --tui-text-positive-hover: #047857;
+  --tui-text-negative: #dc2626;
+  --tui-text-negative-hover: #b91c1c;
+
+  --tui-border-normal: rgba(8, 32, 28, 0.1);
+  --tui-border-hover: rgba(8, 32, 28, 0.18);
+  --tui-border-focus: #7c6cf6;
+
+  --tui-status-negative: #dc2626;
+  --tui-status-negative-pale: rgba(220, 38, 38, 0.1);
+  --tui-status-negative-pale-hover: rgba(220, 38, 38, 0.16);
+  --tui-status-positive: #059669;
+  --tui-status-positive-pale: rgba(5, 150, 105, 0.12);
+  --tui-status-positive-pale-hover: rgba(5, 150, 105, 0.18);
+  --tui-status-warning: #d97706;
+  --tui-status-warning-pale: rgba(217, 119, 6, 0.12);
+  --tui-status-warning-pale-hover: rgba(217, 119, 6, 0.18);
+  --tui-status-info: #2563eb;
+  --tui-status-info-pale: rgba(37, 99, 235, 0.1);
+  --tui-status-info-pale-hover: rgba(37, 99, 235, 0.16);
+  --tui-status-neutral: #4c665f;
+
+  --tui-shadow-small: 0 2px 10px -7px rgba(6, 30, 27, 0.22);
+  --tui-shadow-small-hover: 0 10px 24px -12px rgba(6, 30, 27, 0.26);
+  --tui-shadow-medium: 0 18px 44px -24px rgba(6, 30, 27, 0.26);
+  --tui-shadow-medium-hover: 0 22px 52px -24px rgba(6, 30, 27, 0.3);
+  --tui-shadow-popup: 0 34px 70px -30px rgba(6, 30, 27, 0.3);
+}
+
+/* ── base ─────────────────────────────────────────────────────────────────── */
+/* index.html paints <html> dark before any CSS loads; light mode re-colors it */
+html[tuiTheme='light'] {
+  background: #f1f5f3;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection {
+  background: var(--accent);
+  color: #fff;
+}
+/* Thin, quiet scrollbars everywhere (page, dialogs, table overflow rails) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-3) transparent;
+}
+
+/* ── utilities ────────────────────────────────────────────────────────────── */
+.ss-eyebrow {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.ss-num {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Routed pages enter with a calm fade-up (component hosts are inline by
+   default — the animation needs a transformable box). Scoped to pages inside
+   the shell's <main> — animating the shell host itself would leave it a
+   containing block for fixed descendants (Chrome keeps transform-animated
+   elements promoted while a fill is applied), breaking the fixed tab bar.
+   No fill-mode for the same reason: once the entrance ends, the page host
+   must stop being a containing block so fixed overlays position correctly. */
+.shell-main router-outlet + * {
+  display: block;
+  animation: ss-fadeup var(--dur-3) var(--ease);
+}
+
+/* ── buttons — one accent CTA with a glow; the rest quiet ─────────────────── */
+.ss-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  user-select: none;
+  will-change: transform;
+  transition:
+    transform var(--dur-1) var(--ease),
+    background var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease);
+}
+.ss-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+.ss-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.ss-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.ss-btn--primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: var(--glow);
+}
+.ss-btn--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.ss-btn--primary:active:not(:disabled) {
+  background: var(--accent-press);
+}
+.ss-btn--flat {
+  color: var(--text-muted);
+}
+.ss-btn--flat:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.ss-btn--outline {
+  background: var(--surface-2);
+  border-color: var(--hairline-2);
+}
+.ss-btn--outline:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  background: var(--surface-3);
+}
+.ss-btn--danger {
+  background: var(--tui-status-negative-pale);
+  color: var(--danger);
+}
+.ss-btn--danger:hover:not(:disabled) {
+  background: var(--tui-status-negative-pale-hover);
+}
+.ss-btn--s {
+  height: 36px;
+  padding: 0 15px;
+  font-size: 13px;
+}
+.ss-btn--block {
+  width: 100%;
+}
+
+/* ── fields & inputs ──────────────────────────────────────────────────────── */
+.ss-field {
+  display: block;
+}
+.ss-label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.ss-input {
+  display: block;
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  transition:
+    border-color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease);
+}
+textarea.ss-input {
+  height: auto;
+  min-height: 88px;
+  padding: 10px 14px;
+  resize: vertical;
+}
+.ss-input::placeholder {
+  color: var(--text-faint);
+}
+.ss-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.ss-input--invalid,
+.ss-input--invalid:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--tui-status-negative-pale);
+}
+.ss-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--danger);
+}
+
+/* native datetime controls keep the UA indicator, dimmed into the palette */
+.ss-input::-webkit-calendar-picker-indicator {
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+/* Plain date fields open the kit datepicker popover (rendered by
+   ss-ui-outlet) instead of the UA calendar, so the native indicator is
+   hidden and the whole field is the trigger; the glyph mirrors the select
+   chevron treatment. */
+input[type='date'].ss-input {
+  padding-right: 38px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%2393a8a2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 2v4'/%3E%3Cpath d='M16 2v4'/%3E%3Crect width='18' height='18' x='3' y='4' rx='2'/%3E%3Cpath d='M3 10h18'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  cursor: pointer;
+}
+input[type='date'].ss-input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+/* ── surfaces ─────────────────────────────────────────────────────────────── */
+.ss-card {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease);
+}
+
+/* ── chips (single-select pills) ──────────────────────────────────────────── */
+.ss-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 15px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    transform var(--dur-1) var(--ease),
+    color var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease),
+    background var(--dur-2) var(--ease);
+}
+.ss-chip:hover {
+  color: var(--text);
+  border-color: var(--hairline-2);
+}
+.ss-chip:active {
+  transform: scale(0.95);
+}
+.ss-chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.ss-chip.is-active {
+  color: var(--text);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* ── chip rail (horizontal, scrollable) ───────────────────────────────────── */
+.ss-chip-rail {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+.ss-chip-rail::-webkit-scrollbar {
+  display: none;
+}
+/* wrap variant for forms/dialogs where horizontal scrolling would hide options */
+.ss-chip-rail--wrap {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+/* ── badges (status pills) ────────────────────────────────────────────────── */
+.ss-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: var(--r-sm);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.ss-badge--positive {
+  background: var(--tui-status-positive-pale);
+  color: var(--success);
+}
+.ss-badge--warning {
+  background: var(--tui-status-warning-pale);
+  color: var(--warning);
+}
+.ss-badge--negative {
+  background: var(--tui-status-negative-pale);
+  color: var(--danger);
+}
+.ss-badge--info {
+  background: var(--tui-status-info-pale);
+  color: var(--tui-status-info);
+}
+.ss-badge--neutral {
+  background: var(--tui-background-neutral-1);
+  color: var(--text-muted);
+}
+.ss-badge--accent {
+  background: var(--accent-soft);
+  color: var(--tui-text-action);
+}
+
+/* ── native select (chevron via inline SVG; inherits the ss-input look) ───── */
+select.ss-input {
+  appearance: none;
+  padding-right: 38px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2393a8a2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  cursor: pointer;
+}
+
+/* Customizable select (Chromium): the OPENED dropdown joins the kit instead of
+   rendering as an OS menu. Non-supporting browsers keep the native popup,
+   which at least follows `color-scheme`. */
+@supports (appearance: base-select) {
+  select.ss-input:not([multiple]):not([size]) {
+    appearance: base-select;
+  }
+  /* the kit draws its own chevron; drop the UA triangle base-select adds */
+  select.ss-input::picker-icon {
+    display: none;
+  }
+  select.ss-input:not([multiple]):not([size])::picker(select) {
+    appearance: base-select;
+    background: var(--bg-2);
+    border: 1px solid var(--hairline-2);
+    border-radius: var(--r-md);
+    box-shadow: var(--shadow-lg);
+    padding: 5px;
+    margin-block: 6px;
+    max-height: min(340px, 60vh);
+    overflow-y: auto;
+    opacity: 1;
+    transform: none;
+    transition:
+      opacity var(--dur-2) var(--ease),
+      transform var(--dur-2) var(--ease-emph),
+      overlay var(--dur-2) allow-discrete,
+      display var(--dur-2) allow-discrete;
+  }
+  @starting-style {
+    select.ss-input:not([multiple]):not([size])::picker(select) {
+      opacity: 0;
+      transform: translateY(-5px) scale(0.985);
+    }
+  }
+  select.ss-input:open {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  select.ss-input option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 11px;
+    border-radius: var(--r-sm);
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text);
+    cursor: pointer;
+    transition: background var(--dur-1) var(--ease);
+  }
+  select.ss-input option:not(:disabled):hover,
+  select.ss-input option:not(:disabled):focus {
+    background: var(--surface-2);
+    outline: none;
+  }
+  select.ss-input option:disabled {
+    color: var(--text-faint);
+    cursor: default;
+  }
+  select.ss-input option:checked {
+    background: var(--accent-soft);
+    color: var(--tui-text-action);
+    font-weight: 600;
+  }
+  select.ss-input option::checkmark {
+    order: 1;
+    margin-left: auto;
+    color: var(--tui-text-action);
+  }
+}
+
+/* ── switch ───────────────────────────────────────────────────────────────── */
+.ss-switch {
+  appearance: none;
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex: 0 0 auto;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  border: 1px solid var(--hairline);
+  cursor: pointer;
+  transition: background var(--dur-2) var(--ease);
+}
+.ss-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--dur-3) var(--ease-emph);
+}
+.ss-switch:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.ss-switch:checked::after {
+  transform: translateX(20px);
+}
+.ss-switch:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* ── icon button (round ghost) ────────────────────────────────────────────── */
+.ss-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border: none;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease);
+}
+.ss-icon-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.ss-icon-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.ss-icon-btn--danger {
+  color: var(--danger);
+}
+.ss-icon-btn--danger:hover {
+  background: var(--tui-status-negative-pale);
+  color: var(--danger);
+}
+.ss-icon-btn svg {
+  width: 16px;
+  height: 16px;
+}
+.ss-icon-btn--s {
+  width: 28px;
+  height: 28px;
+}
+
+/* ── mask icon (renders assets/taiga-ui/icons/*.svg in currentColor) ──────── */
+.ss-ic {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  background: currentColor;
+  -webkit-mask: var(--ss-ic) no-repeat center / contain;
+  mask: var(--ss-ic) no-repeat center / contain;
+}
+.ss-ic--lg {
+  width: 32px;
+  height: 32px;
+}
+
+/* ── tooltip (pure CSS; shows on hover and keyboard focus) ────────────────── */
+.ss-tip {
+  position: relative;
+  display: inline-flex;
+}
+.ss-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(2px);
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--r-sm);
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+  letter-spacing: normal;
+  text-transform: none;
+  width: max-content;
+  max-width: 220px;
+  white-space: pre-line;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+  z-index: 40;
+}
+.ss-tip:hover::after,
+.ss-tip:focus-visible::after,
+.ss-tip:focus-within::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── dialog: centered modal on desktop, bottom sheet on mobile ────────────── */
+.ss-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  /* No fill-mode: a retained transform/opacity fill keeps the element a
+     containing block for fixed descendants in Chrome (see .shell-main note). */
+  animation: ss-fade-in var(--dur-2) var(--ease);
+}
+.ss-dialog {
+  width: 100%;
+  max-width: 560px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-2xl);
+  background: var(--bg-2);
+  border: 1px solid var(--hairline-2);
+  box-shadow: var(--shadow-lg);
+  padding: 22px 24px 24px;
+  animation: ss-modal-pop var(--dur-2) var(--ease-emph);
+}
+.ss-dialog--s {
+  max-width: 420px;
+}
+.ss-dialog--l {
+  max-width: 760px;
+}
+.ss-dialog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ss-dialog-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.ss-dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@media (max-width: 767px) {
+  .ss-dialog-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .ss-dialog {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: var(--r-2xl) var(--r-2xl) 0 0;
+    border-bottom: none;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    animation: ss-sheet-up var(--dur-3) var(--ease-emph);
+  }
+  .ss-dialog--s,
+  .ss-dialog--l {
+    max-width: 100%;
+  }
+}
+
+/* ── toasts ───────────────────────────────────────────────────────────────── */
+.ss-toasts {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.ss-toast {
+  pointer-events: auto;
+  display: block;
+  text-align: left;
+  border: 1px solid var(--hairline-2);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  padding: 13px 15px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  animation: ss-toast-in var(--dur-3) var(--ease-emph) both;
+}
+.ss-toast--success {
+  border-left-color: var(--success);
+}
+.ss-toast--error {
+  border-left-color: var(--danger);
+}
+.ss-toast--warning {
+  border-left-color: var(--warning);
+}
+
+/* ── global loading overlay ───────────────────────────────────────────────── */
+.ss-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 8, 7, 0.35);
+  backdrop-filter: blur(2px);
+}
+.ss-spinner {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 3px solid var(--accent-soft);
+  border-top-color: var(--accent);
+  animation: ss-spin 0.7s linear infinite;
+}
+
+/* ── avatar (initials circle) ─────────────────────────────────────────────── */
+.ss-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--tui-text-action);
+  border: 1px solid var(--accent-line);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+.ss-avatar--m {
+  width: 44px;
+  height: 44px;
+  font-size: 15px;
+}
+
+/* ── checkbox ─────────────────────────────────────────────────────────────── */
+.ss-checkbox {
+  appearance: none;
+  width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+  border: 1.5px solid var(--hairline-2);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+  transition:
+    background var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease);
+}
+.ss-checkbox::after {
+  content: '';
+  width: 10px;
+  height: 10px;
+  transform: scale(0);
+  transition: transform var(--dur-1) var(--ease-emph);
+  background: #ffffff;
+  -webkit-mask: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+.ss-checkbox:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.ss-checkbox:checked::after {
+  transform: scale(1);
+}
+.ss-checkbox:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+/* ── tables ───────────────────────────────────────────────────────────────── */
+.ss-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  font-variant-numeric: tabular-nums;
+}
+.ss-table thead th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--hairline);
+  white-space: nowrap;
+}
+.ss-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--text);
+}
+.ss-table tbody tr {
+  transition: background var(--dur-1) var(--ease);
+}
+.ss-table tbody tr:hover {
+  background: var(--tui-background-neutral-1);
+}
+.ss-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── confirm dialog content (ss-confirm inside .ss-dialog--s) ─────────────── */
+.ss-confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding-top: 2px;
+}
+.ss-confirm-ic {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-soft);
+  color: var(--tui-text-action);
+}
+.ss-confirm-ic svg {
+  width: 26px;
+  height: 26px;
+}
+.ss-confirm-ic--danger {
+  background: var(--tui-status-negative-pale);
+  color: var(--danger);
+}
+.ss-confirm-msg {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.ss-confirm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* ── datepicker popover (kit component; rendered by ss-ui-outlet) ─────────── */
+.ss-pop {
+  position: fixed;
+  z-index: 130; /* above dialogs (120), below toasts (140) */
+  width: 296px;
+  background: var(--bg-2);
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 12px;
+  animation: ss-modal-pop var(--dur-2) var(--ease-emph);
+}
+.ss-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.ss-pop-title {
+  flex: 1 1 auto;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.ss-pop-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.ss-pop-dow {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.ss-pop-day {
+  height: 34px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease);
+}
+.ss-pop-day:hover {
+  background: var(--surface-2);
+}
+.ss-pop-day:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.ss-pop-day.is-out {
+  color: var(--text-faint);
+}
+.ss-pop-day.is-today {
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+.ss-pop-day.is-selected {
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+  box-shadow: var(--glow);
+}
+.ss-pop-day:disabled {
+  color: var(--text-faint);
+  opacity: 0.45;
+  cursor: default;
+  background: transparent;
+}
+.ss-pop-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+}
+
+/* ── motion ───────────────────────────────────────────────────────────────── */
+@keyframes ss-fadeup {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ss-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes ss-modal-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes ss-sheet-up {
+  from {
+    transform: translateY(101%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes ss-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ss-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -2,8 +2,6 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of, Subject } from 'rxjs';
-import { TuiAlertService } from '@taiga-ui/core';
-import { TuiDialogService } from '@taiga-ui/experimental';
 
 import { CourtsComponent } from './courts.component';
 import { CourtService } from '../../../services/http-services/court.service';
@@ -18,6 +16,8 @@ import {
   SurfaceColor,
 } from '../../../shared/enums/court-type.enum';
 
+import { SsToastService } from '../../../shared/ui/toast.service';
+import { SsDialogService } from '../../../shared/ui/dialog.service';
 const facility: Facility = {
   _id: 'fac-1',
   name: 'Padel House',
@@ -67,8 +67,8 @@ describe('CourtsComponent', () => {
         { provide: TenantService, useValue: tenantSpy },
         { provide: Router, useValue: routerSpy },
         { provide: ActivatedRoute, useValue: { queryParams: of({}) } },
-        { provide: TuiAlertService, useValue: { open: () => of(undefined) } },
-        { provide: TuiDialogService, useValue: { open: () => of(undefined) } },
+        { provide: SsToastService, useValue: { open: () => of(undefined) } },
+        { provide: SsDialogService, useValue: { open: () => of(undefined) } },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     })

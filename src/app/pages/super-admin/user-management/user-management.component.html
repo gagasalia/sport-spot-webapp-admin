@@ -1,82 +1,72 @@
 <div class="pt-8 p-0 sm:p-8">
   <header class="mb-6 flex items-center justify-between">
     <h1 class="text-2xl font-semibold georgian-text" lang="ka">იუზერები</h1>
-    <button tuiButton appearance="primary" iconStart="@tui.plus" (click)="addUser()">
+    <button class="ss-btn ss-btn--primary" type="button" (click)="addUser()">
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
       <span class="georgian-text" lang="ka">დამატება</span>
     </button>
   </header>
 
   <!-- Filters -->
-  <div class="card-bg rounded-xl border p-4 mb-6" style="border-color: var(--tui-border-normal)">
+  <div class="ss-card p-4 mb-6">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-      <label tuiLabel>
-        <span class="georgian-text" lang="ka">სახელი</span>
-        <tui-textfield>
-          <input
-            tuiTextfield
-            type="text"
-            [ngModel]="filterName()"
-            (ngModelChange)="filterName.set($event)"
-          />
-        </tui-textfield>
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">სახელი</span>
+        <input
+          class="ss-input"
+          type="text"
+          [ngModel]="filterName()"
+          (ngModelChange)="filterName.set($event)"
+        />
       </label>
 
-      <label tuiLabel>
-        <span class="georgian-text" lang="ka">ელ. ფოსტა</span>
-        <tui-textfield>
-          <input
-            tuiTextfield
-            type="text"
-            [ngModel]="filterEmail()"
-            (ngModelChange)="filterEmail.set($event)"
-          />
-        </tui-textfield>
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">ელ. ფოსტა</span>
+        <input
+          class="ss-input"
+          type="text"
+          [ngModel]="filterEmail()"
+          (ngModelChange)="filterEmail.set($event)"
+        />
       </label>
 
-      <label tuiLabel>
-        <span class="georgian-text" lang="ka">ტელეფონი</span>
-        <tui-textfield>
-          <input
-            tuiTextfield
-            type="text"
-            [ngModel]="filterPhone()"
-            (ngModelChange)="filterPhone.set($event)"
-          />
-        </tui-textfield>
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">ტელეფონი</span>
+        <input
+          class="ss-input"
+          type="text"
+          [ngModel]="filterPhone()"
+          (ngModelChange)="filterPhone.set($event)"
+        />
       </label>
 
-      <label tuiLabel>
-        <span class="georgian-text" lang="ka">პირადი ნომერი</span>
-        <tui-textfield>
-          <input
-            tuiTextfield
-            type="text"
-            [ngModel]="filterPid()"
-            (ngModelChange)="filterPid.set($event)"
-          />
-        </tui-textfield>
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">პირადი ნომერი</span>
+        <input
+          class="ss-input"
+          type="text"
+          [ngModel]="filterPid()"
+          (ngModelChange)="filterPid.set($event)"
+        />
       </label>
 
-      <label tuiLabel>
-        <span class="georgian-text" lang="ka">როლი</span>
-        <tui-textfield tuiChevron>
-          <input
-            tuiSelect
-            [ngModel]="filterRole()"
-            (ngModelChange)="filterRole.set($event)"
-            class="georgian-text"
-            lang="ka"
-          />
-          <tui-data-list *tuiTextfieldDropdown>
-            @for (role of roleOptions; track role) {
-              <button tuiOption [value]="role" new>{{ role }}</button>
-            }
-          </tui-data-list>
-        </tui-textfield>
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">როლი</span>
+        <select
+          class="ss-input georgian-text"
+          lang="ka"
+          [ngModel]="filterRole()"
+          (ngModelChange)="filterRole.set($event)"
+        >
+          <option [ngValue]="null">ყველა</option>
+          @for (role of roleOptions; track role) {
+            <option [ngValue]="role">{{ role }}</option>
+          }
+        </select>
       </label>
 
       <div class="flex items-end">
-        <button tuiButton appearance="flat" (click)="clearFilters()" class="w-full">
+        <button class="ss-btn ss-btn--flat ss-btn--block" type="button" (click)="clearFilters()">
           <span class="georgian-text" lang="ka">გასუფთავება</span>
         </button>
       </div>
@@ -90,89 +80,75 @@
   } @else {
     <!-- Desktop Table View -->
     @if (!isMobile()) {
-      <div
-        class="card-bg rounded-xl border overflow-hidden"
-        style="border-color: var(--tui-border-normal)"
-      >
-        <table class="w-full text-left">
+      <div class="ss-card overflow-x-auto">
+        <table class="ss-table">
           <thead>
-            <tr
-              class="border-b"
-              style="
-                border-color: var(--tui-border-normal);
-                background: var(--tui-background-base-alt);
-              "
-            >
-              <th class="px-4 py-3 text-sm font-semibold"></th>
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">სახელი</th>
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">ელ. ფოსტა</th>
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">ტელეფონი</th>
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">პირადი ნომერი</th>
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">
-                დაბადების თარიღი
-              </th>
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">როლი</th>
-              <th class="px-4 py-3 text-sm font-semibold"></th>
+            <tr>
+              <th></th>
+              <th class="georgian-text" lang="ka">სახელი</th>
+              <th class="georgian-text" lang="ka">ელ. ფოსტა</th>
+              <th class="georgian-text" lang="ka">ტელეფონი</th>
+              <th class="georgian-text" lang="ka">პირადი ნომერი</th>
+              <th class="georgian-text" lang="ka">დაბადების თარიღი</th>
+              <th class="georgian-text" lang="ka">როლი</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             @for (user of users(); track user._id) {
-              <tr
-                class="border-b last:border-b-0 hover:bg-(--tui-background-neutral-1)"
-                style="border-color: var(--tui-border-normal)"
-              >
-                <td class="px-4 py-3">
-                  <tui-avatar size="s">{{ getInitials(user) }}</tui-avatar>
+              <tr>
+                <td>
+                  <span class="ss-avatar">{{ getInitials(user) }}</span>
                 </td>
-                <td class="px-4 py-3 font-medium">{{ getFullName(user) }}</td>
-                <td class="px-4 py-3 text-sm">{{ user.email }}</td>
-                <td class="px-4 py-3 text-sm">{{ user.phone || '—' }}</td>
-                <td class="px-4 py-3 text-sm">{{ user.pid || '—' }}</td>
-                <td class="px-4 py-3 text-sm">
+                <td class="font-medium">{{ getFullName(user) }}</td>
+                <td class="text-sm">{{ user.email }}</td>
+                <td class="text-sm">{{ user.phone || '—' }}</td>
+                <td class="text-sm">{{ user.pid || '—' }}</td>
+                <td class="text-sm whitespace-nowrap">
                   {{ user.dateOfBirth ? (user.dateOfBirth | date: 'dd/MM/yyyy') : '—' }}
                 </td>
-                <td class="px-4 py-3 text-sm">
+                <td class="text-sm">
                   @for (role of user.userType; track role) {
                     <span
-                      class="inline-block px-2 py-0.5 rounded-full text-xs font-medium mr-1"
+                      class="mr-1"
                       [class]="
                         role === 'superadmin'
-                          ? 'bg-red-100 text-red-700'
+                          ? 'ss-badge ss-badge--negative'
                           : role === 'admin'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-green-100 text-green-700'
+                            ? 'ss-badge ss-badge--info'
+                            : 'ss-badge ss-badge--positive'
                       "
                     >
                       {{ role }}
                     </span>
                   }
                 </td>
-                <td class="px-4 py-3 text-sm">
+                <td class="text-sm">
                   <div class="flex items-center gap-1">
                     <button
-                      tuiIconButton
-                      appearance="flat"
-                      iconStart="@tui.wallet"
-                      size="s"
+                      class="ss-icon-btn"
+                      type="button"
                       aria-label="ბალანსი"
                       (click)="manageBalance(user)"
-                    ></button>
+                    >
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/wallet.svg')"></i>
+                    </button>
                     <button
-                      tuiIconButton
-                      appearance="flat"
-                      iconStart="@tui.pencil"
-                      size="s"
+                      class="ss-icon-btn"
+                      type="button"
                       aria-label="რედაქტირება"
                       (click)="editUser(user)"
-                    ></button>
+                    >
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+                    </button>
                     <button
-                      tuiIconButton
-                      appearance="flat-destructive"
-                      iconStart="@tui.trash-2"
-                      size="s"
+                      class="ss-icon-btn ss-icon-btn--danger"
+                      type="button"
                       aria-label="წაშლა"
                       (click)="deleteUser(user)"
-                    ></button>
+                    >
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -192,9 +168,9 @@
     @if (isMobile()) {
       <div class="flex flex-col gap-4">
         @for (user of users(); track user._id) {
-          <div class="card-bg rounded-xl border p-4" style="border-color: var(--tui-border-normal)">
+          <div class="ss-card p-4">
             <div class="flex items-center gap-3 mb-3">
-              <tui-avatar size="m">{{ getInitials(user) }}</tui-avatar>
+              <span class="ss-avatar ss-avatar--m">{{ getInitials(user) }}</span>
               <div class="flex-1 min-w-0">
                 <h3 class="font-semibold truncate">{{ getFullName(user) }}</h3>
                 <p class="text-sm truncate" style="color: var(--tui-text-secondary)">
@@ -203,42 +179,41 @@
               </div>
               <div class="flex items-center gap-1">
                 <button
-                  tuiIconButton
-                  appearance="flat"
-                  iconStart="@tui.wallet"
-                  size="s"
+                  class="ss-icon-btn"
+                  type="button"
                   aria-label="ბალანსი"
                   (click)="manageBalance(user)"
-                ></button>
+                >
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/wallet.svg')"></i>
+                </button>
                 <button
-                  tuiIconButton
-                  appearance="flat"
-                  iconStart="@tui.pencil"
-                  size="s"
+                  class="ss-icon-btn"
+                  type="button"
                   aria-label="რედაქტირება"
                   (click)="editUser(user)"
-                ></button>
+                >
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+                </button>
                 <button
-                  tuiIconButton
-                  appearance="flat-destructive"
-                  iconStart="@tui.trash-2"
-                  size="s"
+                  class="ss-icon-btn ss-icon-btn--danger"
+                  type="button"
                   aria-label="წაშლა"
                   (click)="deleteUser(user)"
-                ></button>
+                >
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                </button>
               </div>
             </div>
 
             <div class="flex flex-wrap gap-1 mb-3">
               @for (role of user.userType; track role) {
                 <span
-                  class="inline-block px-2 py-0.5 rounded-full text-xs font-medium"
                   [class]="
                     role === 'superadmin'
-                      ? 'bg-red-100 text-red-700'
+                      ? 'ss-badge ss-badge--negative'
                       : role === 'admin'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-green-100 text-green-700'
+                        ? 'ss-badge ss-badge--info'
+                        : 'ss-badge ss-badge--positive'
                   "
                 >
                   {{ role }}
@@ -249,41 +224,26 @@
             <div class="flex flex-col gap-1 text-sm">
               @if (user.phone) {
                 <div class="flex items-center gap-2">
-                  <tui-icon
-                    icon="@tui.phone"
-                    class="text-xs"
-                    style="color: var(--tui-text-secondary)"
-                  />
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/phone.svg'); width: 12px; height: 12px; color: var(--tui-text-secondary)"></i>
                   <span>{{ user.phone }}</span>
                 </div>
               }
               @if (user.pid) {
                 <div class="flex items-center gap-2">
-                  <tui-icon
-                    icon="@tui.id-card"
-                    class="text-xs"
-                    style="color: var(--tui-text-secondary)"
-                  />
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/id-card.svg'); width: 12px; height: 12px; color: var(--tui-text-secondary)"></i>
                   <span>{{ user.pid }}</span>
                 </div>
               }
               @if (user.dateOfBirth) {
                 <div class="flex items-center gap-2">
-                  <tui-icon
-                    icon="@tui.calendar"
-                    class="text-xs"
-                    style="color: var(--tui-text-secondary)"
-                  />
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/calendar.svg'); width: 12px; height: 12px; color: var(--tui-text-secondary)"></i>
                   <span>{{ user.dateOfBirth | date: 'dd/MM/yyyy' }}</span>
                 </div>
               }
             </div>
           </div>
         } @empty {
-          <div
-            class="card-bg rounded-xl border p-6 text-center"
-            style="border-color: var(--tui-border-normal)"
-          >
+          <div class="ss-card p-6 text-center">
             <p class="georgian-text" lang="ka">იუზერები ვერ მოიძებნა</p>
           </div>
         }
@@ -292,12 +252,26 @@
 
     <!-- Pagination -->
     @if (totalPages() > 1) {
-      <div class="flex justify-center mt-6">
-        <tui-pagination
-          [length]="totalPages()"
-          [index]="page() - 1"
-          (indexChange)="onPageChange($event)"
-        />
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() === 1"
+          (click)="onPageChange(page() - 2)"
+        >
+          <span class="georgian-text" lang="ka">წინა</span>
+        </button>
+        <span class="text-sm" style="color: var(--tui-text-secondary)">
+          {{ page() }} / {{ totalPages() }}
+        </span>
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() >= totalPages()"
+          (click)="onPageChange(page())"
+        >
+          <span class="georgian-text" lang="ka">შემდეგი</span>
+        </button>
       </div>
     }
   }

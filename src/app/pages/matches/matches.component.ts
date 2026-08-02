@@ -3,20 +3,14 @@ import {
   Component,
   DestroyRef,
   HostListener,
-  Injector,
   OnInit,
+  computed,
   inject,
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, take } from 'rxjs';
-import { TuiAlertService } from '@taiga-ui/core';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { TuiDialogService } from '@taiga-ui/experimental';
-import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit/components/confirm';
-import { WA_WINDOW } from '@ng-web-apis/common';
-import { SHARED_TAIGA_IMPORTS } from '../../shared/shared.module';
 import { MatchService } from '../../services/http-services/match.service';
 import {
   AdminMatch,
@@ -28,13 +22,16 @@ import {
 import { tetriToGel } from '../../shared/utils/money.util';
 import { MatchPlayersDialogComponent } from './match-players-dialog.component';
 
+import { SsToastService } from '../../shared/ui/toast.service';
+import { SsDialogService } from '../../shared/ui/dialog.service';
+import { SsConfirmComponent, SsConfirmData } from '../../shared/ui/confirm.component';
 const STATUS_LABELS: Record<MatchStatus, string> = {
   open: 'ღია',
   cancelled: 'გაუქმებული',
 };
 const STATUS_CLASSES: Record<MatchStatus, string> = {
-  open: 'bg-green-100 text-green-700',
-  cancelled: 'bg-red-100 text-red-700',
+  open: 'ss-badge ss-badge--positive',
+  cancelled: 'ss-badge ss-badge--negative',
 };
 const VISIBILITY_LABELS: Record<MatchVisibility, string> = {
   public: 'საჯარო',
@@ -61,39 +58,49 @@ const CATEGORY_LABELS: Record<MatchCategory, string> = {
 @Component({
   selector: 'app-matches',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, CommonModule],
+  imports: [CommonModule],
   templateUrl: './matches.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MatchesComponent implements OnInit {
   private readonly matchService = inject(MatchService);
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly alerts = inject(TuiAlertService);
-  private readonly injector = inject(Injector);
-  private readonly window = inject(WA_WINDOW);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly dialogs = inject(SsDialogService);
+  private readonly alerts = inject(SsToastService);
+    private readonly destroyRef = inject(DestroyRef);
 
   protected readonly matches = signal<AdminMatch[]>([]);
   protected readonly isLoading = signal(true);
-  protected readonly isMobile = signal(this.window.innerWidth <= 768);
+  protected readonly isMobile = signal(window.innerWidth <= 768);
+  protected readonly page = signal(1);
+  protected readonly total = signal(0);
+  protected readonly limit = 20;
+  protected readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.total() / this.limit)),
+  );
 
   @HostListener('window:resize')
   protected onResize(): void {
-    this.isMobile.set(this.window.innerWidth <= 768);
+    this.isMobile.set(window.innerWidth <= 768);
   }
 
   ngOnInit(): void {
     this.load();
   }
 
+  protected onPageChange(page: number): void {
+    this.page.set(page);
+    this.load();
+  }
+
   private load(): void {
     this.isLoading.set(true);
     this.matchService
-      .getMatches()
+      .getMatches({ page: this.page(), limit: this.limit })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ data }) => {
+        next: ({ data, page }) => {
           this.matches.set(data);
+          this.total.set(page?.total ?? data.length);
           this.isLoading.set(false);
         },
         error: () => this.isLoading.set(false),
@@ -103,7 +110,7 @@ export class MatchesComponent implements OnInit {
   protected openPlayers(match: AdminMatch): void {
     this.dialogs
       .open<void>(
-        new PolymorpheusComponent(MatchPlayersDialogComponent, this.injector),
+        MatchPlayersDialogComponent,
         {
           label: `მოთამაშეები · ${match.facilityName ?? ''} ${match.date} ${match.startTime}`,
           size: 'l',
@@ -118,14 +125,14 @@ export class MatchesComponent implements OnInit {
 
   protected cancel(match: AdminMatch): void {
     this.dialogs
-      .open<boolean>(TUI_CONFIRM, {
+      .open<boolean>(SsConfirmComponent, {
         label: 'თამაშის გაუქმება',
         size: 's',
         data: {
           content: `გავაუქმოთ ${match.date} ${match.startTime} თამაში (${match.facilityName ?? ''})? მოთამაშეები დაინახავენ რომ ადმინისტრაციამ გააუქმა.`,
           yes: 'გაუქმება',
           no: 'არა',
-        } as TuiConfirmData,
+        } as SsConfirmData,
       })
       .pipe(take(1), filter(Boolean))
       .subscribe(() => {

@@ -8,43 +8,37 @@
       <div class="text-lg georgian-text" lang="ka">იტვირთება...</div>
     </div>
   } @else {
-    <div class="card-bg rounded-xl border p-6" style="border-color: var(--tui-border-normal)">
+    <div class="ss-card p-6">
       <form [formGroup]="academyForm" class="space-y-6">
         <!-- Name -->
-        <div>
-          <label tuiLabel class="georgian-text" lang="ka">
-            <span class="block mb-3 georgian-text">სახელი *</span>
-            <tui-textfield>
-              <input
-                tuiTextfield
-                type="text"
-                formControlName="name"
-                class="georgian-text"
-                lang="ka"
-                placeholder="აკადემიის სახელი"
-              />
-            </tui-textfield>
-          </label>
-        </div>
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">სახელი *</span>
+          <input
+            class="ss-input georgian-text"
+            lang="ka"
+            type="text"
+            formControlName="name"
+            placeholder="აკადემიის სახელი"
+          />
+        </label>
 
         <!-- Logo Upload -->
         <div>
-          <!-- Group caption for the logo drop-zone below, not a single-control
-               label; tuiLabel is used purely for consistent typography. -->
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label tuiLabel>
-            <span class="georgian-text mb-3" lang="ka">ლოგო</span>
-          </label>
+          <span class="ss-label georgian-text" lang="ka">ლოგო</span>
 
           <!-- Drop Zone -->
           <div
-            class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition-colors"
+            class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
+            style="border-color: var(--tui-border-hover)"
             (dragover)="onDragOver($event)"
             (dragleave)="onDragLeave($event)"
             (drop)="onDrop($event)"
           >
-            <tui-icon icon="@lucide.upload" class="text-4xl text-gray-400 mb-2"></tui-icon>
-            <p class="text-gray-600 mb-2 georgian-text" lang="ka">
+            <i
+              class="ss-ic ss-ic--lg mx-auto mb-2"
+              style="--ss-ic: url('assets/taiga-ui/icons/upload.svg'); color: var(--tui-text-tertiary)"
+            ></i>
+            <p class="mb-2 georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
               გადმოწიეთ ლოგო აქ ან დააჭირეთ ასარჩევად
             </p>
             <input
@@ -56,8 +50,7 @@
             />
             <button
               type="button"
-              tuiButton
-              appearance="outline"
+              class="ss-btn ss-btn--outline"
               (click)="fileInput.click()"
               [disabled]="isUploadingLogo()"
             >
@@ -70,125 +63,96 @@
           <!-- Logo Preview -->
           @if (logoUrl) {
             <div class="mt-4 relative inline-block">
-              <img [src]="logoUrl" alt="ლოგო" class="w-32 h-32 object-cover rounded border" />
+              <img
+                [src]="logoUrl"
+                alt="ლოგო"
+                class="w-32 h-32 object-cover rounded border"
+                style="border-color: var(--tui-border-normal)"
+              />
               <button
                 type="button"
                 (click)="removeLogo()"
                 class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
+                [attr.aria-label]="'წაშლა'"
               >
-                <tui-icon icon="@lucide.x" class="text-xs"></tui-icon>
+                <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/x.svg'); width: 12px; height: 12px"></i>
               </button>
             </div>
           }
         </div>
 
         <!-- Description Georgian -->
-        <div>
-          <label tuiLabel class="georgian-text" lang="ka">
-            <span class="block mb-3 georgian-text">აღწერა (ქართულად)</span>
-            <tui-textfield>
-              <textarea
-                tuiTextarea
-                formControlName="descriptionGeorgian"
-                [rows]="5"
-                class="georgian-text"
-                lang="ka"
-                placeholder="აკადემიის აღწერა ქართულად"
-              ></textarea>
-            </tui-textfield>
-          </label>
-        </div>
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">აღწერა (ქართულად)</span>
+          <textarea
+            class="ss-input georgian-text"
+            lang="ka"
+            formControlName="descriptionGeorgian"
+            rows="5"
+            placeholder="აკადემიის აღწერა ქართულად"
+          ></textarea>
+        </label>
 
         <!-- Description English -->
-        <div>
-          <label tuiLabel>
-            <span class="block mb-3">Description (English)</span>
-            <tui-textfield>
-              <textarea
-                tuiTextarea
-                formControlName="descriptionEnglish"
-                [rows]="5"
-                placeholder="Academy description in English"
-              ></textarea>
-            </tui-textfield>
-          </label>
-        </div>
+        <label class="ss-field">
+          <span class="ss-label">Description (English)</span>
+          <textarea
+            class="ss-input"
+            formControlName="descriptionEnglish"
+            rows="5"
+            placeholder="Academy description in English"
+          ></textarea>
+        </label>
 
         <!-- Contact Info Section -->
         <div class="space-y-6">
           <h3 class="text-lg font-semibold georgian-text" lang="ka">საკონტაქტო ინფორმაცია</h3>
 
           <!-- Phone -->
-          <div>
-            <label tuiLabel class="georgian-text" lang="ka">
-              <span class="block mb-3 georgian-text">ტელეფონი</span>
-              <tui-textfield>
-                <input
-                  tuiTextfield
-                  type="tel"
-                  formControlName="phone"
-                  class="georgian-text"
-                  lang="ka"
-                  placeholder="+995 555 123 456"
-                />
-              </tui-textfield>
-            </label>
-          </div>
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">ტელეფონი</span>
+            <input
+              class="ss-input"
+              type="tel"
+              formControlName="phone"
+              placeholder="+995 555 123 456"
+            />
+          </label>
 
           <!-- Email -->
-          <div>
-            <label tuiLabel class="georgian-text" lang="ka">
-              <span class="block mb-3 georgian-text">ელ. ფოსტა</span>
-              <tui-textfield>
-                <input
-                  tuiTextfield
-                  type="email"
-                  formControlName="email"
-                  class="georgian-text"
-                  lang="ka"
-                  placeholder="info@example.com"
-                />
-              </tui-textfield>
-            </label>
-          </div>
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">ელ. ფოსტა</span>
+            <input
+              class="ss-input"
+              type="email"
+              formControlName="email"
+              placeholder="info@example.com"
+            />
+          </label>
 
           <!-- Social Media -->
           <div class="space-y-4">
             <h4 class="text-base font-semibold georgian-text" lang="ka">სოციალური ქსელები</h4>
 
-            <!-- Facebook -->
-            <div>
-              <label tuiLabel class="georgian-text" lang="ka">
-                <span class="block mb-3">Facebook</span>
-                <tui-textfield>
-                  <input
-                    tuiTextfield
-                    type="url"
-                    formControlName="facebook"
-                    class="georgian-text"
-                    lang="ka"
-                    placeholder="https://facebook.com/yourpage"
-                  />
-                </tui-textfield>
-              </label>
-            </div>
+            <label class="ss-field">
+              <span class="ss-label">Facebook</span>
+              <input
+                class="ss-input"
+                type="url"
+                formControlName="facebook"
+                placeholder="https://facebook.com/yourpage"
+              />
+            </label>
 
-            <!-- Instagram -->
-            <div>
-              <label tuiLabel class="georgian-text" lang="ka">
-                <span class="block mb-3">Instagram</span>
-                <tui-textfield>
-                  <input
-                    tuiTextfield
-                    type="url"
-                    formControlName="instagram"
-                    class="georgian-text"
-                    lang="ka"
-                    placeholder="https://instagram.com/yourpage"
-                  />
-                </tui-textfield>
-              </label>
-            </div>
+            <label class="ss-field">
+              <span class="ss-label">Instagram</span>
+              <input
+                class="ss-input"
+                type="url"
+                formControlName="instagram"
+                placeholder="https://instagram.com/yourpage"
+              />
+            </label>
           </div>
         </div>
 
@@ -206,80 +170,68 @@
 
           <!-- Rackets included in the court price -->
           <div>
-            <label tuiLabel class="georgian-text" lang="ka">
-              <span class="block mb-3 georgian-text">
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">
                 ფასში შემავალი ჩოგნები (0–{{ padelMaxRackets }})
               </span>
-              <tui-textfield>
-                <input
-                  tuiTextfield
-                  type="number"
-                  min="0"
-                  [max]="padelMaxRackets"
-                  step="1"
-                  formControlName="racketsIncluded"
-                  data-testid="rackets-included"
-                />
-              </tui-textfield>
+              <input
+                class="ss-input"
+                type="number"
+                min="0"
+                [max]="padelMaxRackets"
+                step="1"
+                formControlName="racketsIncluded"
+                data-testid="rackets-included"
+              />
             </label>
             @if (
               academyForm.get('padelRules.racketsIncluded')?.touched &&
               academyForm.get('padelRules.racketsIncluded')?.invalid
             ) {
-              <span class="text-xs text-red-500 georgian-text" lang="ka">
+              <span class="ss-error georgian-text" lang="ka">
                 მიუთითეთ რიცხვი 0-დან {{ padelMaxRackets }}-მდე
               </span>
             }
           </div>
 
           <!-- Extra-racket rent (per game, duration-flat) -->
-          <div>
-            <label tuiLabel class="georgian-text" lang="ka">
-              <span class="block mb-3 georgian-text">დამატებითი ჩოგნის ქირა (₾ / თამაში)</span>
-              <tui-textfield>
-                <input
-                  tuiTextfield
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  formControlName="racketRentGel"
-                  data-testid="racket-rent"
-                />
-              </tui-textfield>
-              <span class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
-                ერთი ფასი თამაშზე, ხანგრძლივობის (60/90/120 წთ) მიუხედავად ·
-                ცარიელი — არ ქირავდება
-              </span>
-            </label>
-          </div>
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">დამატებითი ჩოგნის ქირა (₾ / თამაში)</span>
+            <input
+              class="ss-input"
+              type="number"
+              min="0"
+              step="0.5"
+              formControlName="racketRentGel"
+              data-testid="racket-rent"
+            />
+            <span class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+              ერთი ფასი თამაშზე, ხანგრძლივობის (60/90/120 წთ) მიუხედავად ·
+              ცარიელი — არ ქირავდება
+            </span>
+          </label>
 
           <!-- New balls sale price -->
-          <div>
-            <label tuiLabel class="georgian-text" lang="ka">
-              <span class="block mb-3 georgian-text">ახალი ბურთების ფასი (₾)</span>
-              <tui-textfield>
-                <input
-                  tuiTextfield
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  formControlName="ballsPriceGel"
-                  data-testid="balls-price"
-                />
-              </tui-textfield>
-              <span class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
-                ცარიელი — არ იყიდება
-              </span>
-            </label>
-          </div>
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">ახალი ბურთების ფასი (₾)</span>
+            <input
+              class="ss-input"
+              type="number"
+              min="0"
+              step="0.5"
+              formControlName="ballsPriceGel"
+              data-testid="balls-price"
+            />
+            <span class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+              ცარიელი — არ იყიდება
+            </span>
+          </label>
         </div>
 
         <!-- Action Buttons -->
-        <div class="flex justify-end gap-3 pb-4" style="border-color: var(--tui-border-normal)">
+        <div class="flex justify-end gap-3 pb-4">
           <button
-            tuiButton
-            appearance="primary"
-            size="m"
+            class="ss-btn ss-btn--primary"
             type="button"
             (click)="onSave()"
             [disabled]="!academyForm.valid || isSaving()"
@@ -292,13 +244,12 @@
       @if (isSaved()) {
         <div class="flex justify-end pt-4 border-t" style="border-color: var(--tui-border-normal)">
           <button
-            tuiButton
-            appearance="secondary"
-            iconStart="@tui.map-pin"
+            class="ss-btn ss-btn--outline"
             type="button"
             (click)="navigateToFacilities()"
             [disabled]="!isSaved()"
           >
+            <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/map-pin.svg'); width: 14px; height: 14px"></i>
             <span class="georgian-text" lang="ka">ობიექტების მართვა</span>
           </button>
         </div>

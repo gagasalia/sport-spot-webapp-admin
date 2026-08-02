@@ -4,15 +4,20 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, finalize, of, switchMap, take } from 'rxjs';
-import { SHARED_TAIGA_IMPORTS } from '../../shared/shared.module';
 import { AuthService } from '../../shared/services/auth.service';
 import { TenantService } from '../../shared/services/tenant.service';
 
+/**
+ * First fully Taiga-free page (Phase 1 of the Taiga exit): native elements +
+ * the global ss-* kit classes from sport-spot-theme.css. Serves as the
+ * migration pattern for the remaining pages.
+ */
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule],
   templateUrl: './login.component.html',
+  styleUrl: './login.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent {

@@ -12,10 +12,6 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, take } from 'rxjs';
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
-import { TuiDialogContext } from '@taiga-ui/experimental';
-import { TuiAlertService } from '@taiga-ui/core';
-import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
 import { WalletAdminService } from '../../../../services/http-services/wallet-admin.service';
 import { User } from '../../../../shared/models/user.model';
 import {
@@ -24,6 +20,13 @@ import {
 } from '../../../../shared/models/wallet.model';
 import { gelToTetri, tetriToGel } from '../../../../shared/utils/money.util';
 
+import {
+  SS_DIALOG_CONTEXT,
+  SsDialogContext,
+  SsDialogService,
+} from '../../../../shared/ui/dialog.service';
+import { SsToastService } from '../../../../shared/ui/toast.service';
+import { SsConfirmComponent, SsConfirmData } from '../../../../shared/ui/confirm.component';
 /** Ledger row types → Georgian titles. */
 const TX_TYPE_LABELS: Record<WalletTransactionType, string> = {
   topup: 'შევსება (ბარათით)',
@@ -44,17 +47,18 @@ const TX_PAGE_SIZE = 10;
 @Component({
   selector: 'app-user-balance',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, CommonModule, DatePipe, ReactiveFormsModule],
+  imports: [CommonModule, DatePipe, ReactiveFormsModule],
   templateUrl: './user-balance.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UserBalanceComponent implements OnInit {
-  private readonly context = inject(POLYMORPHEUS_CONTEXT) as TuiDialogContext<
+  private readonly context = inject(SS_DIALOG_CONTEXT) as SsDialogContext<
     void,
     { user: User }
   >;
   private readonly walletService = inject(WalletAdminService);
-  private readonly alerts = inject(TuiAlertService);
+  private readonly dialogs = inject(SsDialogService);
+  private readonly alerts = inject(SsToastService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -140,7 +144,10 @@ export class UserBalanceComponent implements OnInit {
       });
   }
 
-  /** Applies the form as a credit (`direction: 1`) or debit (`direction: -1`). */
+  /**
+   * Applies the form as a credit (`direction: 1`) or debit (`direction: -1`) —
+   * after an explicit confirm, since this moves real balance.
+   */
   protected adjust(direction: 1 | -1): void {
     if (!this.user._id || this.isSaving()) {
       return;
@@ -150,6 +157,37 @@ export class UserBalanceComponent implements OnInit {
       return;
     }
 
+    const { amountGel } = this.form.getRawValue();
+    const data: SsConfirmData =
+      direction > 0
+        ? {
+            content: `დაერიცხოს ${amountGel} ₾ — ${this.userLabel}?`,
+            yes: 'დარიცხვა',
+            no: 'გაუქმება',
+          }
+        : {
+            content: `ჩამოეჭრას ${amountGel} ₾ — ${this.userLabel}?`,
+            yes: 'ჩამოჭრა',
+            no: 'გაუქმება',
+            appearance: 'destructive',
+          };
+
+    this.dialogs
+      .open<boolean>(SsConfirmComponent, {
+        label: direction > 0 ? 'დარიცხვის დადასტურება' : 'ჩამოჭრის დადასტურება',
+        size: 's',
+        data,
+      })
+      .pipe(take(1))
+      .subscribe((confirmed) => {
+        if (confirmed) this.doAdjust(direction);
+      });
+  }
+
+  private doAdjust(direction: 1 | -1): void {
+    if (!this.user._id) {
+      return;
+    }
     const { amountGel, note } = this.form.getRawValue();
     const amountTetri = direction * gelToTetri(amountGel ?? 0);
 

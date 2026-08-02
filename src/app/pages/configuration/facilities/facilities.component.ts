@@ -5,31 +5,27 @@ import {
   OnInit,
   signal,
   inject,
-  Injector,
-} from '@angular/core';
+  } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { take } from 'rxjs';
-import { TuiAlertService } from '@taiga-ui/core';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
 import { FacilityService } from '../../../services/http-services/facility.service';
 import { TenantService } from '../../../shared/services/tenant.service';
 import { Facility } from '../../../shared/models/facility.model';
-import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { FacilityFormComponent } from './facility-form/facility-form.component';
 import { FacilityCardComponent } from './facility-card/facility-card.component';
-import { TuiDialogService } from '@taiga-ui/experimental';
 
+import { SsToastService } from '../../../shared/ui/toast.service';
+import { SsDialogService } from '../../../shared/ui/dialog.service';
 @Component({
   selector: 'app-facilities',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, FacilityCardComponent],
+  imports: [FacilityCardComponent],
   templateUrl: './facilities.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FacilitiesComponent implements OnInit {
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly alerts = inject(TuiAlertService);
-  private readonly injector = inject(Injector);
+  private readonly dialogs = inject(SsDialogService);
+  private readonly alerts = inject(SsToastService);
   private readonly facilityService = inject(FacilityService);
   private readonly tenant = inject(TenantService);
   private readonly destroyRef = inject(DestroyRef);
@@ -54,7 +50,7 @@ export class FacilitiesComponent implements OnInit {
 
   addFacility(): void {
     this.dialogs
-      .open(new PolymorpheusComponent(FacilityFormComponent, this.injector), {
+      .open(FacilityFormComponent, {
         label: 'ობიექტის დამატება',
         size: 'l',
         dismissible: true,
@@ -86,7 +82,7 @@ export class FacilitiesComponent implements OnInit {
 
   onEditFacility(facility: Facility): void {
     this.dialogs
-      .open(new PolymorpheusComponent(FacilityFormComponent, this.injector), {
+      .open(FacilityFormComponent, {
         label: 'რედაქტირება',
         size: 'l',
         dismissible: true,

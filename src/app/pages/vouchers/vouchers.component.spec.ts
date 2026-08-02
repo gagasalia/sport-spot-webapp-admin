@@ -3,7 +3,6 @@ import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { TuiAlertService } from '@taiga-ui/core';
 
 import { VouchersComponent } from './vouchers.component';
 import { VoucherService } from '../../services/http-services/voucher.service';
@@ -12,6 +11,7 @@ import { TenantService } from '../../shared/services/tenant.service';
 import { Facility } from '../../shared/models/facility.model';
 import { PendingGrant, Voucher } from '../../shared/models/voucher.model';
 
+import { SsToastService } from '../../shared/ui/toast.service';
 const facility: Facility = {
   _id: 'fac-1',
   name: 'Padel House',
@@ -48,7 +48,7 @@ describe('VouchersComponent', () => {
   let voucherSpy: jasmine.SpyObj<VoucherService>;
   let facilitySpy: jasmine.SpyObj<FacilityService>;
   let tenantSpy: jasmine.SpyObj<TenantService>;
-  let alertSpy: jasmine.SpyObj<TuiAlertService>;
+  let alertSpy: jasmine.SpyObj<SsToastService>;
 
   async function setup() {
     voucherSpy = jasmine.createSpyObj<VoucherService>('VoucherService', [
@@ -61,13 +61,17 @@ describe('VouchersComponent', () => {
       'getFacilitiesByAcademy',
     ]);
     tenantSpy = jasmine.createSpyObj<TenantService>('TenantService', ['academyId', 'ensure']);
-    alertSpy = jasmine.createSpyObj<TuiAlertService>('TuiAlertService', ['open']);
+    alertSpy = jasmine.createSpyObj<SsToastService>('SsToastService', ['open']);
 
     tenantSpy.academyId.and.returnValue('aca-1');
     tenantSpy.ensure.and.returnValue(of(null));
     facilitySpy.getFacilitiesByAcademy.and.returnValue(of([facility]));
-    voucherSpy.getVouchers.and.returnValue(of([activeVoucher]));
-    voucherSpy.getGrants.and.returnValue(of([pendingGrant]));
+    voucherSpy.getVouchers.and.returnValue(
+      of({ data: [activeVoucher], page: { page: 1, size: 20, total: 1 } }),
+    );
+    voucherSpy.getGrants.and.returnValue(
+      of({ data: [pendingGrant], page: { page: 1, size: 20, total: 1 } }),
+    );
     voucherSpy.grant.and.returnValue(of(activeVoucher));
     voucherSpy.import.and.returnValue(of({ granted: 1, pending: 1 }));
     alertSpy.open.and.returnValue(of(undefined));
@@ -82,7 +86,7 @@ describe('VouchersComponent', () => {
         { provide: TenantService, useValue: tenantSpy },
         { provide: Router, useValue: routerSpy },
         { provide: ActivatedRoute, useValue: { queryParams: of({}) } },
-        { provide: TuiAlertService, useValue: alertSpy },
+        { provide: SsToastService, useValue: alertSpy },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     })
@@ -106,10 +110,19 @@ describe('VouchersComponent', () => {
   it('resolves the tenant, auto-selects the single facility and loads both lists', () => {
     expect(facilitySpy.getFacilitiesByAcademy).toHaveBeenCalledWith('aca-1');
     expect(component.selectedFacilityId()).toBe('fac-1');
-    expect(voucherSpy.getVouchers).toHaveBeenCalledWith('fac-1');
-    expect(voucherSpy.getGrants).toHaveBeenCalledWith('fac-1');
+    expect(voucherSpy.getVouchers).toHaveBeenCalledWith('fac-1', 1, 20);
+    expect(voucherSpy.getGrants).toHaveBeenCalledWith('fac-1', 1, 20);
     expect(component.vouchers()).toEqual([activeVoucher]);
     expect(component.grants()).toEqual([pendingGrant]);
+  });
+
+  it('pages the voucher list independently of the grants list', () => {
+    voucherSpy.getVouchers.calls.reset();
+    voucherSpy.getGrants.calls.reset();
+    component.onVouchersPageChange(2);
+    expect(voucherSpy.getVouchers).toHaveBeenCalledWith('fac-1', 2, 20);
+    // The grants list keeps its own page.
+    expect(voucherSpy.getGrants).toHaveBeenCalledWith('fac-1', 1, 20);
   });
 
   it('does not load facilities when there is no tenant academy', fakeAsync(() => {
@@ -124,8 +137,8 @@ describe('VouchersComponent', () => {
   it('surfaces an error state when a list fetch hard-fails', () => {
     voucherSpy.getVouchers.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
     voucherSpy.getGrants.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
-    // Re-run the facility selection to trigger a fresh loadLists().
-    component.onFacilityChange('fac-1');
+    // Re-run the resolution chain to trigger a fresh loadLists().
+    component.ngOnInit();
     expect(component.hasError()).toBeTrue();
   });
 
@@ -234,11 +247,11 @@ describe('VouchersComponent', () => {
     expect(component.derivedStatus({ ...activeVoucher, expiresAt: '2999-01-01' })).toBe('active');
   });
 
-  it('statusChipAppearance maps each state to its chip appearance', () => {
-    expect(component.statusChipAppearance('active')).toBe('positive');
-    expect(component.statusChipAppearance('depleted')).toBe('neutral');
-    expect(component.statusChipAppearance('expired')).toBe('destructive');
-    expect(component.statusChipAppearance('pending_activation')).toBe('warning');
+  it('statusBadgeClass maps each state to its ss-badge modifier', () => {
+    expect(component.statusBadgeClass('active')).toBe('ss-badge ss-badge--positive');
+    expect(component.statusBadgeClass('depleted')).toBe('ss-badge ss-badge--neutral');
+    expect(component.statusBadgeClass('expired')).toBe('ss-badge ss-badge--negative');
+    expect(component.statusBadgeClass('pending_activation')).toBe('ss-badge ss-badge--warning');
   });
 
   it('renders the voucher and grant tables from the loaded lists', () => {

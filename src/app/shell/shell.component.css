@@ -1,0 +1,265 @@
+/* ── Header — glass bar in the player-app style ──────────────────────────── */
+.shell-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 58px;
+  padding: 0 16px;
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--hairline);
+}
+.brandmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+  color: var(--text);
+}
+.brand-dot {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: var(--glow);
+}
+.brand-dot .ss-ic {
+  width: 15px;
+  height: 15px;
+}
+.brand-name {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.brand-admin {
+  padding: 3px 8px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--tui-text-action);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.shell-spacer {
+  flex: 1 1 auto;
+}
+/* ── Body layout ─────────────────────────────────────────────────────────── */
+.shell-body {
+  display: flex;
+  align-items: stretch;
+}
+.shell-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 10px 24px 44px;
+}
+@media (max-width: 768px) {
+  .shell-main {
+    padding: 8px 16px 104px; /* clear the fixed bottom tab bar */
+  }
+}
+
+/* ── Desktop aside — quiet rail on the page background ───────────────────── */
+.shell-aside {
+  position: sticky;
+  top: 58px;
+  display: flex;
+  flex-direction: column;
+  width: 248px;
+  height: calc(100vh - 58px);
+  flex: 0 0 auto;
+  overflow-y: auto;
+  padding: 16px 12px 12px;
+  border-right: 1px solid var(--hairline);
+  transition: width var(--dur-2) var(--ease);
+}
+.shell-aside.is-collapsed {
+  width: 64px;
+}
+.aside-nav {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.aside-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 14px;
+}
+.aside-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 11px;
+  border: none;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease);
+}
+.aside-item:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.aside-item.is-active {
+  background: var(--accent-soft);
+  color: var(--tui-text-action);
+}
+.aside-ic {
+  flex: 0 0 auto;
+  color: inherit;
+  opacity: 0.85;
+}
+.aside-item.is-active .aside-ic {
+  opacity: 1;
+}
+.aside-label {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.aside-caret {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  color: var(--text-faint);
+  transition: transform var(--dur-2) var(--ease);
+}
+.aside-caret.is-open {
+  transform: rotate(180deg);
+}
+.aside-sub {
+  min-height: 36px;
+  padding-left: 38px;
+  font-size: 13px;
+}
+.aside-foot {
+  flex: 0 0 auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+}
+
+/* Collapsed rail: icons only. */
+.shell-aside.is-collapsed .aside-label,
+.shell-aside.is-collapsed .aside-caret {
+  display: none;
+}
+.shell-aside.is-collapsed .aside-item {
+  justify-content: center;
+  padding: 9px 0;
+}
+
+/* ── Mobile tab bar + sheets — glass, player-app style ───────────────────── */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: stretch;
+  padding: 8px 6px calc(8px + env(safe-area-inset-bottom));
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--hairline);
+}
+.tab-item {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 5px 2px;
+  border: none;
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--text-faint);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: color var(--dur-2) var(--ease);
+}
+.tab-item.is-active {
+  color: var(--tui-text-action);
+}
+.tab-ic {
+  width: 18px;
+  height: 18px;
+  transition: transform var(--dur-2) var(--ease-emph);
+}
+.tab-item.is-active .tab-ic {
+  transform: translateY(-2px);
+}
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 31;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  animation: ss-fade-in var(--dur-2) var(--ease) both;
+}
+.tab-sheet {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  z-index: 32;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border-radius: var(--r-xl);
+  background: var(--bg-2);
+  border: 1px solid var(--hairline-2);
+  box-shadow: var(--shadow-lg);
+  animation: ss-modal-pop var(--dur-2) var(--ease-emph) both;
+}
+.sheet-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 44px;
+  padding: 11px 12px;
+  border-radius: var(--r-md);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background var(--dur-2) var(--ease);
+}
+.sheet-item:hover {
+  background: var(--surface-2);
+}
+.sheet-item .aside-ic {
+  color: var(--text-muted);
+}

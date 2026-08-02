@@ -1,130 +1,228 @@
-<header tuiNavigationHeader>
-  <img src="logos/download.svg" alt="Sport Spot Logo" style="height: 40px" />
+<header class="shell-header">
+  <a class="brandmark" routerLink="/reservations" aria-label="Sport Spot Admin">
+    <span class="brand-dot" aria-hidden="true">
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/map-pin.svg')"></i>
+    </span>
+    <span class="brand-name">Sport Spot</span>
+    <span class="brand-admin">Admin</span>
+  </a>
 
-  <hr />
+  <div class="shell-spacer"></div>
 
   <!-- Dark Mode Toggle -->
   <button
-    [iconStart]="darkMode() ? '@tui.sun' : '@tui.moon'"
-    tuiIconButton
+    class="ss-icon-btn"
     type="button"
     (click)="toggleDarkMode()"
     [title]="darkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-  ></button>
-
-  <button iconStart="@tui.bell" tuiIconButton type="button" [attr.aria-label]="'შეტყობინებები'">
-    <tui-badge-notification />
+  >
+    @if (darkMode()) {
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/sun.svg')"></i>
+    } @else {
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/moon.svg')"></i>
+    }
   </button>
+
   <button
-    iconStart="@tui.ellipsis"
-    tuiIconButton
+    automation-id="sign-out"
+    class="ss-icon-btn"
     type="button"
-    [attr.aria-label]="'მეტი'"
-  ></button>
+    (click)="signOut()"
+    aria-label="გასვლა"
+    title="გასვლა"
+  >
+    <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/log-out.svg')"></i>
+  </button>
 </header>
-<div [style.display]="'flex'">
+
+<div class="shell-body">
   <!-- Desktop Sidebar -->
   @if (!isMobile()) {
-    <aside [style.height]="'calc(100vh - 48px)'" [tuiNavigationAside]="expanded()">
-      <tui-aside-group>
-        <button
-          automation-id="setting"
-          iconStart="@tui.settings"
-          tuiAsideItem
-          tuiChevron
-          type="button"
-        >
-          <span lang="ka" class="georgian-text">კონფიგურაცია</span>
-          <ng-template>
-            <a iconStart="@lucide.landmark" tuiAsideItem routerLink="/configuration/academy">
-              <span lang="ka" class="georgian-text">აკადემია</span>
-            </a>
-            <a iconStart="@tui.map-pin" tuiAsideItem routerLink="/configuration/facilities">
-              <span lang="ka" class="georgian-text">ობიექტები</span>
-            </a>
-            <a iconStart="@tui.table-cells-merge" tuiAsideItem routerLink="/configuration/courts">
-              <span lang="ka" class="georgian-text">კორტები</span>
-            </a>
-            <a iconStart="@lucide.clock" tuiAsideItem routerLink="/configuration/working-hours">
-              <span lang="ka" class="georgian-text">საათები და ფასები</span>
-            </a>
-          </ng-template>
-        </button>
-      </tui-aside-group>
-
-      <tui-aside-group>
-        <a
-          automation-id="reservations"
-          iconStart="@lucide.calendar-check"
-          tuiAsideItem
-          routerLink="/reservations"
-        >
-          <span lang="ka" class="georgian-text">ჯავშნები</span>
-        </a>
-        <a
-          automation-id="vouchers"
-          iconStart="@lucide.ticket"
-          tuiAsideItem
-          routerLink="/vouchers"
-        >
-          <span lang="ka" class="georgian-text">ვაუჩერები</span>
-        </a>
-        <a
-          automation-id="tournaments"
-          iconStart="@lucide.trophy"
-          tuiAsideItem
-          routerLink="/tournaments"
-        >
-          <span lang="ka" class="georgian-text">ტურნირები</span>
-        </a>
-        <a
-          automation-id="matches"
-          iconStart="@lucide.users"
-          tuiAsideItem
-          routerLink="/matches"
-        >
-          <span lang="ka" class="georgian-text">თამაშები</span>
-        </a>
-      </tui-aside-group>
-
-      @if (isSuperAdmin()) {
-        <tui-aside-group>
+    <aside class="shell-aside" [class.is-collapsed]="!expanded()">
+      <nav class="aside-nav">
+        <div class="aside-group">
           <button
-            automation-id="super-admin"
-            iconStart="@lucide.shield"
-            tuiAsideItem
-            tuiChevron
+            automation-id="setting"
+            class="aside-item"
             type="button"
+            (click)="toggleConfig()"
           >
-            <span lang="ka" class="georgian-text">Super Admin</span>
-            <ng-template>
-              <a
-                iconStart="@lucide.building-2"
-                tuiAsideItem
-                routerLink="/super-admin/academies-management"
-              >
-                <span lang="ka" class="georgian-text">აკადემიების მართვა</span>
-              </a>
-              <a iconStart="@lucide.users" tuiAsideItem routerLink="/super-admin/user-management">
-                <span lang="ka" class="georgian-text">იუზერები</span>
-              </a>
-            </ng-template>
+            <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/settings.svg')"></i>
+            <span lang="ka" class="georgian-text aside-label">კონფიგურაცია</span>
+            <i
+              class="ss-ic aside-caret"
+              [class.is-open]="configOpen()"
+              style="--ss-ic: url('assets/taiga-ui/icons/chevron-down.svg')"
+            ></i>
           </button>
-        </tui-aside-group>
-      }
-      <footer>
-        <button
-          tuiAsideItem
-          type="button"
-          [iconStart]="expanded() ? '@tui.chevron-left' : '@tui.chevron-right'"
-          (click)="handleToggle()"
-        >
-          <span lang="ka" class="georgian-text">{{ expanded() ? 'დახურვა' : 'გაფართოება' }}</span>
+          @if (configOpen() && expanded()) {
+            <a
+              class="aside-item aside-sub"
+              routerLink="/configuration/academy"
+              routerLinkActive="is-active"
+            >
+              <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/landmark.svg')"></i>
+              <span lang="ka" class="georgian-text aside-label">აკადემია</span>
+            </a>
+            <a
+              class="aside-item aside-sub"
+              routerLink="/configuration/facilities"
+              routerLinkActive="is-active"
+            >
+              <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/map-pin.svg')"></i>
+              <span lang="ka" class="georgian-text aside-label">ობიექტები</span>
+            </a>
+            <a
+              class="aside-item aside-sub"
+              routerLink="/configuration/courts"
+              routerLinkActive="is-active"
+            >
+              <i
+                class="ss-ic aside-ic"
+                style="--ss-ic: url('assets/taiga-ui/icons/table-cells-merge.svg')"
+              ></i>
+              <span lang="ka" class="georgian-text aside-label">კორტები</span>
+            </a>
+            <a
+              class="aside-item aside-sub"
+              routerLink="/configuration/working-hours"
+              routerLinkActive="is-active"
+            >
+              <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/clock.svg')"></i>
+              <span lang="ka" class="georgian-text aside-label">საათები და ფასები</span>
+            </a>
+          }
+        </div>
+
+        <div class="aside-group">
+          <a
+            automation-id="reservations"
+            class="aside-item"
+            routerLink="/reservations"
+            routerLinkActive="is-active"
+          >
+            <i
+              class="ss-ic aside-ic"
+              style="--ss-ic: url('assets/taiga-ui/icons/calendar-check.svg')"
+            ></i>
+            <span lang="ka" class="georgian-text aside-label">ჯავშნები</span>
+          </a>
+          <a
+            automation-id="vouchers"
+            class="aside-item"
+            routerLink="/vouchers"
+            routerLinkActive="is-active"
+          >
+            <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/ticket.svg')"></i>
+            <span lang="ka" class="georgian-text aside-label">ვაუჩერები</span>
+          </a>
+          <a
+            automation-id="tournaments"
+            class="aside-item"
+            routerLink="/tournaments"
+            routerLinkActive="is-active"
+          >
+            <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/trophy.svg')"></i>
+            <span lang="ka" class="georgian-text aside-label">ტურნირები</span>
+          </a>
+          <a
+            automation-id="matches"
+            class="aside-item"
+            routerLink="/matches"
+            routerLinkActive="is-active"
+          >
+            <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
+            <span lang="ka" class="georgian-text aside-label">თამაშები</span>
+          </a>
+          <a
+            automation-id="statistics"
+            class="aside-item"
+            routerLink="/statistics"
+            routerLinkActive="is-active"
+          >
+            <i
+              class="ss-ic aside-ic"
+              style="--ss-ic: url('assets/taiga-ui/icons/chart-column.svg')"
+            ></i>
+            <span lang="ka" class="georgian-text aside-label">სტატისტიკა</span>
+          </a>
+          <a
+            automation-id="customers"
+            class="aside-item"
+            routerLink="/customers"
+            routerLinkActive="is-active"
+          >
+            <i
+              class="ss-ic aside-ic"
+              style="--ss-ic: url('assets/taiga-ui/icons/user-round.svg')"
+            ></i>
+            <span lang="ka" class="georgian-text aside-label">მომხმარებლები</span>
+          </a>
+        </div>
+
+        @if (isSuperAdmin()) {
+          <div class="aside-group">
+            <button
+              automation-id="super-admin"
+              class="aside-item"
+              type="button"
+              (click)="toggleSuper()"
+            >
+              <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/shield.svg')"></i>
+              <span lang="ka" class="georgian-text aside-label">Super Admin</span>
+              <i
+                class="ss-ic aside-caret"
+                [class.is-open]="superOpen()"
+                style="--ss-ic: url('assets/taiga-ui/icons/chevron-down.svg')"
+              ></i>
+            </button>
+            @if (superOpen() && expanded()) {
+              <a
+                class="aside-item aside-sub"
+                routerLink="/super-admin/academies-management"
+                routerLinkActive="is-active"
+              >
+                <i
+                  class="ss-ic aside-ic"
+                  style="--ss-ic: url('assets/taiga-ui/icons/building-2.svg')"
+                ></i>
+                <span lang="ka" class="georgian-text aside-label">აკადემიების მართვა</span>
+              </a>
+              <a
+                class="aside-item aside-sub"
+                routerLink="/super-admin/user-management"
+                routerLinkActive="is-active"
+              >
+                <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
+                <span lang="ka" class="georgian-text aside-label">იუზერები</span>
+              </a>
+            }
+          </div>
+        }
+      </nav>
+
+      <footer class="aside-foot">
+        <button class="aside-item" type="button" (click)="handleToggle()">
+          @if (expanded()) {
+            <i
+              class="ss-ic aside-ic"
+              style="--ss-ic: url('assets/taiga-ui/icons/chevron-left.svg')"
+            ></i>
+          } @else {
+            <i
+              class="ss-ic aside-ic"
+              style="--ss-ic: url('assets/taiga-ui/icons/chevron-right.svg')"
+            ></i>
+          }
+          <span lang="ka" class="georgian-text aside-label">
+            {{ expanded() ? 'დახურვა' : 'გაფართოება' }}
+          </span>
         </button>
       </footer>
     </aside>
   }
-  <main tuiNavigationMain>
+
+  <main class="shell-main">
     <div class="w-full flex justify-center">
       <div class="w-full max-w-[1920px] mx-auto">
         <router-outlet />
@@ -133,106 +231,123 @@
   </main>
 </div>
 
-<!-- Mobile TabBar -->
+<!-- Mobile TabBar + bottom sheets -->
 @if (isMobile()) {
-  <nav tuiTabBar ngProjectAs="tuiOverContent">
-    <button
-      icon="@tui.settings"
-      tuiTabBarItem
-      type="button"
-      [tuiDropdown]="configDropdown"
-      [(tuiDropdownOpen)]="configDropdownOpen"
-    >
-      <span lang="ka" class="georgian-text">კონფიგურაცია</span>
-    </button>
-    <a icon="@lucide.calendar-check" tuiTabBarItem routerLink="/reservations">
-      <span lang="ka" class="georgian-text">ჯავშნები</span>
-    </a>
-    <a icon="@lucide.ticket" tuiTabBarItem routerLink="/vouchers">
-      <span lang="ka" class="georgian-text">ვაუჩერები</span>
-    </a>
-    <a icon="@lucide.trophy" tuiTabBarItem routerLink="/tournaments">
-      <span lang="ka" class="georgian-text">ტურნირები</span>
-    </a>
-    <a icon="@lucide.users" tuiTabBarItem routerLink="/matches">
-      <span lang="ka" class="georgian-text">თამაშები</span>
-    </a>
-    @if (isSuperAdmin()) {
-      <button
-        icon="@lucide.shield"
-        tuiTabBarItem
-        type="button"
-        [tuiDropdown]="superAdminDropdown"
-        [(tuiDropdownOpen)]="superAdminDropdownOpen"
-      >
-        <span lang="ka" class="georgian-text">Super Admin</span>
-      </button>
-    }
-  </nav>
+  @if (configDropdownOpen() || superAdminDropdownOpen()) {
+    <div class="sheet-backdrop" (click)="closeSheets()"></div>
+  }
 
-  <!-- Configuration Dropdown Template -->
-  <ng-template #configDropdown>
-    <tui-data-list role="menu">
+  @if (configDropdownOpen()) {
+    <div class="tab-sheet" role="menu">
       <a
-        iconStart="@lucide.landmark"
-        tuiOption
+        class="sheet-item"
         role="menuitem"
         routerLink="/configuration/academy"
-        (click)="configDropdownOpen.set(false)"
+        (click)="closeSheets()"
       >
+        <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/landmark.svg')"></i>
         <span lang="ka" class="georgian-text">აკადემია</span>
       </a>
       <a
-        iconStart="@tui.map-pin"
-        tuiOption
+        class="sheet-item"
         role="menuitem"
         routerLink="/configuration/facilities"
-        (click)="configDropdownOpen.set(false)"
+        (click)="closeSheets()"
       >
+        <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/map-pin.svg')"></i>
         <span lang="ka" class="georgian-text">ობიექტები</span>
       </a>
       <a
-        iconStart="@tui.table-cells-merge"
-        tuiOption
+        class="sheet-item"
         role="menuitem"
         routerLink="/configuration/courts"
-        (click)="configDropdownOpen.set(false)"
+        (click)="closeSheets()"
       >
+        <i
+          class="ss-ic aside-ic"
+          style="--ss-ic: url('assets/taiga-ui/icons/table-cells-merge.svg')"
+        ></i>
         <span lang="ka" class="georgian-text">კორტები</span>
       </a>
       <a
-        iconStart="@lucide.clock"
-        tuiOption
+        class="sheet-item"
         role="menuitem"
         routerLink="/configuration/working-hours"
-        (click)="configDropdownOpen.set(false)"
+        (click)="closeSheets()"
       >
+        <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/clock.svg')"></i>
         <span lang="ka" class="georgian-text">საათები და ფასები</span>
       </a>
-    </tui-data-list>
-  </ng-template>
+    </div>
+  }
 
-  <!-- Super Admin Dropdown Template -->
-  <ng-template #superAdminDropdown>
-    <tui-data-list role="menu">
+  @if (superAdminDropdownOpen()) {
+    <div class="tab-sheet" role="menu">
       <a
-        iconStart="@lucide.building-2"
-        tuiOption
+        class="sheet-item"
         role="menuitem"
         routerLink="/super-admin/academies-management"
-        (click)="superAdminDropdownOpen.set(false)"
+        (click)="closeSheets()"
       >
+        <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/building-2.svg')"></i>
         <span lang="ka" class="georgian-text">აკადემიების მართვა</span>
       </a>
       <a
-        iconStart="@lucide.users"
-        tuiOption
+        class="sheet-item"
         role="menuitem"
         routerLink="/super-admin/user-management"
-        (click)="superAdminDropdownOpen.set(false)"
+        (click)="closeSheets()"
       >
+        <i class="ss-ic aside-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
         <span lang="ka" class="georgian-text">იუზერები</span>
       </a>
-    </tui-data-list>
-  </ng-template>
+    </div>
+  }
+
+  <nav class="tab-bar">
+    <button
+      class="tab-item"
+      type="button"
+      [class.is-active]="configDropdownOpen()"
+      (click)="toggleConfigDropdown()"
+    >
+      <i class="ss-ic tab-ic" style="--ss-ic: url('assets/taiga-ui/icons/settings.svg')"></i>
+      <span lang="ka" class="georgian-text">კონფიგ.</span>
+    </button>
+    <a class="tab-item" routerLink="/reservations" routerLinkActive="is-active">
+      <i class="ss-ic tab-ic" style="--ss-ic: url('assets/taiga-ui/icons/calendar-check.svg')"></i>
+      <span lang="ka" class="georgian-text">ჯავშნები</span>
+    </a>
+    <a class="tab-item" routerLink="/vouchers" routerLinkActive="is-active">
+      <i class="ss-ic tab-ic" style="--ss-ic: url('assets/taiga-ui/icons/ticket.svg')"></i>
+      <span lang="ka" class="georgian-text">ვაუჩერები</span>
+    </a>
+    <a class="tab-item" routerLink="/tournaments" routerLinkActive="is-active">
+      <i class="ss-ic tab-ic" style="--ss-ic: url('assets/taiga-ui/icons/trophy.svg')"></i>
+      <span lang="ka" class="georgian-text">ტურნირები</span>
+    </a>
+    <a class="tab-item" routerLink="/matches" routerLinkActive="is-active">
+      <i class="ss-ic tab-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
+      <span lang="ka" class="georgian-text">თამაშები</span>
+    </a>
+    <a class="tab-item" routerLink="/statistics" routerLinkActive="is-active">
+      <i class="ss-ic tab-ic" style="--ss-ic: url('assets/taiga-ui/icons/chart-column.svg')"></i>
+      <span lang="ka" class="georgian-text">სტატ.</span>
+    </a>
+    <a class="tab-item" routerLink="/customers" routerLinkActive="is-active">
+      <i class="ss-ic tab-ic" style="--ss-ic: url('assets/taiga-ui/icons/user-round.svg')"></i>
+      <span lang="ka" class="georgian-text">მომხმ.</span>
+    </a>
+    @if (isSuperAdmin()) {
+      <button
+        class="tab-item"
+        type="button"
+        [class.is-active]="superAdminDropdownOpen()"
+        (click)="toggleSuperDropdown()"
+      >
+        <i class="ss-ic tab-ic" style="--ss-ic: url('assets/taiga-ui/icons/shield.svg')"></i>
+        <span lang="ka" class="georgian-text">Super</span>
+      </button>
+    }
+  </nav>
 }

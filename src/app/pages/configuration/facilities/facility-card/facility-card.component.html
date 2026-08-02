@@ -1,30 +1,30 @@
 <div
-  class="card-bg rounded-xl overflow-hidden border transition-shadow hover:shadow-lg flex flex-col h-full"
+  class="ss-card overflow-hidden transition-shadow hover:shadow-lg flex flex-col h-full"
 >
   <!-- Header with Toggle and Status -->
-  <div class="card-header-bg flex items-center justify-between p-4 border-b h-[72px]">
+  <div
+    class="flex items-center justify-between p-4 border-b h-[72px]"
+    style="border-color: var(--tui-border-normal); background: var(--tui-background-neutral-1)"
+  >
     <div class="flex items-center gap-3">
       <input
-        tuiSwitch
+        class="ss-switch"
         type="checkbox"
         [ngModel]="activeState()"
         (ngModelChange)="onToggleState($event)"
+        [attr.aria-label]="'გამოქვეყნება'"
       />
 
       @if (activeState()) {
-        <tui-chip appearance="success" size="m" class="georgian-text" lang="ka">
-          გამოქვეყნებული
-        </tui-chip>
+        <span class="ss-badge ss-badge--positive georgian-text" lang="ka">გამოქვეყნებული</span>
       } @else {
-        <tui-chip appearance="neutral" size="m" class="georgian-text" lang="ka">
-          მონახაზი
-        </tui-chip>
+        <span class="ss-badge ss-badge--neutral georgian-text" lang="ka">მონახაზი</span>
       }
     </div>
   </div>
 
   <!-- Photo Section -->
-  <div class="photo-bg relative h-68">
+  <div class="relative h-68" style="background: var(--tui-background-neutral-1)">
     <img
       [src]="primaryPhoto"
       [alt]="facility.description || '--'"
@@ -41,12 +41,13 @@
 
   <!-- Content Section -->
   <div class="p-4 flex flex-col flex-1">
-    <h3 class="title-text text-lg font-bold m-0 georgian-text h-7 line-clamp-1" lang="ka">
+    <h3 class="text-lg font-bold m-0 georgian-text h-7 line-clamp-1" lang="ka">
       {{ facility.name || '--' }}
     </h3>
     <p
-      class="description-text text-sm m-0 leading-relaxed georgian-text h-10 line-clamp-2 mt-2 mb-3"
+      class="text-sm m-0 leading-relaxed georgian-text h-10 line-clamp-2 mt-2 mb-3"
       lang="ka"
+      style="color: var(--tui-text-secondary)"
     >
       {{ facility.description || '--' }}
     </p>
@@ -56,8 +57,8 @@
       class="flex gap-2 h-11 mb-4 w-full text-left cursor-pointer hover:opacity-80 transition-opacity"
       (click)="openInGoogleMaps($event)"
     >
-      <tui-icon icon="@lucide.map-pin" class="location-icon w-4 h-4 mt-0.5 shrink-0"></tui-icon>
-      <div class="location-text text-sm leading-snug georgian-text" lang="ka">
+      <i class="ss-ic mt-0.5" style="--ss-ic: url('assets/taiga-ui/icons/map-pin.svg'); color: var(--tui-text-action)"></i>
+      <div class="text-sm leading-snug georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
         <div class="line-clamp-1">{{ facility.addressText || '--' }}</div>
         <div class="line-clamp-1">{{ cityName || '--' }}, {{ countryName || '--' }}</div>
       </div>
@@ -65,43 +66,36 @@
 
     <!-- Action Buttons -->
     <div class="flex gap-2 mt-auto items-center">
-      <!-- Edit: show icon on small screens, label from sm and up -->
+      <!-- Edit -->
       <button
-        tuiButton
-        appearance="secondary"
-        size="m"
-        class="flex-1 flex items-center justify-center gap-1.5 text-sm sm:text-base px-3 py-2 min-w-0"
+        class="ss-btn ss-btn--outline ss-btn--s flex-1 min-w-0"
+        type="button"
         (click)="onEdit($event)"
         [attr.aria-label]="'რედაქტირება'"
       >
-        <tui-icon icon="@lucide.edit" class="w-4 h-4 shrink-0"></tui-icon>
-        <span class="georgian-text truncate ml-2" lang="ka">რედაქტირება</span>
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg'); width: 14px; height: 14px"></i>
+        <span class="georgian-text truncate" lang="ka">რედაქტირება</span>
       </button>
 
-      <!-- Courts: primary on larger screens, icon-only on small -->
-      <button
-        tuiButton
-        appearance="primary"
-        size="m"
-        class="flex-1 flex items-center justify-center gap-1.5 text-sm sm:text-base px-3 py-2 min-w-0"
+      <!-- Courts -->
+      <a
+        class="ss-btn ss-btn--primary ss-btn--s flex-1 min-w-0"
         [routerLink]="['/configuration/courts']"
         [queryParams]="{ facilityId: facility._id ?? facility.id }"
         [attr.aria-label]="'კორტები'"
       >
-        <tui-icon icon="@lucide.layout-grid" class="w-4 h-4 shrink-0"></tui-icon>
-        <span class="georgian-text truncate ml-2" lang="ka">კორტები</span>
-      </button>
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/layout-grid.svg'); width: 14px; height: 14px"></i>
+        <span class="georgian-text truncate" lang="ka">კორტები</span>
+      </a>
 
-      <!-- Delete: keep small fixed-size icon button -->
+      <!-- Delete -->
       <button
-        tuiIconButton
-        appearance="flat"
-        size="m"
-        class="w-10 h-10 flex items-center justify-center text-red-600 hover:bg-red-50"
+        class="ss-icon-btn ss-icon-btn--danger"
+        type="button"
         (click)="onDelete($event)"
         [attr.aria-label]="'წაშლა'"
       >
-        <tui-icon icon="@lucide.trash-2" class="w-4 h-4"></tui-icon>
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
       </button>
     </div>
   </div>

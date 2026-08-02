@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse } from '../../shared/models/api-response.model';
+import { ApiPage, ApiResponse } from '../../shared/models/api-response.model';
 import {
   GrantResult,
   GrantVoucherDto,
@@ -12,6 +12,16 @@ import {
   PendingGrant,
   Voucher,
 } from '../../shared/models/voucher.model';
+
+export interface PaginatedVouchers {
+  data: Voucher[];
+  page?: ApiPage;
+}
+
+export interface PaginatedGrants {
+  data: PendingGrant[];
+  page?: ApiPage;
+}
 
 /**
  * Admin voucher API (design §21.4). All amounts cross the wire as integer
@@ -50,19 +60,25 @@ export class VoucherService {
       .pipe(map((res) => res.result.data));
   }
 
-  /** GET /vouchers?facilityId= — vouchers of a facility (admin-scoped). */
-  getVouchers(facilityId: string): Observable<Voucher[]> {
-    const params = new HttpParams().set('facilityId', facilityId);
+  /** GET /vouchers?facilityId= — vouchers of a facility (admin-scoped, paginated). */
+  getVouchers(facilityId: string, page = 1, limit = 20): Observable<PaginatedVouchers> {
+    const params = new HttpParams()
+      .set('facilityId', facilityId)
+      .set('page', page)
+      .set('limit', limit);
     return this.http
       .get<ApiResponse<Voucher[]>>(this.apiUrl, { params })
-      .pipe(map((res) => res.result.data ?? []));
+      .pipe(map((res) => ({ data: res.result.data ?? [], page: res.result.page })));
   }
 
-  /** GET /vouchers/grants?facilityId= — pending grants of a facility. */
-  getGrants(facilityId: string): Observable<PendingGrant[]> {
-    const params = new HttpParams().set('facilityId', facilityId);
+  /** GET /vouchers/grants?facilityId= — pending grants of a facility (paginated). */
+  getGrants(facilityId: string, page = 1, limit = 20): Observable<PaginatedGrants> {
+    const params = new HttpParams()
+      .set('facilityId', facilityId)
+      .set('page', page)
+      .set('limit', limit);
     return this.http
       .get<ApiResponse<PendingGrant[]>>(`${this.apiUrl}/grants`, { params })
-      .pipe(map((res) => res.result.data ?? []));
+      .pipe(map((res) => ({ data: res.result.data ?? [], page: res.result.page })));
   }
 }

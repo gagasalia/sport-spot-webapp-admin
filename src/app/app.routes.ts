@@ -66,6 +66,27 @@ export const routes: Routes = [
           import('./pages/matches/matches.component').then((m) => m.MatchesComponent),
       },
       {
+        path: 'statistics',
+        loadComponent: () =>
+          import('./pages/statistics/statistics.component').then(
+            (m) => m.StatisticsComponent,
+          ),
+      },
+      {
+        path: 'customers',
+        loadComponent: () =>
+          import('./pages/customers/customers.component').then(
+            (m) => m.CustomersComponent,
+          ),
+      },
+      {
+        path: 'customers/:id',
+        loadComponent: () =>
+          import('./pages/customers/customer-detail/customer-detail.component').then(
+            (m) => m.CustomerDetailComponent,
+          ),
+      },
+      {
         path: 'super-admin/academies-management',
         canActivate: [superAdminGuard],
         loadComponent: () =>
@@ -83,12 +104,12 @@ export const routes: Routes = [
       },
       {
         path: '',
-        redirectTo: 'configuration/academy',
+        redirectTo: 'reservations',
         pathMatch: 'full',
       },
       {
         path: '**',
-        redirectTo: 'configuration/academy',
+        redirectTo: 'reservations',
       },
     ],
   },

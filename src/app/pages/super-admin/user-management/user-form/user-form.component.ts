@@ -14,29 +14,16 @@ import {
   maskitoAddOnFocusPlugin,
   maskitoRemoveOnBlurPlugin,
 } from '@maskito/kit';
-import { type TuiStringHandler } from '@taiga-ui/cdk';
-import { TuiDay } from '@taiga-ui/cdk/date-time';
-import { TuiAlertService } from '@taiga-ui/core';
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
-import { TuiDialogContext } from '@taiga-ui/experimental';
-import { TuiInputDate } from '@taiga-ui/kit/components/input-date';
-import { TuiMultiSelect } from '@taiga-ui/kit';
-import { SHARED_TAIGA_IMPORTS } from '../../../../shared/shared.module';
 import { UserManagementService } from '../../../../services/http-services/user-management.service';
 import { CreateUserDto, User, UserType } from '../../../../shared/models/user.model';
 import { arrayRequiredValidator } from '../../../../shared/validators/array-required.validator';
 
+import { SsToastService } from '../../../../shared/ui/toast.service';
+import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../../../shared/ui/dialog.service';
 @Component({
   selector: 'app-user-form',
   standalone: true,
-  imports: [
-    ...SHARED_TAIGA_IMPORTS,
-    ...TuiMultiSelect,
-    ReactiveFormsModule,
-    CommonModule,
-    ...TuiInputDate,
-    MaskitoDirective,
-  ],
+  imports: [ReactiveFormsModule, CommonModule, MaskitoDirective],
   templateUrl: './user-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -51,9 +38,6 @@ export class UserFormComponent implements OnInit {
     [UserType.SUPERADMIN]: 'სუპერადმინი',
   };
 
-  readonly stringifyUserType: TuiStringHandler<UserType> = (type) =>
-    this.userTypeLabels[type] || '';
-
   readonly phoneMask: MaskitoOptions = {
     mask: ['+', '9', '9', '5', /[5]/, /\d/, /\d/, /\d/, /\d/, /\d/, /\d/, /\d/, /\d/],
     postprocessors: [maskitoPrefixPostprocessorGenerator('+995')],
@@ -64,13 +48,13 @@ export class UserFormComponent implements OnInit {
     mask: [/\d/, /\d/, /\d/, /\d/, /\d/, /\d/, /\d/, /\d/, /\d/, /\d/, /\d/],
   };
 
-  private readonly context = inject(POLYMORPHEUS_CONTEXT) as TuiDialogContext<
+  private readonly context = inject(SS_DIALOG_CONTEXT) as SsDialogContext<
     User | null,
     { user?: User }
   >;
   private readonly fb = inject(FormBuilder);
   private readonly userService = inject(UserManagementService);
-  private readonly alerts = inject(TuiAlertService);
+  private readonly alerts = inject(SsToastService);
 
   protected get isEditMode(): boolean {
     return !!this.context.data?.user;
@@ -79,11 +63,13 @@ export class UserFormComponent implements OnInit {
   ngOnInit(): void {
     const editingUser = this.context.data?.user;
 
-    let dateOfBirth: TuiDay | null = null;
+    // Native-date 'YYYY-MM-DD' string ('' = unset), local wall-clock.
+    let dateOfBirth = '';
     if (editingUser?.dateOfBirth) {
       const d = new Date(editingUser.dateOfBirth);
       if (!isNaN(d.getTime())) {
-        dateOfBirth = new TuiDay(d.getFullYear(), d.getMonth(), d.getDate());
+        const pad = (n: number) => String(n).padStart(2, '0');
+        dateOfBirth = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
       }
     }
 
@@ -122,10 +108,13 @@ export class UserFormComponent implements OnInit {
 
     const formValue = this.userForm.value;
     const editingUser = this.context.data?.user;
-    const dateOfBirth =
-      formValue.dateOfBirth instanceof TuiDay
-        ? formValue.dateOfBirth.toLocalNativeDate().toISOString()
-        : formValue.dateOfBirth || undefined;
+    // 'YYYY-MM-DD' → local-midnight instant (same semantics as the old TuiDay
+    // toLocalNativeDate path); '' stays undefined.
+    let dateOfBirth: string | undefined;
+    if (formValue.dateOfBirth) {
+      const [y, m, d] = String(formValue.dateOfBirth).split('-').map(Number);
+      dateOfBirth = new Date(y, m - 1, d).toISOString();
+    }
     const phone = this.extractPhoneDigits(formValue.phone);
 
     if (editingUser?._id) {
@@ -189,6 +178,21 @@ export class UserFormComponent implements OnInit {
           },
         });
     }
+  }
+
+  /** Role checkbox helpers (multi-role selection without a multiselect widget). */
+  protected isRoleChecked(type: UserType): boolean {
+    return (this.userForm.get('userType')?.value ?? []).includes(type);
+  }
+
+  protected toggleRole(type: UserType): void {
+    const control = this.userForm.get('userType');
+    const current: UserType[] = control?.value ?? [];
+    const next = current.includes(type)
+      ? current.filter((t) => t !== type)
+      : [...current, type];
+    control?.setValue(next);
+    control?.markAsTouched();
   }
 
   onCancel(): void {

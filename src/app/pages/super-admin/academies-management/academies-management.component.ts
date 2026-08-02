@@ -1,61 +1,68 @@
 import {
   Component,
   ChangeDetectionStrategy,
+  computed,
   inject,
   signal,
   HostListener,
   OnInit,
   DestroyRef,
-  Injector,
-} from '@angular/core';
+  } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, switchMap, take } from 'rxjs';
-import { TuiAlertService } from '@taiga-ui/core';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { TuiDialogService } from '@taiga-ui/experimental';
-import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit/components/confirm';
-import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { AcademyService } from '../../../services/http-services/academy.service';
 import { Academy } from '../../../shared/models/academy.model';
 import { AcademyFormComponent } from './academy-form/academy-form.component';
-import { WA_WINDOW } from '@ng-web-apis/common';
 
+import { SsToastService } from '../../../shared/ui/toast.service';
+import { SsDialogService } from '../../../shared/ui/dialog.service';
+import { SsConfirmComponent, SsConfirmData } from '../../../shared/ui/confirm.component';
 @Component({
   selector: 'app-academies-management',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS],
+  imports: [],
   templateUrl: './academies-management.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AcademiesManagementComponent implements OnInit {
   private readonly academyService = inject(AcademyService);
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly alerts = inject(TuiAlertService);
-  private readonly injector = inject(Injector);
-  private readonly window = inject(WA_WINDOW);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly dialogs = inject(SsDialogService);
+  private readonly alerts = inject(SsToastService);
+    private readonly destroyRef = inject(DestroyRef);
 
   protected readonly academies = signal<Academy[]>([]);
   protected readonly isLoading = signal(true);
-  protected readonly isMobile = signal(this.window.innerWidth <= 768);
+  protected readonly isMobile = signal(window.innerWidth <= 768);
+  protected readonly page = signal(1);
+  protected readonly total = signal(0);
+  protected readonly limit = 20;
+  protected readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.total() / this.limit)),
+  );
 
   @HostListener('window:resize')
   protected onResize(): void {
-    this.isMobile.set(this.window.innerWidth <= 768);
+    this.isMobile.set(window.innerWidth <= 768);
   }
 
   ngOnInit(): void {
     this.loadAcademies();
   }
 
+  protected onPageChange(page: number): void {
+    this.page.set(page);
+    this.loadAcademies();
+  }
+
   private loadAcademies(): void {
     this.isLoading.set(true);
     this.academyService
-      .getAllAcademies()
+      .getAcademiesPage(this.page(), this.limit)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (academies) => {
-          this.academies.set(academies);
+        next: ({ data, page }) => {
+          this.academies.set(data);
+          this.total.set(page?.total ?? data.length);
           this.isLoading.set(false);
         },
         error: () => {
@@ -66,7 +73,7 @@ export class AcademiesManagementComponent implements OnInit {
 
   protected addAcademy(): void {
     this.dialogs
-      .open<Academy | null>(new PolymorpheusComponent(AcademyFormComponent, this.injector), {
+      .open<Academy | null>(AcademyFormComponent, {
         label: 'აკადემიის დამატება',
         size: 'l',
         dismissible: true,
@@ -83,7 +90,7 @@ export class AcademiesManagementComponent implements OnInit {
 
   protected editAcademy(academy: Academy): void {
     this.dialogs
-      .open<Academy | null>(new PolymorpheusComponent(AcademyFormComponent, this.injector), {
+      .open<Academy | null>(AcademyFormComponent, {
         label: 'აკადემიის რედაქტირება',
         size: 'l',
         dismissible: true,
@@ -108,14 +115,14 @@ export class AcademiesManagementComponent implements OnInit {
     if (!academy._id) return;
 
     this.dialogs
-      .open<boolean>(TUI_CONFIRM, {
+      .open<boolean>(SsConfirmComponent, {
         label: 'აკადემიის წაშლა',
         size: 's',
         data: {
           content: `ნამდვილად გსურთ "${academy.name}" - ის წაშლა?`,
           yes: 'წაშლა',
           no: 'გაუქმება',
-        } as TuiConfirmData,
+        } as SsConfirmData,
       })
       .pipe(
         take(1),
@@ -124,7 +131,8 @@ export class AcademiesManagementComponent implements OnInit {
       )
       .subscribe({
         next: () => {
-          this.academies.update((list) => list.filter((a) => a._id !== academy._id));
+          // Reload instead of splicing locally — keeps the page/total honest.
+          this.loadAcademies();
           this.alerts
             .open('აკადემია წარმატებით წაიშალა!', { appearance: 'success' })
             .pipe(take(1))

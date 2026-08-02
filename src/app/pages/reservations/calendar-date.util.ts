@@ -1,24 +1,10 @@
-import { TuiDay } from '@taiga-ui/cdk/date-time';
-
 /**
  * Date helpers for the operator calendar. Dates are facility-local "YYYY-MM-DD"
  * wall-clock strings (conventions §2) — we deliberately avoid `Date`'s timezone
- * surprises by formatting/parsing the local Y-M-D directly.
+ * surprises by formatting/parsing the local Y-M-D directly. Native
+ * `<input type="date">` controls speak the same "YYYY-MM-DD" format, so no
+ * conversion layer is needed.
  */
-
-/** `TuiDay` → "YYYY-MM-DD" (facility-local date string). */
-export function tuiDayToIso(day: TuiDay): string {
-  const y = day.year;
-  const m = (day.month + 1).toString().padStart(2, '0');
-  const d = day.day.toString().padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-/** "YYYY-MM-DD" → `TuiDay`. */
-export function isoToTuiDay(iso: string): TuiDay {
-  const [y, m, d] = iso.split('-').map(Number);
-  return new TuiDay(y, m - 1, d);
-}
 
 /** Today's local date as "YYYY-MM-DD". */
 export function todayIso(now: Date = new Date()): string {

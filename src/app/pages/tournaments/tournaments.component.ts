@@ -3,20 +3,14 @@ import {
   Component,
   DestroyRef,
   HostListener,
-  Injector,
   OnInit,
+  computed,
   inject,
   signal,
 } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, switchMap, take } from 'rxjs';
-import { TuiAlertService } from '@taiga-ui/core';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { TuiDialogService } from '@taiga-ui/experimental';
-import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit/components/confirm';
-import { WA_WINDOW } from '@ng-web-apis/common';
-import { SHARED_TAIGA_IMPORTS } from '../../shared/shared.module';
 import { TournamentService } from '../../services/http-services/tournament.service';
 import {
   Tournament,
@@ -32,6 +26,9 @@ import {
 } from './tournament-form/tournament-form.component';
 import { RegistrationsDialogComponent } from './registrations-dialog.component';
 
+import { SsToastService } from '../../shared/ui/toast.service';
+import { SsDialogService } from '../../shared/ui/dialog.service';
+import { SsConfirmComponent, SsConfirmData } from '../../shared/ui/confirm.component';
 const STATUS_LABELS: Record<TournamentStatus, string> = {
   draft: 'დრაფტი',
   published: 'გამოქვეყნებული',
@@ -39,11 +36,12 @@ const STATUS_LABELS: Record<TournamentStatus, string> = {
   cancelled: 'გაუქმებული',
 };
 
+// Theme-aware ss-badge variants (the old Tailwind color classes broke in dark mode).
 const STATUS_CLASSES: Record<TournamentStatus, string> = {
-  draft: 'bg-gray-200 text-gray-700',
-  published: 'bg-green-100 text-green-700',
-  completed: 'bg-blue-100 text-blue-700',
-  cancelled: 'bg-red-100 text-red-700',
+  draft: 'ss-badge ss-badge--neutral',
+  published: 'ss-badge ss-badge--positive',
+  completed: 'ss-badge ss-badge--info',
+  cancelled: 'ss-badge ss-badge--negative',
 };
 
 /**
@@ -54,39 +52,49 @@ const STATUS_CLASSES: Record<TournamentStatus, string> = {
 @Component({
   selector: 'app-tournaments',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, CommonModule, DatePipe],
+  imports: [CommonModule],
   templateUrl: './tournaments.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TournamentsComponent implements OnInit {
   private readonly tournamentService = inject(TournamentService);
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly alerts = inject(TuiAlertService);
-  private readonly injector = inject(Injector);
-  private readonly window = inject(WA_WINDOW);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly dialogs = inject(SsDialogService);
+  private readonly alerts = inject(SsToastService);
+    private readonly destroyRef = inject(DestroyRef);
 
   protected readonly tournaments = signal<Tournament[]>([]);
   protected readonly isLoading = signal(true);
-  protected readonly isMobile = signal(this.window.innerWidth <= 768);
+  protected readonly isMobile = signal(window.innerWidth <= 768);
+  protected readonly page = signal(1);
+  protected readonly total = signal(0);
+  protected readonly limit = 20;
+  protected readonly totalPages = computed(() =>
+    Math.max(1, Math.ceil(this.total() / this.limit)),
+  );
 
   @HostListener('window:resize')
   protected onResize(): void {
-    this.isMobile.set(this.window.innerWidth <= 768);
+    this.isMobile.set(window.innerWidth <= 768);
   }
 
   ngOnInit(): void {
     this.load();
   }
 
+  protected onPageChange(page: number): void {
+    this.page.set(page);
+    this.load();
+  }
+
   private load(): void {
     this.isLoading.set(true);
     this.tournamentService
-      .getMyTournaments()
+      .getMyTournaments(this.page(), this.limit)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: ({ data }) => {
+        next: ({ data, page }) => {
           this.tournaments.set(data);
+          this.total.set(page?.total ?? data.length);
           this.isLoading.set(false);
         },
         error: () => this.isLoading.set(false),
@@ -96,7 +104,7 @@ export class TournamentsComponent implements OnInit {
   protected addTournament(): void {
     this.dialogs
       .open<Tournament | null>(
-        new PolymorpheusComponent(TournamentFormComponent, this.injector),
+        TournamentFormComponent,
         {
           label: 'ტურნირის დამატება',
           size: 'l',
@@ -120,7 +128,7 @@ export class TournamentsComponent implements OnInit {
   protected editTournament(tournament: Tournament): void {
     this.dialogs
       .open<Tournament | null>(
-        new PolymorpheusComponent(TournamentFormComponent, this.injector),
+        TournamentFormComponent,
         {
           label: 'ტურნირის რედაქტირება',
           size: 'l',
@@ -140,7 +148,7 @@ export class TournamentsComponent implements OnInit {
   protected openRegistrations(tournament: Tournament): void {
     this.dialogs
       .open<void>(
-        new PolymorpheusComponent(RegistrationsDialogComponent, this.injector),
+        RegistrationsDialogComponent,
         {
           label: `რეგისტრაციები · ${tournament.name}`,
           size: 'l',
@@ -154,7 +162,13 @@ export class TournamentsComponent implements OnInit {
   }
 
   protected publish(tournament: Tournament): void {
-    this.setStatus(tournament, 'published', 'ტურნირი გამოქვეყნდა');
+    this.confirmThenSetStatus(
+      tournament,
+      'published',
+      'ტურნირის გამოქვეყნება',
+      `გამოვაქვეყნოთ „${tournament.name}"? ის ხილული გახდება მოთამაშეებისთვის და გაიხსნება რეგისტრაცია.`,
+      'ტურნირი გამოქვეყნდა',
+    );
   }
 
   protected complete(tournament: Tournament): void {
@@ -179,14 +193,14 @@ export class TournamentsComponent implements OnInit {
 
   protected deleteTournament(tournament: Tournament): void {
     this.dialogs
-      .open<boolean>(TUI_CONFIRM, {
+      .open<boolean>(SsConfirmComponent, {
         label: 'ტურნირის წაშლა',
         size: 's',
         data: {
           content: `ნამდვილად წავშალოთ დრაფტი „${tournament.name}"?`,
           yes: 'წაშლა',
           no: 'გაუქმება',
-        } as TuiConfirmData,
+        } as SsConfirmData,
       })
       .pipe(
         take(1),
@@ -215,10 +229,10 @@ export class TournamentsComponent implements OnInit {
     successMessage: string,
   ): void {
     this.dialogs
-      .open<boolean>(TUI_CONFIRM, {
+      .open<boolean>(SsConfirmComponent, {
         label,
         size: 's',
-        data: { content, yes: 'დიახ', no: 'არა' } as TuiConfirmData,
+        data: { content, yes: 'დიახ', no: 'არა' } as SsConfirmData,
       })
       .pipe(take(1), filter(Boolean))
       .subscribe(() => this.setStatus(tournament, status, successMessage));

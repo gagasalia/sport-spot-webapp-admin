@@ -1,17 +1,11 @@
 import { ChangeDetectionStrategy, Component, HostListener, inject, signal } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
-import { WA_LOCAL_STORAGE, WA_WINDOW } from '@ng-web-apis/common';
-import {
-  TuiButton,
-  TuiDataList,
-  TuiDropdown,
-  TUI_DARK_MODE,
-  TUI_DARK_MODE_KEY,
-} from '@taiga-ui/core';
-import { TuiBadgeNotification, TuiChevron } from '@taiga-ui/kit';
-import { TuiNavigation } from '@taiga-ui/layout';
-import { TuiTabBar } from '@taiga-ui/addon-mobile';
+import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { take } from 'rxjs';
 import { AuthService } from '../shared/services/auth.service';
+import { TenantService } from '../shared/services/tenant.service';
+import { SsConfirmComponent, SsConfirmData } from '../shared/ui/confirm.component';
+import { SsDialogService } from '../shared/ui/dialog.service';
+import { SsThemeService } from '../shared/ui/theme.service';
 
 /**
  * Authenticated application chrome: header, sidebar, mobile tab bar and the
@@ -19,45 +13,40 @@ import { AuthService } from '../shared/services/auth.service';
  * shell never paints (and never reads auth state) on the public `/login` page.
  * Feature pages render into the shell's own `<router-outlet>`.
  *
- * Dropdown portals are intentionally NOT wired here. `TuiRoot` (in `App`)
- * already renders `<tui-dropdowns>`, which is the `TuiPortals` host that owns
- * the root `TuiDropdownService` — Taiga's default. A previous Phase-2 split
- * re-provided `TuiDropdownService` + `tuiAsPortal` on this shell and extended
- * `TuiPortals`, but without a `#viewContainer` in the template the host's
- * `vcr` was undefined, so every `tuiSelect`/`tuiDropdown` open threw
- * "Cannot read properties of undefined (reading 'createComponent')". Letting
- * `TuiRoot` own the portals fixes it; the `TuiDropdown` directive import below
- * is only the consumer side used by the mobile tab bar.
+ * The chrome is plain kit markup (ss-* classes + `.ss-ic` mask icons); theming
+ * runs through `SsThemeService`, which stamps `[tuiTheme]` on `<html>`.
+ * Accordion groups auto-open when the current URL is inside their section; on
+ * mobile the config / super-admin groups become bottom sheets over the tab bar.
  */
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-    TuiButton,
-    TuiDataList,
-    TuiDropdown,
-    TuiBadgeNotification,
-    TuiChevron,
-    TuiNavigation,
-    TuiTabBar,
-  ],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './shell.component.html',
+  styleUrl: './shell.component.css',
 })
 export class ShellComponent {
-  private readonly key = inject(TUI_DARK_MODE_KEY);
-  private readonly storage = inject(WA_LOCAL_STORAGE);
-  private readonly media = inject(WA_WINDOW).matchMedia('(prefers-color-scheme: dark)');
-  private readonly window = inject(WA_WINDOW);
   private readonly auth = inject(AuthService);
+  private readonly tenant = inject(TenantService);
+  private readonly router = inject(Router);
+  private readonly theme = inject(SsThemeService);
+  private readonly dialogs = inject(SsDialogService);
 
-  protected readonly darkMode = inject(TUI_DARK_MODE);
+  protected readonly darkMode = this.theme.dark;
   protected readonly isSuperAdmin = this.auth.isSuperAdmin;
   protected expanded = signal(true);
   protected isMobile = signal(false);
+
+  /**
+   * Desktop aside accordions. Configuration starts open regardless of route so
+   * its sub-items are always one click away; super-admin opens only when the
+   * route is already inside it.
+   */
+  protected configOpen = signal(true);
+  protected superOpen = signal(this.router.url.startsWith('/super-admin'));
+
+  /** Mobile bottom sheets (config / super-admin). */
   protected configDropdownOpen = signal(false);
   protected superAdminDropdownOpen = signal(false);
 
@@ -71,23 +60,70 @@ export class ShellComponent {
   }
 
   private checkMobile(): void {
-    this.isMobile.set(this.window.innerWidth <= 768);
+    this.isMobile.set(typeof window !== 'undefined' && window.innerWidth <= 768);
   }
 
   protected handleToggle(): void {
     this.expanded.update((e) => !e);
   }
 
-  protected toggleDarkMode(): void {
-    this.darkMode.set(!this.darkMode());
+  /** Collapsed rail: clicking an accordion first re-expands the rail. */
+  protected toggleConfig(): void {
+    if (!this.expanded()) {
+      this.expanded.set(true);
+      this.configOpen.set(true);
+      return;
+    }
+    this.configOpen.update((o) => !o);
   }
 
-  protected resetDarkMode(): void {
-    this.darkMode.set(this.media.matches);
-    this.storage?.removeItem(this.key);
+  protected toggleSuper(): void {
+    if (!this.expanded()) {
+      this.expanded.set(true);
+      this.superOpen.set(true);
+      return;
+    }
+    this.superOpen.update((o) => !o);
+  }
+
+  protected toggleDarkMode(): void {
+    this.theme.toggle();
+  }
+
+  protected signOut(): void {
+    const data: SsConfirmData = {
+      content: 'ნამდვილად გსურთ სისტემიდან გასვლა?',
+      yes: 'გასვლა',
+      no: 'გაუქმება',
+    };
+    this.dialogs
+      .open<boolean>(SsConfirmComponent, { label: 'გასვლა', size: 's', data })
+      .pipe(take(1))
+      .subscribe((confirmed) => {
+        if (!confirmed) {
+          return;
+        }
+        this.auth.logout();
+        // The cached tenant must go with the session — otherwise the next login
+        // (possibly a different operator) reads the previous academy, and a
+        // cached `null` (superadmin) makes every module render empty.
+        this.tenant.clear();
+        this.router.navigate(['/login']);
+      });
   }
 
   protected toggleConfigDropdown(): void {
+    this.superAdminDropdownOpen.set(false);
     this.configDropdownOpen.update((open) => !open);
+  }
+
+  protected toggleSuperDropdown(): void {
+    this.configDropdownOpen.set(false);
+    this.superAdminDropdownOpen.update((open) => !open);
+  }
+
+  protected closeSheets(): void {
+    this.configDropdownOpen.set(false);
+    this.superAdminDropdownOpen.set(false);
   }
 }

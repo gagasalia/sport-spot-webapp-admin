@@ -1,7 +1,8 @@
 <div class="pt-8 p-0 sm:p-8">
   <header class="mb-6 flex items-center justify-between">
     <h1 class="text-2xl font-semibold georgian-text" lang="ka">აკადემიების მართვა</h1>
-    <button tuiButton appearance="primary" iconStart="@tui.plus" (click)="addAcademy()">
+    <button class="ss-btn ss-btn--primary" type="button" (click)="addAcademy()">
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
       <span class="georgian-text" lang="ka">დამატება</span>
     </button>
   </header>
@@ -14,73 +15,49 @@
     <!-- Desktop Table View -->
     @if (!isMobile()) {
       <div
-        class="card-bg rounded-xl border overflow-hidden"
-        style="border-color: var(--tui-border-normal)"
+        class="ss-card overflow-x-auto"
       >
-        <table class="w-full text-left">
+        <table class="ss-table">
           <thead>
-            <tr
-              class="border-b"
-              style="
-                border-color: var(--tui-border-normal);
-                background: var(--tui-background-base-alt);
-              "
-            >
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">სახელი</th>
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">ადმინ(ებ)ი</th>
-              <th class="px-4 py-3 text-sm font-semibold georgian-text" lang="ka">სტატუსი</th>
-              <th class="px-4 py-3 text-sm font-semibold"></th>
+            <tr>
+              <th class="georgian-text" lang="ka">სახელი</th>
+              <th class="georgian-text" lang="ka">ადმინ(ებ)ი</th>
+              <th class="georgian-text" lang="ka">სტატუსი</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             @for (academy of academies(); track academy._id) {
-              <tr
-                class="border-b last:border-b-0 hover:bg-(--tui-background-neutral-1)"
-                style="border-color: var(--tui-border-normal)"
-              >
-                <td class="px-4 py-3 font-medium">{{ academy.name }}</td>
-                <td class="px-4 py-3 text-sm">
+              <tr>
+                <td class="font-medium">{{ academy.name }}</td>
+                <td class="text-sm">
                   @if (academy.admins.length) {
                     {{ formatAdmins(academy.admins) }}
                   } @else {
                     <span>—</span>
                   }
                 </td>
-                <td class="px-4 py-3 text-sm">
+                <td class="text-sm">
                   @if (academy.status === 'published') {
-                    <tui-badge appearance="success">
-                      <span class="georgian-text" lang="ka">გამოქვეყნებული</span>
-                    </tui-badge>
+                    <span class="ss-badge ss-badge--positive georgian-text" lang="ka">გამოქვეყნებული</span>
                   } @else {
-                    <tui-badge appearance="neutral">
-                      <span class="georgian-text" lang="ka">გამოუქვეყნებელი</span>
-                    </tui-badge>
+                    <span class="ss-badge ss-badge--neutral georgian-text" lang="ka">გამოუქვეყნებელი</span>
                   }
                 </td>
-                <td class="px-4 py-3 text-sm">
+                <td class="text-sm">
                   <div class="flex items-center gap-1">
-                    <button
-                      tuiIconButton
-                      appearance="flat"
-                      iconStart="@tui.pencil"
-                      size="s"
-                      aria-label="რედაქტირება"
-                      (click)="editAcademy(academy)"
-                    ></button>
-                    <button
-                      tuiIconButton
-                      appearance="flat-destructive"
-                      iconStart="@tui.trash-2"
-                      size="s"
-                      aria-label="წაშლა"
-                      (click)="deleteAcademy(academy)"
-                    ></button>
+                    <button class="ss-icon-btn" type="button" aria-label="რედაქტირება" (click)="editAcademy(academy)">
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+                    </button>
+                    <button class="ss-icon-btn ss-icon-btn--danger" type="button" aria-label="წაშლა" (click)="deleteAcademy(academy)">
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                    </button>
                   </div>
                 </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="4" class="px-4 py-8 text-center georgian-text" lang="ka">
+                <td colspan="4" class="py-8 text-center georgian-text" lang="ka">
                   აკადემიები ვერ მოიძებნა
                 </td>
               </tr>
@@ -94,26 +71,16 @@
     @if (isMobile()) {
       <div class="flex flex-col gap-4">
         @for (academy of academies(); track academy._id) {
-          <div class="card-bg rounded-xl border p-4" style="border-color: var(--tui-border-normal)">
+          <div class="ss-card p-4">
             <div class="flex items-center justify-between mb-3">
               <h3 class="font-semibold truncate">{{ academy.name }}</h3>
               <div class="flex items-center gap-1 shrink-0">
-                <button
-                  tuiIconButton
-                  appearance="flat"
-                  iconStart="@tui.pencil"
-                  size="s"
-                  aria-label="რედაქტირება"
-                  (click)="editAcademy(academy)"
-                ></button>
-                <button
-                  tuiIconButton
-                  appearance="flat-destructive"
-                  iconStart="@tui.trash-2"
-                  size="s"
-                  aria-label="წაშლა"
-                  (click)="deleteAcademy(academy)"
-                ></button>
+                <button class="ss-icon-btn" type="button" aria-label="რედაქტირება" (click)="editAcademy(academy)">
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+                    </button>
+                <button class="ss-icon-btn ss-icon-btn--danger" type="button" aria-label="წაშლა" (click)="deleteAcademy(academy)">
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                    </button>
               </div>
             </div>
 
@@ -131,25 +98,45 @@
               }
               <div>
                 @if (academy.status === 'published') {
-                  <tui-badge appearance="success">
-                    <span class="georgian-text" lang="ka">გამოქვეყნებული</span>
-                  </tui-badge>
+                  <span class="ss-badge ss-badge--positive georgian-text" lang="ka">გამოქვეყნებული</span>
                 } @else {
-                  <tui-badge appearance="neutral">
-                    <span class="georgian-text" lang="ka">გამოუქვეყნებელი</span>
-                  </tui-badge>
+                  <span class="ss-badge ss-badge--neutral georgian-text" lang="ka">გამოუქვეყნებელი</span>
                 }
               </div>
             </div>
           </div>
         } @empty {
           <div
-            class="card-bg rounded-xl border p-6 text-center"
-            style="border-color: var(--tui-border-normal)"
+            class="ss-card p-6 text-center"
           >
             <p class="georgian-text" lang="ka">აკადემიები ვერ მოიძებნა</p>
           </div>
         }
+      </div>
+    }
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() === 1"
+          (click)="onPageChange(page() - 1)"
+        >
+          <span class="georgian-text" lang="ka">წინა</span>
+        </button>
+        <span class="text-sm" style="color: var(--tui-text-secondary)">
+          {{ page() }} / {{ totalPages() }}
+        </span>
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() >= totalPages()"
+          (click)="onPageChange(page() + 1)"
+        >
+          <span class="georgian-text" lang="ka">შემდეგი</span>
+        </button>
       </div>
     }
   }

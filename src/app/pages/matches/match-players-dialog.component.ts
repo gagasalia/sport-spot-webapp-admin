@@ -1,9 +1,6 @@
 import { CommonModule, DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { take } from 'rxjs';
-import { POLYMORPHEUS_CONTEXT } from '@taiga-ui/polymorpheus';
-import { TuiDialogContext } from '@taiga-ui/experimental';
-import { SHARED_TAIGA_IMPORTS } from '../../shared/shared.module';
 import { MatchService } from '../../services/http-services/match.service';
 import {
   AdminMatch,
@@ -11,6 +8,7 @@ import {
   MatchPlayerStatus,
 } from '../../shared/models/match.model';
 
+import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../shared/ui/dialog.service';
 const STATUS_LABELS: Record<MatchPlayerStatus, string> = {
   joined: 'შეერთებული',
   left: 'გავიდა',
@@ -18,16 +16,16 @@ const STATUS_LABELS: Record<MatchPlayerStatus, string> = {
 };
 
 const STATUS_CLASSES: Record<MatchPlayerStatus, string> = {
-  joined: 'bg-green-100 text-green-700',
-  left: 'bg-gray-200 text-gray-700',
-  removed: 'bg-red-100 text-red-700',
+  joined: 'ss-badge ss-badge--positive',
+  left: 'ss-badge ss-badge--neutral',
+  removed: 'ss-badge ss-badge--negative',
 };
 
 /** Every membership row of one match — snapshots incl. contacts. */
 @Component({
   selector: 'app-match-players-dialog',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-h-[70vh] overflow-y-auto">
@@ -50,7 +48,7 @@ const STATUS_CLASSES: Record<MatchPlayerStatus, string> = {
                   {{ p.playerName || p.playerEmail || '—' }}
                   @if (p.role === 'owner') {
                     <span
-                      class="ml-1 inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 georgian-text"
+                      class="ml-1 ss-badge ss-badge--accent georgian-text"
                       lang="ka"
                       >ორგანიზატორი</span
                     >
@@ -62,7 +60,7 @@ const STATUS_CLASSES: Record<MatchPlayerStatus, string> = {
                 </div>
               </div>
               <span
-                class="inline-block px-2 py-0.5 rounded-full text-xs font-medium georgian-text"
+                class="georgian-text"
                 lang="ka"
                 [class]="statusClass(p.status)"
               >
@@ -76,7 +74,7 @@ const STATUS_CLASSES: Record<MatchPlayerStatus, string> = {
   `,
 })
 export class MatchPlayersDialogComponent implements OnInit {
-  private readonly context = inject(POLYMORPHEUS_CONTEXT) as TuiDialogContext<
+  private readonly context = inject(SS_DIALOG_CONTEXT) as SsDialogContext<
     void,
     { match: AdminMatch }
   >;

@@ -1,9 +1,48 @@
-.working-hours-card {
-  border-color: var(--tui-border-normal) !important;
+// Page-scoped bits on top of the global ss-* kit.
+
+// Compact hour/minute native selects.
+.time-select {
+  width: 92px;
+  flex: 0 0 auto;
 }
 
-.border-color {
-  border-color: var(--tui-border-normal) !important;
+// Working-day toggle pill (checkbox + label card).
+.day-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--tui-radius-m);
+  border: 1px solid var(--tui-border-normal);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+
+  &:hover {
+    border-color: var(--tui-border-hover);
+  }
+
+  &.is-on {
+    background: var(--tui-background-accent-1-pale);
+    border-color: var(--tui-background-accent-1);
+  }
+}
+
+// Remove-holiday × inside the badge chip.
+.hol-x {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 0 0 2px;
+  cursor: pointer;
+  opacity: 0.7;
+
+  &:hover {
+    opacity: 1;
+  }
 }
 
 // Ensure grid is responsive

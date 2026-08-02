@@ -8,17 +8,17 @@ import {
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { of } from 'rxjs';
-import { TuiAlertService } from '@taiga-ui/core';
 
 import { errorInterceptor, SKIP_ERROR_TOAST } from './error.interceptor';
 import { AuthService } from '../services/auth.service';
 import { TenantService } from '../services/tenant.service';
 import { environment } from '../../../environments/environment';
 
+import { SsToastService } from '../ui/toast.service';
 describe('errorInterceptor', () => {
   let http: HttpClient;
   let httpMock: HttpTestingController;
-  let alertsSpy: jasmine.SpyObj<TuiAlertService>;
+  let alertsSpy: jasmine.SpyObj<SsToastService>;
   let authSpy: jasmine.SpyObj<AuthService>;
   let tenantSpy: jasmine.SpyObj<TenantService>;
   let routerSpy: jasmine.SpyObj<Router>;
@@ -26,7 +26,7 @@ describe('errorInterceptor', () => {
   const base = environment.apiUrl;
 
   beforeEach(() => {
-    alertsSpy = jasmine.createSpyObj<TuiAlertService>('TuiAlertService', ['open']);
+    alertsSpy = jasmine.createSpyObj<SsToastService>('SsToastService', ['open']);
     alertsSpy.open.and.returnValue(of(undefined) as any);
     authSpy = jasmine.createSpyObj<AuthService>('AuthService', ['logout']);
     tenantSpy = jasmine.createSpyObj<TenantService>('TenantService', ['clear']);
@@ -36,7 +36,7 @@ describe('errorInterceptor', () => {
       providers: [
         provideHttpClient(withInterceptors([errorInterceptor])),
         provideHttpClientTesting(),
-        { provide: TuiAlertService, useValue: alertsSpy },
+        { provide: SsToastService, useValue: alertsSpy },
         { provide: AuthService, useValue: authSpy },
         { provide: TenantService, useValue: tenantSpy },
         { provide: Router, useValue: routerSpy },

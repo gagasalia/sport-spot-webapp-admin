@@ -1,38 +1,37 @@
-<div class="pt-8 p-0 sm:p-8">
+<div class="pt-8 p-0 sm:p-8 pb-28">
   <header class="mb-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 min-h-16">
       <h1 class="text-2xl font-semibold georgian-text" lang="ka">ჯავშნები</h1>
     </div>
   </header>
 
-  <!-- Facility selector (identical pattern to the courts page) -->
+  <!-- Facility chips (single-select, first selected by default) -->
   @if (facilities().length === 0) {
     <div class="flex flex-col items-center justify-center py-16">
       <img src="images/no-result.png" alt="No facilities" class="w-64 h-64 mb-6 opacity-50" />
       <p class="text-lg text-gray-500 mb-6 georgian-text" lang="ka">
         ჯავშნების სანახავად დაამატეთ ობიექტი
       </p>
-      <button tuiButton appearance="primary" iconStart="@tui.plus" (click)="navigateToFacilities()">
+      <button class="ss-btn ss-btn--primary" type="button" (click)="navigateToFacilities()">
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
         <span class="georgian-text" lang="ka">დაამატე ობიექტი</span>
       </button>
     </div>
   } @else {
-    <div class="mb-6">
-      <label tuiLabel>
-        <span class="georgian-text" lang="ka">აირჩიეთ ობიექტი</span>
-        <tui-textfield tuiChevron [stringify]="stringifyFacility">
-          <input tuiSelect [formControl]="facilityControl" class="georgian-text" lang="ka" />
-          <tui-data-list *tuiTextfieldDropdown>
-            @for (facility of facilities(); track facility._id ?? facility.id) {
-              <button new tuiOption [value]="facility._id ?? facility.id">
-                <span class="georgian-text" lang="ka">
-                  {{ facility.name || facility.description || 'უსახელო ობიექტი' }}
-                </span>
-              </button>
-            }
-          </tui-data-list>
-        </tui-textfield>
-      </label>
+    <div class="chip-rail mb-5" role="tablist" aria-label="ობიექტები">
+      @for (facility of facilities(); track facility._id ?? facility.id) {
+        <button
+          type="button"
+          class="pick-chip"
+          role="tab"
+          [class.is-active]="(facility._id ?? facility.id) === selectedFacilityId()"
+          [attr.aria-selected]="(facility._id ?? facility.id) === selectedFacilityId()"
+          (click)="onFacilityChipClick(facility)"
+        >
+          <i class="ss-ic chip-ic" style="--ss-ic: url('assets/taiga-ui/icons/building-2.svg')"></i>
+          <span class="georgian-text" lang="ka">{{ facilityLabel(facility) }}</span>
+        </button>
+      }
     </div>
   }
 
@@ -40,39 +39,42 @@
     @if (activeCourts().length === 0 && !isLoading()) {
       <!-- Facility has no active courts -->
       <div class="flex flex-col items-center justify-center py-16">
-        <tui-icon icon="@tui.table-cells-merge" class="w-32 h-32 opacity-50 mb-6"></tui-icon>
+        <i
+          class="ss-ic opacity-50 mb-6"
+          style="--ss-ic: url('assets/taiga-ui/icons/table-cells-merge.svg'); width: 128px; height: 128px"
+        ></i>
         <p class="text-lg text-gray-500 georgian-text" lang="ka">
           ამ ობიექტს აქტიური კორტი არ აქვს
         </p>
       </div>
     } @else {
-      <!-- Tabs -->
-      <div class="flex gap-2 mb-4 border-b" style="border-color: var(--tui-border-normal)">
+      <!-- Tabs (segmented) -->
+      <div class="seg-tabs mb-5" role="tablist">
         <button
-          tuiButton
-          size="s"
           type="button"
-          [appearance]="tab() === 'day' ? 'primary' : 'flat'"
+          class="seg-tab"
+          [class.is-active]="tab() === 'day'"
           (click)="setTab('day')"
         >
+          <i class="ss-ic seg-ic" style="--ss-ic: url('assets/taiga-ui/icons/calendar.svg')"></i>
           <span class="georgian-text" lang="ka">დღე</span>
         </button>
         <button
-          tuiButton
-          size="s"
           type="button"
-          [appearance]="tab() === 'week' ? 'primary' : 'flat'"
+          class="seg-tab"
+          [class.is-active]="tab() === 'week'"
           (click)="setTab('week')"
         >
+          <i class="ss-ic seg-ic" style="--ss-ic: url('assets/taiga-ui/icons/calendar-range.svg')"></i>
           <span class="georgian-text" lang="ka">კვირა</span>
         </button>
         <button
-          tuiButton
-          size="s"
           type="button"
-          [appearance]="tab() === 'list' ? 'primary' : 'flat'"
+          class="seg-tab"
+          [class.is-active]="tab() === 'list'"
           (click)="setTab('list')"
         >
+          <i class="ss-ic seg-ic" style="--ss-ic: url('assets/taiga-ui/icons/list.svg')"></i>
           <span class="georgian-text" lang="ka">სია</span>
         </button>
       </div>
@@ -88,52 +90,85 @@
         </div>
       }
 
-      <!-- ════════════════════════ DAY VIEW ════════════════════════ -->
-      @if (tab() === 'day') {
-        <div class="flex flex-wrap items-end gap-3 mb-4">
-          <button
-            tuiIconButton
-            iconStart="@tui.chevron-left"
-            type="button"
-            (click)="prevDay()"
-            size="s"
-            [attr.aria-label]="'წინა დღე'"
-          ></button>
-          <label tuiLabel>
-            <span class="georgian-text" lang="ka">თარიღი</span>
-            <tui-textfield>
-              <input tuiInputDate [formControl]="dateControl" />
-              <tui-calendar *tuiTextfieldDropdown />
-            </tui-textfield>
-          </label>
-          <button
-            tuiIconButton
-            iconStart="@tui.chevron-right"
-            type="button"
-            (click)="nextDay()"
-            size="s"
-            [attr.aria-label]="'შემდეგი დღე'"
-          ></button>
-          <button tuiButton appearance="flat" size="s" type="button" (click)="today()">
-            <span class="georgian-text" lang="ka">დღეს</span>
-          </button>
+      <!-- Date rail + datepicker (day + week tabs) -->
+      @if (tab() !== 'list') {
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+          <div class="chip-rail date-rail-wrap" aria-label="თარიღი">
+            @for (option of dateOptions; track option.iso) {
+              <button
+                type="button"
+                class="date-chip"
+                [class.is-active]="selectedDate() === option.iso"
+                (click)="selectDate(option.iso)"
+              >
+                <span class="dow georgian-text" lang="ka">{{ option.label }}</span>
+                <span class="dnum">{{ option.dayNum }}</span>
+              </button>
+            }
+          </div>
 
-          <!-- Mobile court switcher (single-column day view) -->
-          @if (isMobile()) {
-            <label tuiLabel class="ml-auto">
-              <span class="georgian-text" lang="ka">კორტი</span>
-              <tui-textfield tuiChevron [stringify]="stringifyCourt">
-                <input tuiSelect [formControl]="courtControl" />
-                <tui-data-list *tuiTextfieldDropdown>
-                  @for (court of activeCourts(); track court.id) {
-                    <button new tuiOption [value]="court.id">{{ court.label }}</button>
-                  }
-                </tui-data-list>
-              </tui-textfield>
-            </label>
-          }
+          <!-- Datepicker for dates beyond the rail -->
+          <label class="date-picker" [class.is-active]="isOffRailDate()">
+            <input
+              type="date"
+              class="ss-input"
+              [formControl]="dateControl"
+              aria-label="თარიღის არჩევა"
+            />
+          </label>
         </div>
 
+        <!-- Week paging + range (week tab) -->
+        @if (tab() === 'week') {
+          <div class="flex flex-wrap items-center gap-3 mb-4">
+            <button
+              class="ss-icon-btn ss-icon-btn--s"
+              type="button"
+              (click)="prevDay()"
+              aria-label="წინა კვირა"
+            >
+              <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/chevron-left.svg')"></i>
+            </button>
+            <span class="week-range">{{ weekDayLabel(weekRange().from) }} — {{ weekDayLabel(weekRange().to) }}</span>
+            <button
+              class="ss-icon-btn ss-icon-btn--s"
+              type="button"
+              (click)="nextDay()"
+              aria-label="შემდეგი კვირა"
+            >
+              <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/chevron-right.svg')"></i>
+            </button>
+          </div>
+        }
+
+        <!-- Court chips: week tab always; day tab on mobile only -->
+        @if (tab() === 'week' || isMobile()) {
+          <div class="chip-rail mb-4" aria-label="კორტები">
+            @for (court of activeCourts(); track court.id) {
+              <button
+                type="button"
+                class="pick-chip"
+                [class.is-active]="court.id === selectedCourtId()"
+                (click)="onCourtChipClick(court.id)"
+              >
+                <span class="georgian-text" lang="ka">{{ court.label }}</span>
+              </button>
+            }
+          </div>
+        }
+
+        <!-- Color legend -->
+        <div class="legend mb-3">
+          <span class="lg-item"><i class="lg-dot dot-free"></i><span class="georgian-text" lang="ka">თავისუფალი</span></span>
+          <span class="lg-item"><i class="lg-dot dot-user"></i><span class="georgian-text" lang="ka">მომხმარებლის ჯავშანი</span></span>
+          <span class="lg-item"><i class="lg-dot dot-admin"></i><span class="georgian-text" lang="ka">ადმინის ჯავშანი</span></span>
+          <span class="lg-item"><i class="lg-dot dot-block"></i><span class="georgian-text" lang="ka">დაბლოკილი</span></span>
+          <span class="lg-item"><i class="lg-dot dot-closed"></i><span class="georgian-text" lang="ka">მიუწვდომელი</span></span>
+        </div>
+      }
+
+      <!-- ════════════════════════ DAY VIEW ════════════════════════ -->
+      @if (tab() === 'day') {
         @if (isLoading()) {
           <!-- Loading skeleton -->
           <div class="space-y-2 animate-pulse">
@@ -144,110 +179,122 @@
         } @else if (dayGrid().rows.length === 0) {
           <!-- Closed / empty day -->
           <div class="flex flex-col items-center justify-center py-16">
-            <tui-icon icon="@lucide.calendar-off" class="w-24 h-24 opacity-50 mb-4"></tui-icon>
-            <p class="text-lg text-gray-500 georgian-text" lang="ka">ამ დღეს სლოტები არ არის</p>
+            <i
+              class="ss-ic opacity-50 mb-4"
+              style="--ss-ic: url('assets/taiga-ui/icons/calendar-off.svg'); width: 96px; height: 96px"
+            ></i>
+            <p class="text-lg text-gray-500 georgian-text" lang="ka">ამ დღეს ობიექტი დაკეტილია</p>
           </div>
         } @else {
           <div class="overflow-x-auto">
-            <table class="w-full border-collapse text-sm">
+            <table class="cal-table">
               <thead>
                 <tr>
-                  <th
-                    class="w-20 p-2 text-left sticky left-0 z-10"
-                    style="background: var(--tui-background-base)"
-                  >
-                    <span class="georgian-text" lang="ka">დრო</span>
-                  </th>
+                  <th class="time-col"></th>
                   @for (court of dayGrid().courts; track court.id) {
-                    <th class="p-2 text-center georgian-text" lang="ka">{{ court.label }}</th>
+                    <th class="georgian-text" lang="ka">{{ court.label }}</th>
                   }
                 </tr>
               </thead>
               <tbody>
                 @for (row of dayGrid().rows; track row.start) {
                   <tr>
-                    <td
-                      class="w-20 p-2 whitespace-nowrap font-medium sticky left-0 z-10"
-                      style="background: var(--tui-background-base); color: var(--tui-text-secondary)"
-                    >
-                      {{ row.start }}
-                    </td>
+                    <td class="time-col">{{ row.start }}</td>
                     @for (cell of row.cells; track cell.courtId) {
-                      <td class="p-1 align-top">
-                        @switch (cell.kind) {
-                          @case ('free') {
-                            <button
-                              type="button"
-                              class="w-full rounded-md p-2 text-center transition hover:opacity-80"
-                              style="background: var(--tui-status-positive-pale); color: var(--tui-status-positive)"
-                              (click)="onCellClick(cell)"
-                            >
-                              <span class="text-xs">+</span>
-                              @if (cellPriceGel(cell) !== null) {
-                                <span class="block text-[10px]">{{ cellPriceGel(cell) }} GEL</span>
-                              }
-                            </button>
-                          }
-                          @case ('closed') {
-                            <div
-                              class="w-full rounded-md p-2 text-center opacity-40 cursor-not-allowed"
-                              style="background: var(--tui-background-neutral-1)"
-                              aria-disabled="true"
-                            >
-                              <span class="text-xs">—</span>
-                            </div>
-                          }
-                          @case ('block') {
-                            <button
-                              type="button"
-                              class="w-full rounded-md p-2 text-left"
-                              style="background: var(--tui-background-neutral-2); color: var(--tui-text-secondary)"
-                              (click)="onCellClick(cell)"
-                            >
-                              <span class="block text-xs truncate georgian-text" lang="ka">
-                                {{ cellLabel(cell) }}
-                              </span>
-                            </button>
-                          }
-                          @case ('booking') {
-                            <!-- Cannot be a <button> (it nests the "Paid" button),
-                                 so keyboard support is added explicitly. -->
-                            <div
-                              role="button"
-                              tabindex="0"
-                              class="w-full rounded-md p-2 text-left cursor-pointer"
-                              style="background: var(--tui-status-info-pale)"
-                              (click)="onCellClick(cell)"
-                              (keydown.enter)="onCellClick(cell)"
-                              (keydown.space)="onCellClick(cell)"
-                            >
-                              <span class="block text-xs font-medium truncate">{{ cellLabel(cell) }}</span>
-                              <div class="flex items-center gap-1 mt-1">
-                                <tui-chip
-                                  size="xs"
-                                  [appearance]="isPaid(cell) ? 'positive' : 'warning'"
-                                >
-                                  <span class="georgian-text" lang="ka">
-                                    {{ isPaid(cell) ? 'გადახდილია' : 'ადგილზე' }}
-                                  </span>
-                                </tui-chip>
-                                @if (!isPaid(cell) && cell.booking) {
-                                  <button
-                                    tuiIconButton
-                                    size="xs"
-                                    appearance="flat"
-                                    iconStart="@tui.check"
-                                    type="button"
-                                    (click)="markPaid(cell.booking, $event)"
-                                  >
-                                    Paid
-                                  </button>
+                      @if (!cell.covered) {
+                        <td class="cal-td" [attr.rowspan]="cell.span > 1 ? cell.span : null">
+                          @switch (cell.kind) {
+                            @case ('free') {
+                              <button
+                                type="button"
+                                [class]="cellClass(cell)"
+                                (click)="onCellClick(cell)"
+                              >
+                                <span class="free-plus">+</span>
+                                @if (cellPriceGel(cell) !== null) {
+                                  <span class="free-price">{{ cellPriceGel(cell) }}₾</span>
+                                }
+                              </button>
+                            }
+                            @case ('past') {
+                              <div [class]="cellClass(cell)" aria-disabled="true">·</div>
+                            }
+                            @case ('closed') {
+                              <div [class]="cellClass(cell)" aria-disabled="true">—</div>
+                            }
+                            @default {
+                              <!-- booking / block spans -->
+                              <div
+                                role="button"
+                                tabindex="0"
+                                [class]="cellClass(cell)"
+                                (click)="onCellClick(cell)"
+                                (keydown.enter)="onCellClick(cell)"
+                                (keydown.space)="onCellClick(cell)"
+                              >
+                                <div class="cell-head">
+                                  <span class="cell-title georgian-text" lang="ka">{{ cellLabel(cell) }}</span>
+                                  @if (cellNote(cell)) {
+                                    <span
+                                      class="ss-tip"
+                                      tabindex="0"
+                                      [attr.data-tip]="cellNote(cell)"
+                                      (click)="$event.stopPropagation()"
+                                    >
+                                      <i
+                                        class="ss-ic cell-info"
+                                        style="--ss-ic: url('assets/taiga-ui/icons/info.svg')"
+                                      ></i>
+                                    </span>
+                                  }
+                                </div>
+                                <span class="cell-sub">{{ cell.start }}–{{ cell.end }} · {{ cellSpanMinutes(cell) }} წთ</span>
+                                @if (cell.kind === 'booking') {
+                                  <div class="cell-foot" (click)="$event.stopPropagation()">
+                                    <span
+                                      [class]="
+                                        isPaid(cell)
+                                          ? 'ss-badge ss-badge--positive'
+                                          : 'ss-badge ss-badge--warning'
+                                      "
+                                    >
+                                      <span class="georgian-text" lang="ka">
+                                        {{ isPaid(cell) ? 'გადახდილია' : 'ადგილზე' }}
+                                      </span>
+                                    </span>
+                                    @if (!isPaid(cell) && cell.booking) {
+                                      <button
+                                        class="ss-icon-btn ss-icon-btn--s"
+                                        type="button"
+                                        aria-label="გადახდილად მონიშვნა"
+                                        (click)="markPaid(cell.booking, $event)"
+                                      >
+                                        <i
+                                          class="ss-ic"
+                                          style="--ss-ic: url('assets/taiga-ui/icons/check.svg')"
+                                        ></i>
+                                      </button>
+                                    }
+                                    @if (cell.booking && bookingPlayer(cell.booking)) {
+                                      <button
+                                        class="ss-icon-btn ss-icon-btn--s"
+                                        type="button"
+                                        aria-label="მომხმარებლის გვერდი"
+                                        (click)="openPlayer(cell.booking, $event)"
+                                      >
+                                        <i
+                                          class="ss-ic"
+                                          style="--ss-ic: url('assets/taiga-ui/icons/user-round.svg')"
+                                        ></i>
+                                      </button>
+                                    }
+                                  </div>
                                 }
                               </div>
-                            </div>
+                            }
                           }
-                        }
-                      </td>
+                        </td>
+                      }
                     }
                   </tr>
                 }
@@ -259,26 +306,6 @@
 
       <!-- ════════════════════════ WEEK VIEW ════════════════════════ -->
       @if (tab() === 'week') {
-        <div class="flex flex-wrap items-end gap-3 mb-4">
-          <label tuiLabel>
-            <span class="georgian-text" lang="ka">კორტი</span>
-            <tui-textfield tuiChevron [stringify]="stringifyCourt">
-              <input tuiSelect [formControl]="courtControl" />
-              <tui-data-list *tuiTextfieldDropdown>
-                @for (court of activeCourts(); track court.id) {
-                  <button new tuiOption [value]="court.id">{{ court.label }}</button>
-                }
-              </tui-data-list>
-            </tui-textfield>
-          </label>
-          <button tuiButton appearance="flat" size="s" type="button" (click)="prevDay()">
-            <span class="georgian-text" lang="ka">წინა</span>
-          </button>
-          <button tuiButton appearance="flat" size="s" type="button" (click)="nextDay()">
-            <span class="georgian-text" lang="ka">შემდეგი</span>
-          </button>
-        </div>
-
         @if (isLoading()) {
           <div class="space-y-2 animate-pulse">
             @for (n of [1, 2, 3, 4, 5]; track n) {
@@ -287,73 +314,83 @@
           </div>
         } @else if (weekGrid().rows.length === 0) {
           <div class="flex flex-col items-center justify-center py-16">
-            <tui-icon icon="@lucide.calendar-off" class="w-24 h-24 opacity-50 mb-4"></tui-icon>
+            <i
+              class="ss-ic opacity-50 mb-4"
+              style="--ss-ic: url('assets/taiga-ui/icons/calendar-off.svg'); width: 96px; height: 96px"
+            ></i>
             <p class="text-lg text-gray-500 georgian-text" lang="ka">სლოტები არ არის</p>
           </div>
         } @else {
           <div class="overflow-x-auto">
-            <table class="w-full border-collapse text-sm">
+            <table class="cal-table">
               <thead>
                 <tr>
-                  <th class="p-2 text-left">
-                    <span class="georgian-text" lang="ka">დრო</span>
-                  </th>
+                  <th class="time-col"></th>
                   @for (date of weekGrid().days; track date) {
-                    <th class="p-2 text-center text-xs">{{ date }}</th>
+                    <th [class.today-col]="isToday(date)">
+                      <span class="georgian-text" lang="ka">{{ weekdayShortOf(date) }}</span>
+                      <span class="th-date">{{ weekDayLabel(date) }}</span>
+                    </th>
                   }
                 </tr>
               </thead>
               <tbody>
                 @for (row of weekGrid().rows; track row.start) {
                   <tr>
-                    <td class="p-2 whitespace-nowrap font-medium" style="color: var(--tui-text-secondary)">
-                      {{ row.start }}
-                    </td>
+                    <td class="time-col">{{ row.start }}</td>
                     @for (cell of row.cells; track cell.date) {
-                      <td class="p-1 align-top">
-                        @switch (cell.kind) {
-                          @case ('free') {
-                            <button
-                              type="button"
-                              class="w-full rounded-md p-2 text-center text-xs transition hover:opacity-80"
-                              style="background: var(--tui-status-positive-pale); color: var(--tui-status-positive)"
-                              (click)="onCellClick(cell, cell.date)"
-                            >
-                              +
-                            </button>
+                      @if (!cell.covered) {
+                        <td class="cal-td" [attr.rowspan]="cell.span > 1 ? cell.span : null">
+                          @switch (cell.kind) {
+                            @case ('free') {
+                              <button
+                                type="button"
+                                [class]="cellClass(cell)"
+                                (click)="onCellClick(cell)"
+                              >
+                                <span class="free-plus">+</span>
+                                @if (cellPriceGel(cell) !== null) {
+                                  <span class="free-price">{{ cellPriceGel(cell) }}₾</span>
+                                }
+                              </button>
+                            }
+                            @case ('past') {
+                              <div [class]="cellClass(cell)" aria-disabled="true">·</div>
+                            }
+                            @case ('closed') {
+                              <div [class]="cellClass(cell)" aria-disabled="true">—</div>
+                            }
+                            @default {
+                              <div
+                                role="button"
+                                tabindex="0"
+                                [class]="cellClass(cell)"
+                                (click)="onCellClick(cell)"
+                                (keydown.enter)="onCellClick(cell)"
+                                (keydown.space)="onCellClick(cell)"
+                              >
+                                <div class="cell-head">
+                                  <span class="cell-title georgian-text" lang="ka">{{ cellLabel(cell) }}</span>
+                                  @if (cellNote(cell)) {
+                                    <span
+                                      class="ss-tip"
+                                      tabindex="0"
+                                      [attr.data-tip]="cellNote(cell)"
+                                      (click)="$event.stopPropagation()"
+                                    >
+                                      <i
+                                        class="ss-ic cell-info"
+                                        style="--ss-ic: url('assets/taiga-ui/icons/info.svg')"
+                                      ></i>
+                                    </span>
+                                  }
+                                </div>
+                                <span class="cell-sub">{{ cell.start }}–{{ cell.end }}</span>
+                              </div>
+                            }
                           }
-                          @case ('closed') {
-                            <div
-                              class="w-full rounded-md p-2 text-center text-xs opacity-40 cursor-not-allowed"
-                              style="background: var(--tui-background-neutral-1)"
-                              aria-disabled="true"
-                            >
-                              —
-                            </div>
-                          }
-                          @case ('block') {
-                            <button
-                              type="button"
-                              class="w-full rounded-md p-2 text-xs truncate georgian-text text-left cursor-pointer"
-                              lang="ka"
-                              style="background: var(--tui-background-neutral-2); color: var(--tui-text-secondary)"
-                              (click)="onCellClick(cell, cell.date)"
-                            >
-                              {{ cellLabel(cell) }}
-                            </button>
-                          }
-                          @case ('booking') {
-                            <button
-                              type="button"
-                              class="w-full rounded-md p-2 text-xs truncate text-left cursor-pointer"
-                              style="background: var(--tui-status-info-pale)"
-                              (click)="onCellClick(cell, cell.date)"
-                            >
-                              {{ cellLabel(cell) }}
-                            </button>
-                          }
-                        }
-                      </td>
+                        </td>
+                      }
                     }
                   </tr>
                 }
@@ -366,51 +403,33 @@
       <!-- ════════════════════════ LIST VIEW ════════════════════════ -->
       @if (tab() === 'list') {
         <div class="flex flex-wrap items-end gap-3 mb-4">
-          <label tuiLabel>
-            <span class="georgian-text" lang="ka">დან</span>
-            <tui-textfield>
-              <input tuiInputDate [formControl]="listFrom" />
-              <tui-calendar *tuiTextfieldDropdown />
-            </tui-textfield>
+          <label class="ss-field list-filter">
+            <span class="ss-label georgian-text" lang="ka">დან</span>
+            <input type="date" class="ss-input" [formControl]="listFrom" />
           </label>
-          <label tuiLabel>
-            <span class="georgian-text" lang="ka">მდე</span>
-            <tui-textfield>
-              <input tuiInputDate [formControl]="listTo" />
-              <tui-calendar *tuiTextfieldDropdown />
-            </tui-textfield>
+          <label class="ss-field list-filter">
+            <span class="ss-label georgian-text" lang="ka">მდე</span>
+            <input type="date" class="ss-input" [formControl]="listTo" />
           </label>
-          <label tuiLabel>
-            <span class="georgian-text" lang="ka">კორტი</span>
-            <tui-textfield tuiChevron [stringify]="stringifyCourt">
-              <input tuiSelect [formControl]="listCourt" />
-              <tui-data-list *tuiTextfieldDropdown>
-                <button new tuiOption [value]="null">
-                  <span class="georgian-text" lang="ka">ყველა</span>
-                </button>
-                @for (court of activeCourts(); track court.id) {
-                  <button new tuiOption [value]="court.id">{{ court.label }}</button>
-                }
-              </tui-data-list>
-            </tui-textfield>
+          <label class="ss-field list-filter">
+            <span class="ss-label georgian-text" lang="ka">კორტი</span>
+            <select class="ss-input georgian-text" lang="ka" [formControl]="listCourt">
+              <option [ngValue]="null">ყველა</option>
+              @for (court of activeCourts(); track court.id) {
+                <option [ngValue]="court.id">{{ court.label }}</option>
+              }
+            </select>
           </label>
-          <label tuiLabel>
-            <span class="georgian-text" lang="ka">სტატუსი</span>
-            <tui-textfield tuiChevron [stringify]="stringifyStatus">
-              <input tuiSelect [formControl]="listStatus" />
-              <tui-data-list *tuiTextfieldDropdown>
-                <button new tuiOption [value]="null">
-                  <span class="georgian-text" lang="ka">ყველა</span>
-                </button>
-                @for (status of statusOptions; track status) {
-                  <button new tuiOption [value]="status">
-                    <span class="georgian-text" lang="ka">{{ statusLabels[status] }}</span>
-                  </button>
-                }
-              </tui-data-list>
-            </tui-textfield>
+          <label class="ss-field list-filter">
+            <span class="ss-label georgian-text" lang="ka">სტატუსი</span>
+            <select class="ss-input georgian-text" lang="ka" [formControl]="listStatus">
+              <option [ngValue]="null">ყველა</option>
+              @for (status of statusOptions; track status) {
+                <option [ngValue]="status">{{ statusLabels[status] }}</option>
+              }
+            </select>
           </label>
-          <button tuiButton appearance="primary" size="s" type="button" (click)="applyListFilters()">
+          <button class="ss-btn ss-btn--primary ss-btn--s" type="button" (click)="applyListFilters()">
             <span class="georgian-text" lang="ka">ფილტრი</span>
           </button>
         </div>
@@ -448,12 +467,29 @@
                   <tr class="border-t" style="border-color: var(--tui-border-normal)">
                     <td class="p-2 whitespace-nowrap">{{ b.date }}</td>
                     <td class="p-2 whitespace-nowrap">{{ b.start }}–{{ b.end }}</td>
-                    <td class="p-2">{{ courtLabelById(b.court) }}</td>
+                    <td class="p-2 whitespace-nowrap">{{ courtLabelById(b.court) }}</td>
                     <td class="p-2">
                       @if (b.type === 'block') {
                         <span class="georgian-text" lang="ka">დაბლოკილი</span>
+                      } @else if (bookingPlayer(b)) {
+                        <button
+                          class="player-link"
+                          type="button"
+                          title="მომხმარებლის გვერდი"
+                          (click)="openPlayer(b, $event)"
+                        >
+                          {{ displayName(b) || '—' }}
+                        </button>
                       } @else {
-                        {{ b.customerName || '—' }}
+                        {{ displayName(b) || '—' }}
+                      }
+                      @if (b.note) {
+                        <span class="ss-tip ml-1" tabindex="0" [attr.data-tip]="b.note">
+                          <i
+                            class="ss-ic cell-info"
+                            style="--ss-ic: url('assets/taiga-ui/icons/info.svg')"
+                          ></i>
+                        </span>
                       }
                     </td>
                     <td class="p-2 whitespace-nowrap">
@@ -478,16 +514,14 @@
                       </td>
                     }
                     <td class="p-2">
-                      <tui-chip size="xs" [appearance]="statusChipAppearance(b.status)">
+                      <span [class]="statusBadgeClass(b.status)">
                         <span class="georgian-text" lang="ka">{{ statusLabels[b.status] }}</span>
-                      </tui-chip>
+                      </span>
                     </td>
                     <td class="p-2 text-right">
                       @if (b.status === 'confirmed') {
                         <button
-                          tuiButton
-                          size="xs"
-                          appearance="flat"
+                          class="ss-btn ss-btn--flat ss-btn--s"
                           type="button"
                           (click)="cancelFromList(b)"
                         >
@@ -504,9 +538,7 @@
           <!-- Pagination -->
           <div class="flex items-center justify-end gap-3 mt-4">
             <button
-              tuiButton
-              size="s"
-              appearance="flat"
+              class="ss-btn ss-btn--outline ss-btn--s"
               type="button"
               [disabled]="listPage() === 1"
               (click)="prevListPage()"
@@ -517,9 +549,7 @@
               {{ listPage() }}
             </span>
             <button
-              tuiButton
-              size="s"
-              appearance="flat"
+              class="ss-btn ss-btn--outline ss-btn--s"
               type="button"
               [disabled]="listPage() * listLimit >= listTotal()"
               (click)="nextListPage()"
@@ -530,10 +560,40 @@
         }
       }
     }
-  } @else if (facilities().length > 1) {
-    <div class="flex flex-col items-center justify-center py-16">
-      <tui-icon icon="@lucide.building-2" class="w-32 h-32 opacity-50 mb-6"></tui-icon>
-      <p class="text-lg text-gray-500 georgian-text" lang="ka">აირჩიეთ ობიექტი ჯავშნების სანახავად</p>
+  }
+
+  <!-- ── Floating selection bar (multi-slot create) ── -->
+  @if (selectionInfo(); as info) {
+    <div class="select-bar" role="dialog" aria-live="polite">
+      <div class="sb-info">
+        <span class="sb-strong georgian-text" lang="ka">{{ info.courtLabel }}</span>
+        <span class="sb-sep">·</span>
+        <span>{{ info.date }}</span>
+        <span class="sb-sep">·</span>
+        <span class="sb-strong">{{ info.start }}–{{ info.end }}</span>
+        <span class="sb-sep">·</span>
+        <span>{{ info.minutes }} წთ</span>
+        @if (info.priceGel > 0) {
+          <span class="sb-sep">·</span>
+          <span class="sb-strong">{{ info.priceGel }}₾</span>
+        }
+        @if (!info.canContinue) {
+          <span class="sb-hint georgian-text" lang="ka">აირჩიეთ მინ. 60 წუთი</span>
+        }
+      </div>
+      <div class="sb-actions">
+        <button class="ss-btn ss-btn--flat ss-btn--s" type="button" (click)="clearSelection()">
+          <span class="georgian-text" lang="ka">გასუფთავება</span>
+        </button>
+        <button
+          class="ss-btn ss-btn--primary ss-btn--s"
+          type="button"
+          [disabled]="!info.canContinue"
+          (click)="openSelectionDialog()"
+        >
+          <span class="georgian-text" lang="ka">გაგრძელება</span>
+        </button>
+      </div>
     </div>
   }
 </div>

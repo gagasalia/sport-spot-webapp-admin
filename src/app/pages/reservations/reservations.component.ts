@@ -3,7 +3,6 @@ import {
   Component,
   DestroyRef,
   HostListener,
-  Injector,
   OnInit,
   computed,
   inject,
@@ -12,71 +11,76 @@ import {
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { forkJoin, of, take } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { TuiAlertService } from '@taiga-ui/core';
-import { type TuiStringHandler, TuiDay } from '@taiga-ui/cdk';
-import { TuiInputDate } from '@taiga-ui/kit/components/input-date';
-import { TUI_CONFIRM, type TuiConfirmData } from '@taiga-ui/kit';
-import { PolymorpheusComponent } from '@taiga-ui/polymorpheus';
-import { TuiDialogService } from '@taiga-ui/experimental';
-import { SHARED_TAIGA_IMPORTS } from '../../shared/shared.module';
 import { BookingService } from '../../services/http-services/booking.service';
 import { CourtService } from '../../services/http-services/court.service';
 import { FacilityService } from '../../services/http-services/facility.service';
+import { ScheduleService } from '../../services/http-services/schedule.service';
 import { TenantService } from '../../shared/services/tenant.service';
 import { AuthService } from '../../shared/services/auth.service';
 import { tetriToGel } from '../../shared/utils/money.util';
 import { Court } from '../../shared/models/court.model';
 import { Facility } from '../../shared/models/facility.model';
+import { FacilityScheduleDTO } from '../../shared/models/schedule.model';
+import { Booking, BookingStatus, BookingUserRef } from '../../shared/models/booking.model';
 import {
-  AvailabilityByCourt,
-  Booking,
-  BookingStatus,
-} from '../../shared/models/booking.model';
-import {
+  CellRef,
   DayGrid,
   GridCell,
   GridCourt,
+  Selection,
   WeekDayData,
   WeekGrid,
   buildDayGrid,
   buildWeekGrid,
+  hhmmToMinutes,
+  isBookableDuration,
+  minutesToHHmm,
+  priceForWindow,
+  selectionMinutes,
+  toggleCell,
 } from './calendar-grid';
-import {
-  isoToTuiDay,
-  shiftIso,
-  todayIso,
-  tuiDayToIso,
-  weekDates,
-} from './calendar-date.util';
+import { shiftIso, todayIso, weekDates } from './calendar-date.util';
 import {
   BookingDialogComponent,
   BookingDialogData,
-  SlotOption,
 } from './booking-dialog/booking-dialog.component';
 
+import { SsToastService } from '../../shared/ui/toast.service';
+import { SsConfirmComponent, SsConfirmData } from '../../shared/ui/confirm.component';
+import { SsDialogService } from '../../shared/ui/dialog.service';
 type CalendarTab = 'day' | 'week' | 'list';
 
+/** One chip on the horizontal date rail. */
+interface DateOption {
+  iso: string; // "YYYY-MM-DD"
+  dayNum: string; // "31"
+  label: string; // დღეს / ხვალ / weekday short
+}
+
+/** Days shown on the date rail (today + 13). Further dates use the datepicker. */
+const DATE_RAIL_DAYS = 14;
+
+/** Georgian 3-letter weekday names, Monday=0. */
+const WEEKDAY_SHORT = ['ორშ', 'სამ', 'ოთხ', 'ხუთ', 'პარ', 'შაბ', 'კვი'];
+
 /**
- * Operator calendar (Phase 4, design §5). Resurrects the `/reservations` nav
- * item. Day view is the primary surface: a CSS-grid table of active courts ×
- * the facility's slot grid. Week view (one court × 7 days) and a filtered list
- * view are secondary tabs. All grid math lives in the pure `calendar-grid`
- * module; this component owns I/O, state signals and the create/cancel/pay flows.
+ * Operator calendar. Day view is the primary surface: a CSS-table of active
+ * courts × the facility's 30-minute cell grid, built from the SCHEDULE
+ * (hours/holidays/pricing) + the day's bookings — see `calendar-grid.ts`.
+ * Facility, date and (week/mobile) court pickers are single-select chip rails;
+ * adjacent free cells are multi-selectable and a floating bar opens the create
+ * dialog for the whole range. Week view is one court × 7 days; the list view is
+ * a filtered table. All grid math lives in the pure `calendar-grid` module.
  */
 @Component({
   selector: 'app-reservations',
   standalone: true,
-  imports: [
-    ...SHARED_TAIGA_IMPORTS,
-    CommonModule,
-    ReactiveFormsModule,
-    FormsModule,
-    ...TuiInputDate,
-  ],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './reservations.component.html',
+  styleUrl: './reservations.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReservationsComponent implements OnInit {
@@ -86,10 +90,10 @@ export class ReservationsComponent implements OnInit {
   protected readonly isSuperAdmin = this.auth.isSuperAdmin;
   private readonly courtService = inject(CourtService);
   private readonly facilityService = inject(FacilityService);
+  private readonly scheduleService = inject(ScheduleService);
   private readonly tenant = inject(TenantService);
-  private readonly alerts = inject(TuiAlertService);
-  private readonly dialogs = inject(TuiDialogService);
-  private readonly injector = inject(Injector);
+  private readonly alerts = inject(SsToastService);
+  private readonly dialogs = inject(SsDialogService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -98,28 +102,28 @@ export class ReservationsComponent implements OnInit {
   readonly facilities = signal<Facility[]>([]);
   readonly courts = signal<Court[]>([]);
   readonly selectedFacilityId = signal<string | null>(null);
-  readonly facilityControl = new FormControl<string | null>(null);
+  readonly schedule = signal<FacilityScheduleDTO | null>(null);
 
   readonly tab = signal<CalendarTab>('day');
   readonly isMobile = signal(false);
 
-  // ── day view state ───────────────────────────────────────────────────────────
+  // ── date state ───────────────────────────────────────────────────────────────
   readonly selectedDate = signal<string>(todayIso());
-  // Nullable + non-null-asserted initial TuiDay so the TuiInputDate control
-  // accessor renders the selected date (today by default) in the textfield —
-  // previously typed as `FormControl<TuiDay>`, which left the field blank.
-  readonly dateControl = new FormControl<TuiDay | null>(isoToTuiDay(todayIso()));
+  /**
+   * Native datepicker for dates beyond the rail; kept in sync with the rail.
+   * Holds a "YYYY-MM-DD" string — the native `<input type="date">` value format.
+   */
+  readonly dateControl = new FormControl<string>(todayIso(), { nonNullable: true });
+  readonly dateOptions: DateOption[] = this.buildDateOptions();
+
   readonly dayBookings = signal<Booking[]>([]);
-  readonly dayAvailability = signal<AvailabilityByCourt>({});
 
   // ── week view state ──────────────────────────────────────────────────────────
   readonly selectedCourtId = signal<string | null>(null);
-  // A real reactive control backs the week / mobile court selectors so the
-  // selected court number renders in the textfield (via `stringifyCourt`). A
-  // one-way `[ngModel]` left the field blank; `[formControl]` + the textfield
-  // `[stringify]` reliably shows the value, mirroring the facility selector.
-  readonly courtControl = new FormControl<string | null>(null);
   readonly weekData = signal<WeekDayData[]>([]);
+
+  // ── multi-cell selection (day + week grids) ──────────────────────────────────
+  readonly selection = signal<Selection>([]);
 
   // ── list view state ──────────────────────────────────────────────────────────
   readonly listBookings = signal<Booking[]>([]);
@@ -127,8 +131,9 @@ export class ReservationsComponent implements OnInit {
   /** One-based page index (matches the `/um/find` + `result.page` convention). */
   readonly listPage = signal<number>(1);
   readonly listLimit = 20;
-  readonly listFrom = new FormControl<TuiDay | null>(null);
-  readonly listTo = new FormControl<TuiDay | null>(null);
+  /** "YYYY-MM-DD" strings; '' = unset (native date inputs clear to ''). */
+  readonly listFrom = new FormControl<string>('', { nonNullable: true });
+  readonly listTo = new FormControl<string>('', { nonNullable: true });
   readonly listCourt = new FormControl<string | null>(null);
   readonly listStatus = new FormControl<BookingStatus | null>(null);
 
@@ -159,13 +164,46 @@ export class ReservationsComponent implements OnInit {
   });
 
   readonly dayGrid = computed<DayGrid>(() =>
-    buildDayGrid(this.visibleDayCourts(), this.dayAvailability(), this.dayBookings()),
+    buildDayGrid(
+      this.visibleDayCourts(),
+      this.selectedDate(),
+      this.schedule(),
+      this.dayBookings(),
+      this.nowMinutesFor(this.selectedDate()),
+    ),
   );
 
   readonly weekGrid = computed<WeekGrid>(() => {
     const courtId = this.selectedCourtId();
     if (!courtId) return { days: [], rows: [] };
-    return buildWeekGrid(courtId, this.weekData());
+    return buildWeekGrid(
+      courtId,
+      this.weekData(),
+      this.schedule(),
+      todayIso(),
+      this.nowMinutesFor(todayIso()),
+    );
+  });
+
+  /** Floating-bar summary of the current selection (null when empty). */
+  readonly selectionInfo = computed(() => {
+    const sel = this.selection();
+    if (sel.length === 0) return null;
+    const minutes = selectionMinutes(sel);
+    const startMin = hhmmToMinutes(sel[0].start);
+    const endMin = startMin + minutes;
+    const priceTetri = priceForWindow(startMin, endMin, this.schedule()?.pricing);
+    return {
+      courtLabel: this.courtLabelById(sel[0].courtId),
+      date: sel[0].date,
+      start: sel[0].start,
+      end: minutesToHHmm(endMin),
+      minutes,
+      priceGel: tetriToGel(priceTetri),
+      priceTetri,
+      canContinue: minutes >= 60,
+      bookable: isBookableDuration(minutes),
+    };
   });
 
   readonly statusOptions: BookingStatus[] = ['confirmed', 'cancelled', 'completed'];
@@ -180,34 +218,14 @@ export class ReservationsComponent implements OnInit {
     return f._id ?? f.id ?? null;
   }
 
-  readonly stringifyFacility: TuiStringHandler<string> = (id) => {
-    const facility = this.facilities().find((f) => this.facilityIdOf(f) === id);
-    if (!facility) return '';
-    return facility.name || facility.description || 'უსახელო ობიექტი';
-  };
-
-  readonly stringifyCourt: TuiStringHandler<string> = (id) => {
-    const court = this.activeCourts().find((c) => c.id === id);
-    return court ? court.label : '';
-  };
-
-  readonly stringifyStatus: TuiStringHandler<BookingStatus> = (s) => this.statusLabels[s] ?? '';
+  facilityLabel(f: Facility): string {
+    return f.name || f.description || 'უსახელო ობიექტი';
+  }
 
   constructor() {
     this.checkMobile();
-    this.facilityControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((id) => {
-      this.onFacilityChange(id);
-    });
-    this.dateControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((day) => {
-      if (day) {
-        this.selectedDate.set(tuiDayToIso(day));
-        this.loadDay();
-      }
-    });
-    // User-driven court changes from the week / mobile selectors flow through
-    // here; programmatic updates use `{ emitEvent: false }` to avoid re-entry.
-    this.courtControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((id) => {
-      this.onCourtSwitch(id);
+    this.dateControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((iso) => {
+      if (iso && iso !== this.selectedDate()) this.goToDate(iso);
     });
   }
 
@@ -230,12 +248,55 @@ export class ReservationsComponent implements OnInit {
   }
 
   setTab(tab: CalendarTab): void {
+    if (tab === this.tab()) return;
     this.tab.set(tab);
+    this.clearSelection();
+    if (tab === 'day') this.loadDay();
     if (tab === 'week') this.loadWeek();
     if (tab === 'list') this.loadList();
   }
 
-  // ── facility resolution (same pattern as the courts page) ────────────────────
+  // ── date rail ────────────────────────────────────────────────────────────────
+  private buildDateOptions(): DateOption[] {
+    const start = todayIso();
+    return Array.from({ length: DATE_RAIL_DAYS }, (_, i) => {
+      const iso = shiftIso(start, i);
+      const [y, m, d] = iso.split('-').map(Number);
+      const weekday = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
+      return {
+        iso,
+        dayNum: String(d).padStart(2, '0'),
+        label: i === 0 ? 'დღეს' : i === 1 ? 'ხვალ' : WEEKDAY_SHORT[weekday],
+      };
+    });
+  }
+
+  /** True when the selected date is not on the rail (picked via the datepicker). */
+  readonly isOffRailDate = computed(
+    () => !this.dateOptions.some((o) => o.iso === this.selectedDate()),
+  );
+
+  selectDate(iso: string): void {
+    if (iso === this.selectedDate()) return;
+    this.goToDate(iso);
+  }
+
+  private goToDate(iso: string): void {
+    this.selectedDate.set(iso);
+    this.dateControl.setValue(iso, { emitEvent: false });
+    this.clearSelection();
+    if (this.tab() === 'week') this.loadWeek();
+    else this.loadDay();
+  }
+
+  /** Facility-local "now" in minutes for past-cell marking; undefined off-today. */
+  private nowMinutesFor(date: string): number | undefined {
+    if (date !== todayIso()) return undefined;
+    const now = new Date();
+    return now.getHours() * 60 + now.getMinutes();
+  }
+
+  // ── facility resolution ─────────────────────────────────────────────────────
   private loadFacilities(): void {
     const academyId = this.tenant.academyId();
     if (!academyId) {
@@ -255,48 +316,36 @@ export class ReservationsComponent implements OnInit {
       });
   }
 
+  /** The first chip is selected by default; a valid ?facilityId= overrides it. */
   private resolveSelection(facilities: Facility[]): void {
     this.route.queryParams.pipe(take(1)).subscribe((params) => {
-      const fromQuery = params['facilityId'];
       if (facilities.length === 0) {
         this.selectFacility(null);
-      } else if (facilities.length === 1) {
-        const fId = this.facilityIdOf(facilities[0]);
-        this.facilityControl.setValue(fId, { emitEvent: false });
-        if (fromQuery !== fId) this.updateQueryParam(fId);
-        this.selectFacility(fId);
-      } else if (fromQuery) {
-        const facility = facilities.find((f) => this.facilityIdOf(f) === fromQuery);
-        const fId = facility ? this.facilityIdOf(facility) : null;
-        this.facilityControl.setValue(fId, { emitEvent: false });
-        if (!facility) this.updateQueryParam(null);
-        this.selectFacility(fId);
-      } else {
-        this.facilityControl.setValue(null, { emitEvent: false });
-        this.selectFacility(null);
+        return;
       }
+      const fromQuery = params['facilityId'];
+      const match = facilities.find((f) => this.facilityIdOf(f) === fromQuery);
+      const fId = match ? this.facilityIdOf(match) : this.facilityIdOf(facilities[0]);
+      if (fromQuery !== fId) this.updateQueryParam(fId);
+      this.selectFacility(fId);
     });
   }
 
-  onFacilityChange(facilityId: string | null): void {
-    this.updateQueryParam(facilityId);
-    this.selectFacility(facilityId);
+  onFacilityChipClick(facility: Facility): void {
+    const fId = this.facilityIdOf(facility);
+    if (fId === this.selectedFacilityId()) return;
+    this.updateQueryParam(fId);
+    this.selectFacility(fId);
   }
 
   private selectFacility(facilityId: string | null): void {
     this.selectedFacilityId.set(facilityId);
     this.courts.set([]);
-    this.setSelectedCourt(null);
+    this.schedule.set(null);
+    this.selectedCourtId.set(null);
+    this.clearSelection();
     if (facilityId) {
       this.loadCourtsThenData(facilityId);
-    }
-  }
-
-  /** Sets the selected court signal and keeps the backing control in sync. */
-  private setSelectedCourt(courtId: string | null): void {
-    this.selectedCourtId.set(courtId);
-    if (this.courtControl.value !== courtId) {
-      this.courtControl.setValue(courtId, { emitEvent: false });
     }
   }
 
@@ -312,15 +361,21 @@ export class ReservationsComponent implements OnInit {
   private loadCourtsThenData(facilityId: string): void {
     this.isLoading.set(true);
     this.hasError.set(false);
-    this.courtService
-      .getCourts(facilityId)
+    forkJoin({
+      courts: this.courtService.getCourts(facilityId),
+      schedule: this.scheduleService
+        .getSchedule(facilityId)
+        .pipe(catchError(() => of<FacilityScheduleDTO | null>(null))),
+    })
       .pipe(take(1))
       .subscribe({
-        next: (courts) => {
+        next: ({ courts, schedule }) => {
           this.courts.set(courts);
-          const firstActive = this.activeCourts()[0]?.id ?? null;
-          this.setSelectedCourt(firstActive);
-          this.loadDay();
+          this.schedule.set(schedule);
+          this.selectedCourtId.set(this.activeCourts()[0]?.id ?? null);
+          if (this.tab() === 'week') this.loadWeek();
+          else if (this.tab() === 'list') this.loadList();
+          else this.loadDay();
         },
         error: () => {
           this.isLoading.set(false);
@@ -337,16 +392,11 @@ export class ReservationsComponent implements OnInit {
     this.isLoading.set(true);
     this.hasError.set(false);
 
-    forkJoin({
-      availability: this.bookingService
-        .getAvailability(facilityId, date)
-        .pipe(catchError(() => of<AvailabilityByCourt>({}))),
-      bookings: this.bookingService.getBookings(facilityId, { date }),
-    })
+    this.bookingService
+      .getBookings(facilityId, { date })
       .pipe(take(1))
       .subscribe({
-        next: ({ availability, bookings }) => {
-          this.dayAvailability.set(availability);
+        next: (bookings) => {
           this.dayBookings.set(bookings.data);
           this.isLoading.set(false);
         },
@@ -366,18 +416,13 @@ export class ReservationsComponent implements OnInit {
     this.goToDate(shiftIso(this.selectedDate(), this.tab() === 'week' ? 7 : 1));
   }
 
-  today(): void {
-    this.goToDate(todayIso());
-  }
-
-  private goToDate(iso: string): void {
-    this.selectedDate.set(iso);
-    this.dateControl.setValue(isoToTuiDay(iso), { emitEvent: false });
-    if (this.tab() === 'week') this.loadWeek();
-    else this.loadDay();
-  }
-
   // ── week view ────────────────────────────────────────────────────────────────
+  /** The Monday-anchored 7-day window containing the selected date. */
+  readonly weekRange = computed(() => {
+    const dates = weekDates(this.selectedDate());
+    return { from: dates[0], to: dates[6] };
+  });
+
   private loadWeek(): void {
     const facilityId = this.selectedFacilityId();
     const courtId = this.selectedCourtId();
@@ -386,29 +431,24 @@ export class ReservationsComponent implements OnInit {
     this.isLoading.set(true);
     this.hasError.set(false);
 
-    // One forkJoin over a flat list of [availability, bookings] pairs (two per day);
-    // we re-associate each result with its date by index, avoiding a nested forkJoin
-    // and the extra `of(date)` inner stream.
-    const requests = dates.flatMap((date) => [
-      this.bookingService
-        .getAvailability(facilityId, date)
-        .pipe(catchError(() => of<AvailabilityByCourt>({}))),
-      this.bookingService
-        .getBookings(facilityId, { date, courtId })
-        .pipe(catchError(() => of({ data: [] as Booking[] }))),
-    ]);
-
-    forkJoin(requests)
+    // ONE ranged request for the whole week (was 7 per-day calls — a burst that
+    // tripped the API's rate limit and re-fired 7 requests on every retry).
+    // limit=200 is the API max; a single court's week never comes close.
+    this.bookingService
+      .getBookings(facilityId, {
+        from: dates[0],
+        to: dates[6],
+        courtId,
+        limit: 200,
+      })
       .pipe(take(1))
       .subscribe({
-        next: (results) => {
-          this.weekData.set(
-            dates.map((date, i) => ({
-              date,
-              availability: results[i * 2] as AvailabilityByCourt,
-              bookings: (results[i * 2 + 1] as { data: Booking[] }).data,
-            })),
-          );
+        next: (res) => {
+          const byDate = new Map<string, Booking[]>(dates.map((d) => [d, []]));
+          for (const b of res.data) {
+            byDate.get(b.date)?.push(b);
+          }
+          this.weekData.set(dates.map((date) => ({ date, bookings: byDate.get(date) ?? [] })));
           this.isLoading.set(false);
         },
         error: () => {
@@ -418,11 +458,12 @@ export class ReservationsComponent implements OnInit {
       });
   }
 
-  onCourtSwitch(courtId: string | null): void {
-    // Guard against redundant 14-call week reloads when a rapid toggle re-selects
-    // the already-active court (distinctUntilChanged for an imperative handler).
+  onCourtChipClick(courtId: string): void {
+    // Guard against redundant 7-call week reloads when a rapid toggle re-selects
+    // the already-active court.
     if (courtId === this.selectedCourtId()) return;
-    this.setSelectedCourt(courtId);
+    this.selectedCourtId.set(courtId);
+    this.clearSelection();
     if (this.tab() === 'week') this.loadWeek();
   }
 
@@ -432,8 +473,8 @@ export class ReservationsComponent implements OnInit {
     const facilityId = this.selectedFacilityId();
     if (!facilityId) return;
     this.listPage.set(page);
-    const from = this.listFrom.value ? tuiDayToIso(this.listFrom.value) : undefined;
-    const to = this.listTo.value ? tuiDayToIso(this.listTo.value) : undefined;
+    const from = this.listFrom.value || undefined;
+    const to = this.listTo.value || undefined;
     this.isLoading.set(true);
     this.hasError.set(false);
 
@@ -482,52 +523,52 @@ export class ReservationsComponent implements OnInit {
 
   // ── cell interactions ────────────────────────────────────────────────────────
   /**
-   * Handle a grid cell click. `date` carries the cell's own day so the week view
-   * (whose cells each belong to a different day) prefills the clicked day rather
-   * than the globally-selected date. The day view omits it and falls back to
-   * `selectedDate()`. `closed` cells are inert (no handler is wired in the template).
+   * Grid cell click: free cells toggle in/out of the multi-slot selection
+   * (adjacent cells on one court+date — see `toggleCell`); booking/block cells
+   * open the cancel flow. `past`/`closed` cells are inert.
    */
-  onCellClick(cell: GridCell, date: string = this.selectedDate()): void {
+  onCellClick(cell: GridCell): void {
     if (cell.kind === 'free') {
-      this.openCreateDialog(cell, date);
+      this.selection.update((sel) =>
+        toggleCell(sel, { courtId: cell.courtId, date: cell.date, start: cell.start }),
+      );
     } else if (cell.booking) {
       this.openBookingActions(cell.booking);
     }
   }
 
-  /** Availability map for a given date: the day view uses the day's map; the week
-   * view looks up the per-day map captured in `weekData`. */
-  private availabilityForDate(date: string): AvailabilityByCourt {
-    if (this.tab() === 'week') {
-      return this.weekData().find((d) => d.date === date)?.availability ?? {};
-    }
-    return this.dayAvailability();
+  isSelected(cell: GridCell): boolean {
+    return this.selection().some(
+      (c) => c.courtId === cell.courtId && c.date === cell.date && c.start === cell.start,
+    );
   }
 
-  private openCreateDialog(cell: GridCell, date: string): void {
-    const facilityId = this.selectedFacilityId();
-    if (!facilityId) return;
-    const courtLabel = this.courtLabelById(cell.courtId);
+  clearSelection(): void {
+    if (this.selection().length > 0) this.selection.set([]);
+  }
 
-    // Later free slots on the same court/day — for the optional multi-slot block.
-    const laterSlots: SlotOption[] = (this.availabilityForDate(date)[cell.courtId] ?? [])
-      .filter((s) => s.start > cell.start)
-      .map((s) => ({ start: s.start, end: s.end }));
+  /** Open the create dialog for the selected contiguous range. */
+  openSelectionDialog(): void {
+    const info = this.selectionInfo();
+    const sel = this.selection();
+    const facilityId = this.selectedFacilityId();
+    if (!info || !info.canContinue || sel.length === 0 || !facilityId) return;
 
     const data: BookingDialogData = {
       facilityId,
-      court: cell.courtId,
-      courtLabel,
-      date,
-      start: cell.start,
-      end: cell.end,
-      priceTetri: cell.priceTetri,
-      laterSlots,
+      court: sel[0].courtId,
+      courtLabel: info.courtLabel,
+      date: info.date,
+      start: info.start,
+      end: info.end,
+      durationMinutes: info.minutes,
+      priceTetri: info.priceTetri,
+      allowBooking: info.bookable,
     };
 
     this.dialogs
-      .open<boolean>(new PolymorpheusComponent(BookingDialogComponent, this.injector), {
-        label: `${courtLabel} · ${cell.start}`,
+      .open<boolean>(BookingDialogComponent, {
+        label: `${info.courtLabel} · ${info.start}–${info.end}`,
         size: 'm',
         dismissible: true,
         closable: true,
@@ -535,7 +576,10 @@ export class ReservationsComponent implements OnInit {
       })
       .pipe(take(1))
       .subscribe((saved) => {
-        if (saved) this.refreshActive();
+        if (saved) {
+          this.clearSelection();
+          this.refreshActive();
+        }
       });
   }
 
@@ -549,14 +593,14 @@ export class ReservationsComponent implements OnInit {
   }
 
   confirmCancel(booking: Booking, content: string): void {
-    const data: TuiConfirmData = {
+    const data: SsConfirmData = {
       content,
       yes: 'დიახ',
       no: 'არა',
       appearance: 'destructive',
     };
     this.dialogs
-      .open<boolean>(TUI_CONFIRM, {
+      .open<boolean>(SsConfirmComponent, {
         label: 'დადასტურება',
         size: 's',
         data,
@@ -587,6 +631,24 @@ export class ReservationsComponent implements OnInit {
 
   markPaid(booking: Booking, event?: Event): void {
     event?.stopPropagation();
+    const data: SsConfirmData = {
+      content: 'ჯავშანი მოინიშნოს გადახდილად?',
+      yes: 'დიახ',
+      no: 'არა',
+    };
+    this.dialogs
+      .open<boolean>(SsConfirmComponent, {
+        label: 'გადახდის დადასტურება',
+        size: 's',
+        data,
+      })
+      .pipe(take(1))
+      .subscribe((confirmed) => {
+        if (confirmed) this.doMarkPaid(booking);
+      });
+  }
+
+  private doMarkPaid(booking: Booking): void {
     this.bookingService
       .markPaid(booking._id)
       .pipe(take(1))
@@ -616,22 +678,67 @@ export class ReservationsComponent implements OnInit {
   }
 
   // ── cell display helpers (kept thin; heavy logic is in calendar-grid) ────────
+  /**
+   * Inline cell title. Notes are NOT inlined — they surface via the info-icon
+   * tooltip (`cellNote`) so every cell stays one clean line.
+   */
   cellLabel(cell: GridCell): string {
-    if (cell.kind === 'free') return '';
     const b = cell.booking;
     if (!b) return '';
-    if (b.type === 'block') return b.note || 'დაბლოკილი';
-    return b.customerName || b.note || 'მომხმარებელი';
+    if (b.type === 'block') return 'დაბლოკილია';
+    return this.displayName(b) ?? 'ჯავშანი';
+  }
+
+  // ── player identity (populated on operator reads) ────────────────────────────
+  /** The populated player ref, or null for manual/legacy rows. */
+  bookingPlayer(b: Booking): BookingUserRef | null {
+    return b.user && typeof b.user === 'object' ? b.user : null;
+  }
+
+  /** Who the slot belongs to: manual customerName or the player's name. */
+  displayName(b: Booking): string | null {
+    if (b.customerName) return b.customerName;
+    const u = this.bookingPlayer(b);
+    if (!u) return null;
+    const parts = [u.firstName, u.lastName].filter(Boolean);
+    return parts.length > 0 ? parts.join(' ') : null;
+  }
+
+  /** Open the player's customer page (list row link / cell profile button). */
+  openPlayer(b: Booking, event?: Event): void {
+    event?.stopPropagation();
+    const u = this.bookingPlayer(b);
+    if (u) void this.router.navigate(['/customers', u._id]);
+  }
+
+  /** Operator note / block reason shown in the cell's info tooltip. */
+  cellNote(cell: GridCell): string | null {
+    return cell.booking?.note || null;
+  }
+
+  /** Color-group class of a cell (free/user/admin/block/past/closed/selected). */
+  cellClass(cell: GridCell): string {
+    switch (cell.kind) {
+      case 'free':
+        return this.isSelected(cell) ? 'cal-cell cell-free is-selected' : 'cal-cell cell-free';
+      case 'booking':
+        return cell.byUser ? 'cal-cell cell-user' : 'cal-cell cell-admin';
+      case 'block':
+        return 'cal-cell cell-block';
+      case 'past':
+        return 'cal-cell cell-past';
+      default:
+        return 'cal-cell cell-closed';
+    }
   }
 
   cellPriceGel(cell: GridCell): number | null {
-    if (cell.kind === 'free' && cell.priceTetri != null) {
-      return tetriToGel(cell.priceTetri);
-    }
-    if (cell.booking?.priceTetri != null) {
-      return tetriToGel(cell.booking.priceTetri);
-    }
-    return null;
+    return cell.priceTetri != null ? tetriToGel(cell.priceTetri) : null;
+  }
+
+  /** Duration of a booking/block span in minutes (for the cell subtitle). */
+  cellSpanMinutes(cell: GridCell): number {
+    return hhmmToMinutes(cell.end) - hhmmToMinutes(cell.start);
   }
 
   bookingPriceGel(booking: Booking): number | null {
@@ -647,15 +754,31 @@ export class ReservationsComponent implements OnInit {
     return cell.booking?.paymentStatus === 'paid';
   }
 
+  /** "31 ივლ" — compact week-column header. */
+  weekDayLabel(iso: string): string {
+    const [, m, d] = iso.split('-').map(Number);
+    const months = ['იან', 'თებ', 'მარ', 'აპრ', 'მაი', 'ივნ', 'ივლ', 'აგვ', 'სექ', 'ოქტ', 'ნოე', 'დეკ'];
+    return `${d} ${months[m - 1]}`;
+  }
+
+  weekdayShortOf(iso: string): string {
+    const [y, m, d] = iso.split('-').map(Number);
+    const weekday = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
+    return WEEKDAY_SHORT[weekday];
+  }
+
+  isToday(iso: string): boolean {
+    return iso === todayIso();
+  }
+
   /**
-   * List-view status chip appearance: cancelled → destructive, completed →
-   * neutral (a played-out booking is past, not an active green one), confirmed →
-   * positive.
+   * List-view status badge: cancelled → negative, completed → neutral (a
+   * played-out booking is past, not an active green one), confirmed → positive.
    */
-  statusChipAppearance(status: BookingStatus): 'destructive' | 'neutral' | 'positive' {
-    if (status === 'cancelled') return 'destructive';
-    if (status === 'completed') return 'neutral';
-    return 'positive';
+  statusBadgeClass(status: BookingStatus): string {
+    if (status === 'cancelled') return 'ss-badge ss-badge--negative';
+    if (status === 'completed') return 'ss-badge ss-badge--neutral';
+    return 'ss-badge ss-badge--positive';
   }
 
   navigateToFacilities(): void {

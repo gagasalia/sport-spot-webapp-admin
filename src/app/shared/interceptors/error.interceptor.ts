@@ -1,11 +1,11 @@
 import { HttpContextToken, HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { TuiAlertService } from '@taiga-ui/core';
 import { catchError, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../services/auth.service';
 import { TenantService } from '../services/tenant.service';
+import { SsToastService } from '../ui/toast.service';
 
 /**
  * Per-request opt-out of the generic Georgian error toast. Set it on a request
@@ -16,7 +16,7 @@ import { TenantService } from '../services/tenant.service';
 export const SKIP_ERROR_TOAST = new HttpContextToken<boolean>(() => false);
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
-  const alerts = inject(TuiAlertService);
+  const alerts = inject(SsToastService);
   const auth = inject(AuthService);
   const tenant = inject(TenantService);
   const router = inject(Router);

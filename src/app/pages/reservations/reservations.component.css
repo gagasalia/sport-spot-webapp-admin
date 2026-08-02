@@ -1,0 +1,448 @@
+/* ── chip rails (facility / court / date) ─────────────────────────────────── */
+.chip-rail {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+.chip-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.pick-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--tui-border-normal);
+  background: var(--tui-background-base);
+  color: var(--tui-text-primary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.pick-chip:hover {
+  border-color: var(--tui-border-hover);
+}
+.pick-chip.is-active {
+  background: var(--tui-background-accent-1-pale, rgba(82, 109, 255, 0.12));
+  border-color: var(--tui-background-accent-1);
+  color: var(--tui-text-action);
+  font-weight: 600;
+}
+.chip-ic {
+  font-size: 14px;
+  block-size: 14px;
+  inline-size: 14px;
+}
+
+/* date rail — user-side chip style: weekday label over the day number */
+.date-rail-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.date-chip {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 56px;
+  height: 60px;
+  padding: 0 10px;
+  border-radius: 14px;
+  border: 1px solid var(--tui-border-normal);
+  background: var(--tui-background-base);
+  color: var(--tui-text-primary);
+  cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.date-chip:hover {
+  border-color: var(--tui-border-hover);
+}
+.date-chip:active {
+  transform: scale(0.95);
+}
+.date-chip .dow {
+  font-size: 11px;
+  color: var(--tui-text-secondary);
+}
+.date-chip .dnum {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+}
+.date-chip.is-active {
+  background: var(--tui-background-accent-1-pale, rgba(82, 109, 255, 0.12));
+  border-color: var(--tui-background-accent-1);
+}
+.date-chip.is-active .dow {
+  color: var(--tui-text-action);
+}
+
+/* datepicker for off-rail dates */
+.date-picker {
+  flex: 0 0 auto;
+  width: 160px;
+}
+.date-picker .ss-input {
+  width: 100%;
+}
+.date-picker.is-active .ss-input {
+  box-shadow: 0 0 0 2px var(--tui-background-accent-1);
+}
+
+/* List-view filter fields (dates + selects) share a compact fixed width. */
+.list-filter {
+  flex: 0 0 auto;
+  width: 170px;
+}
+
+/* ── segmented tabs ───────────────────────────────────────────────────────── */
+.seg-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--tui-background-neutral-1);
+}
+.seg-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--tui-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.seg-tab.is-active {
+  background: var(--tui-background-base);
+  color: var(--tui-text-action);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+}
+.seg-ic {
+  font-size: 14px;
+  block-size: 14px;
+  inline-size: 14px;
+}
+
+.week-range {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tui-text-primary);
+  min-width: 140px;
+  text-align: center;
+}
+
+/* ── legend ───────────────────────────────────────────────────────────────── */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--tui-text-secondary);
+}
+.lg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.lg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+}
+.dot-free {
+  background: var(--tui-status-positive-pale);
+  box-shadow: inset 0 0 0 1px var(--tui-status-positive);
+}
+.dot-user {
+  background: var(--tui-status-info-pale);
+  box-shadow: inset 0 0 0 1px var(--tui-status-info);
+}
+.dot-admin {
+  background: rgba(139, 92, 246, 0.18);
+  box-shadow: inset 0 0 0 1px #8b5cf6;
+}
+.dot-block {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--tui-background-neutral-1),
+    var(--tui-background-neutral-1) 3px,
+    var(--tui-background-neutral-2) 3px,
+    var(--tui-background-neutral-2) 6px
+  );
+  box-shadow: inset 0 0 0 1px var(--tui-border-normal);
+}
+.dot-closed {
+  background: var(--tui-background-neutral-1);
+  opacity: 0.6;
+}
+
+/* ── calendar grid ────────────────────────────────────────────────────────── */
+.cal-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 4px;
+  font-size: 12px;
+}
+.cal-table thead th {
+  padding: 6px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tui-text-primary);
+  text-align: center;
+}
+.cal-table thead th .th-date {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--tui-text-secondary);
+}
+.cal-table thead th.today-col,
+.cal-table thead th.today-col .th-date {
+  color: var(--tui-text-action);
+}
+.time-col {
+  width: 48px;
+  min-width: 48px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--tui-text-secondary);
+  text-align: right;
+  padding-right: 6px !important;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.cal-table tbody tr {
+  height: 44px;
+}
+.cal-td {
+  position: relative;
+  padding: 0;
+  vertical-align: top;
+}
+
+/* every cell fills its (possibly row-spanning) td — identical width & height */
+.cal-cell {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 4px 6px;
+  font: inherit;
+  text-align: left;
+  overflow: hidden;
+  transition:
+    opacity 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+/* free (green) */
+.cell-free {
+  background: var(--tui-status-positive-pale);
+  color: var(--tui-status-positive);
+  cursor: pointer;
+}
+.cell-free:hover {
+  opacity: 0.82;
+}
+.cell-free.is-selected {
+  box-shadow: inset 0 0 0 2px var(--tui-status-positive);
+  font-weight: 700;
+}
+.free-plus {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+.free-price {
+  font-size: 9px;
+  opacity: 0.85;
+  line-height: 1;
+}
+
+/* player booking (blue) */
+.cell-user {
+  background: var(--tui-status-info-pale);
+  color: var(--tui-status-info);
+  cursor: pointer;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+/* operator booking (violet) */
+.cell-admin {
+  background: rgba(139, 92, 246, 0.16);
+  color: #8b5cf6;
+  cursor: pointer;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+/* operator block (striped gray) */
+.cell-block {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--tui-background-neutral-1),
+    var(--tui-background-neutral-1) 6px,
+    var(--tui-background-neutral-2) 6px,
+    var(--tui-background-neutral-2) 12px
+  );
+  color: var(--tui-text-secondary);
+  cursor: pointer;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+/* past / closed (inert) */
+.cell-past,
+.cell-closed {
+  background: var(--tui-background-neutral-1);
+  color: var(--tui-text-tertiary, var(--tui-text-secondary));
+  opacity: 0.45;
+  cursor: not-allowed;
+  font-size: 11px;
+}
+
+/* occupied-cell internals */
+.cell-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+}
+.cell-title {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.cell-info {
+  flex: 0 0 auto;
+  font-size: 14px;
+  block-size: 14px;
+  inline-size: 14px;
+  cursor: help;
+  opacity: 0.8;
+}
+.cell-info:hover {
+  opacity: 1;
+}
+.cell-sub {
+  font-size: 10px;
+  opacity: 0.75;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.cell-foot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+/* ── floating multi-select bar ────────────────────────────────────────────── */
+.select-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  max-width: min(92vw, 720px);
+  padding: 10px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--tui-border-normal);
+  background: var(--tui-background-elevation-2, var(--tui-background-base));
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.28);
+  animation: sb-in 0.18s ease;
+}
+@keyframes sb-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+.sb-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--tui-text-secondary);
+}
+.sb-strong {
+  font-weight: 700;
+  color: var(--tui-text-primary);
+}
+.sb-sep {
+  opacity: 0.5;
+}
+.sb-hint {
+  margin-left: 6px;
+  font-size: 11px;
+  color: var(--tui-status-warning);
+  font-weight: 600;
+}
+.sb-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* player name → customer page link (list view) */
+.player-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--tui-text-action);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 0.15s ease;
+}
+.player-link:hover {
+  text-decoration-color: currentColor;
+}

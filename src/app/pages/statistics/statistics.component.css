@@ -1,0 +1,240 @@
+/* ── filter card ──────────────────────────────────────────────────────────── */
+.filter-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.filter-dates {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.filter-dates .ss-input {
+  width: 150px;
+}
+.date-sep {
+  color: var(--text-faint);
+}
+.filter-selects {
+  gap: 12px;
+}
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 160px;
+  min-width: 150px;
+  max-width: 230px;
+}
+
+/* chips — same look as the reservations picker chips */
+.chip-rail {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+.chip-rail::-webkit-scrollbar {
+  display: none;
+}
+.pick-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--tui-border-normal);
+  background: var(--tui-background-base);
+  color: var(--tui-text-primary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.pick-chip:hover {
+  border-color: var(--tui-border-hover);
+}
+.pick-chip.is-active {
+  background: var(--tui-background-accent-1-pale, rgba(124, 108, 246, 0.12));
+  border-color: var(--tui-background-accent-1);
+  color: var(--tui-text-action);
+  font-weight: 600;
+}
+
+/* ── view tabs (reservations seg-tab look, wrapping for 6 items) ──────────── */
+.seg-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--tui-background-neutral-1);
+}
+.seg-tabs--wrap {
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.seg-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: var(--tui-text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.seg-tab.is-active {
+  background: var(--tui-background-base);
+  color: var(--tui-text-action);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+}
+.seg-ic {
+  font-size: 14px;
+  block-size: 14px;
+  inline-size: 14px;
+}
+
+/* ── states ───────────────────────────────────────────────────────────────── */
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--tui-status-negative-pale);
+  color: var(--tui-status-negative);
+}
+.loading-block {
+  display: flex;
+  justify-content: center;
+  padding: 72px 0;
+}
+.empty-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 56px 16px;
+  color: var(--text-muted);
+  text-align: center;
+}
+.empty-ic {
+  inline-size: 56px;
+  block-size: 56px;
+  opacity: 0.4;
+}
+
+/* ── KPI + chart layout ───────────────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+}
+.kpi-grid--3 {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+.compare-note {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+.chart-card {
+  padding: 18px;
+  min-width: 0;
+}
+.chart-title {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.chart-foot {
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.table-card {
+  padding: 6px;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* occupancy meter cell */
+.occ-meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 130px;
+}
+.occ-track {
+  flex: 1 1 auto;
+  height: 7px;
+  min-width: 64px;
+  border-radius: 999px;
+  background: var(--tui-background-neutral-1);
+  overflow: hidden;
+}
+.occ-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+.occ-val {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* heatmap intensity legend */
+.heat-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+.heat-scale {
+  flex: 0 0 120px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(124, 108, 246, 0.12),
+    rgba(124, 108, 246, 1)
+  );
+}

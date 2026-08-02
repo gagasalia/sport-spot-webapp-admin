@@ -13,18 +13,12 @@ import {
   ReactiveFormsModule,
   Validators,
   FormsModule,
-  FormControl,
   AbstractControl,
   ValidationErrors,
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { take } from 'rxjs';
-import { TuiAlertService, TuiCalendar } from '@taiga-ui/core';
-import { type TuiStringHandler, EMPTY_ARRAY, TuiDay } from '@taiga-ui/cdk';
-import { type TuiMarkerHandler } from '@taiga-ui/core';
-import { TuiInputDateMulti } from '@taiga-ui/kit';
-import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { ScheduleService } from '../../../services/http-services/schedule.service';
 import { FacilityService } from '../../../services/http-services/facility.service';
 import { TenantService } from '../../../shared/services/tenant.service';
@@ -39,6 +33,7 @@ import {
 import { Facility } from '../../../shared/models/facility.model';
 import { Day, DAY_LABELS } from '../../../shared/enums/day.enum';
 
+import { SsToastService } from '../../../shared/ui/toast.service';
 /** Validates that a group's `endHour:endMinute` is strictly after `startHour:startMinute`. */
 function endAfterStartValidator(
   startHourKey = 'startHour',
@@ -58,17 +53,16 @@ function endAfterStartValidator(
   };
 }
 
+/**
+ * Working hours, holidays and pricing — Taiga-free template (ss-* kit). Hour/
+ * minute pickers are native selects with [ngValue] (number-typed values);
+ * holidays use a native date input + removable badge chips instead of the old
+ * TuiInputDateMulti calendar. SsToastService remains for toasts.
+ */
 @Component({
   selector: 'app-working-hours-and-prices',
   standalone: true,
-  imports: [
-    ...SHARED_TAIGA_IMPORTS,
-    ReactiveFormsModule,
-    CommonModule,
-    FormsModule,
-    TuiInputDateMulti,
-    TuiCalendar,
-  ],
+  imports: [ReactiveFormsModule, CommonModule, FormsModule],
   templateUrl: './working-hours-and-prices.component.html',
   styleUrls: ['./working-hours-and-prices.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -78,7 +72,7 @@ export class WorkingHoursAndPricesComponent implements OnInit {
   private readonly scheduleService = inject(ScheduleService);
   private readonly facilityService = inject(FacilityService);
   private readonly tenant = inject(TenantService);
-  private readonly alerts = inject(TuiAlertService);
+  private readonly alerts = inject(SsToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
@@ -91,20 +85,19 @@ export class WorkingHoursAndPricesComponent implements OnInit {
   isLoading = signal<boolean>(false);
   isLoadingFacilities = signal<boolean>(false);
 
-  facilityControl = new FormControl<string | null>(null);
-
   private facilityIdOf(f: Facility): string | null {
     return f._id ?? f.id ?? null;
   }
 
-  readonly stringifyFacility: TuiStringHandler<string> = (id) => {
-    const facility = this.facilities().find((f) => this.facilityIdOf(f) === id);
-    if (!facility) return '';
-    return facility.name || facility.description || 'უსახელო ობიექტი';
-  };
+  facilityLabel(f: Facility): string {
+    return f.name || f.description || 'უსახელო ობიექტი';
+  }
 
-  // Holidays as TuiDay[]; we keep the server holiday docs to address by _id.
-  holidays: TuiDay[] = [];
+  // Picked holiday dates as sorted 'YYYY-MM-DD' strings; the server holiday
+  // docs are kept alongside so removals can be addressed by `_id`.
+  holidays: string[] = [];
+  /** ngModel of the native add-a-holiday date input. */
+  holidayInput = '';
   private serverHolidays: HolidayDTO[] = [];
 
   // Working days selection — derived from / written into weeklyHours
@@ -119,10 +112,17 @@ export class WorkingHoursAndPricesComponent implements OnInit {
     [Day.Sunday]: false,
   };
 
-  readonly markerHandler: TuiMarkerHandler = (day: TuiDay) =>
-    this.holidays.some((holiday) => holiday.daySame(day))
-      ? ['var(--tui-status-negative)']
-      : EMPTY_ARRAY;
+  /** Adds the native date input's value to the picked-holidays set. */
+  addHoliday(): void {
+    const iso = this.holidayInput;
+    if (!iso || this.holidays.includes(iso)) return;
+    this.holidays = [...this.holidays, iso].sort();
+    this.holidayInput = '';
+  }
+
+  removeHoliday(iso: string): void {
+    this.holidays = this.holidays.filter((d) => d !== iso);
+  }
 
   // Group days: Weekdays (Mon-Fri), Saturday, Sunday
   readonly dayGroups = [
@@ -149,15 +149,8 @@ export class WorkingHoursAndPricesComponent implements OnInit {
   readonly hours = Array.from({ length: 24 }, (_, i) => i);
   readonly minutes = [0, 30];
 
-  readonly stringifyHour: TuiStringHandler<number> = (hour) => hour.toString().padStart(2, '0');
-  readonly stringifyMinute: TuiStringHandler<number> = (minute) =>
-    minute.toString().padStart(2, '0');
-
-  constructor() {
-    this.facilityControl.valueChanges.pipe(takeUntilDestroyed()).subscribe((facilityId) => {
-      this.onFacilityChange(facilityId);
-    });
-  }
+  readonly stringifyHour = (hour: number): string => hour.toString().padStart(2, '0');
+  readonly stringifyMinute = (minute: number): string => minute.toString().padStart(2, '0');
 
   ngOnInit(): void {
     this.initializePricesForm();
@@ -194,45 +187,29 @@ export class WorkingHoursAndPricesComponent implements OnInit {
       });
   }
 
+  /** The first chip is selected by default; a valid ?facilityId= overrides it. */
   private resolveSelection(facilities: Facility[]): void {
     this.route.queryParams.pipe(take(1)).subscribe((params) => {
-      const facilityIdFromQuery = params['facilityId'];
-
       if (facilities.length === 0) {
         this.selectedFacilityId.set(null);
-        this.facilityControl.setValue(null, { emitEvent: false });
-      } else if (facilities.length === 1) {
-        const fId = this.facilityIdOf(facilities[0]);
-        this.selectedFacilityId.set(fId);
-        this.facilityControl.setValue(fId, { emitEvent: false });
-        if (facilityIdFromQuery !== fId) {
-          this.updateQueryParam(fId);
-        }
-        if (fId) this.loadScheduleForFacility(fId);
-      } else if (facilityIdFromQuery) {
-        const facility = facilities.find((f) => this.facilityIdOf(f) === facilityIdFromQuery);
-        if (facility) {
-          const fId = this.facilityIdOf(facility);
-          this.selectedFacilityId.set(fId);
-          this.facilityControl.setValue(fId, { emitEvent: false });
-          if (fId) this.loadScheduleForFacility(fId);
-        } else {
-          this.selectedFacilityId.set(null);
-          this.facilityControl.setValue(null, { emitEvent: false });
-          this.updateQueryParam(null);
-        }
-      } else {
-        this.selectedFacilityId.set(null);
-        this.facilityControl.setValue(null, { emitEvent: false });
+        return;
       }
+      const fromQuery = params['facilityId'];
+      const match = facilities.find((f) => this.facilityIdOf(f) === fromQuery);
+      const fId = match ? this.facilityIdOf(match) : this.facilityIdOf(facilities[0]);
+      if (fromQuery !== fId) this.updateQueryParam(fId);
+      this.selectedFacilityId.set(fId);
+      if (fId) this.loadScheduleForFacility(fId);
     });
   }
 
-  onFacilityChange(facilityId: string | null): void {
-    this.selectedFacilityId.set(facilityId);
-    this.updateQueryParam(facilityId);
-    if (facilityId) {
-      this.loadScheduleForFacility(facilityId);
+  onFacilityChipClick(facility: Facility): void {
+    const fId = this.facilityIdOf(facility);
+    if (fId === this.selectedFacilityId()) return;
+    this.selectedFacilityId.set(fId);
+    this.updateQueryParam(fId);
+    if (fId) {
+      this.loadScheduleForFacility(fId);
     } else {
       this.schedule.set(null);
       this.scheduleForm = null!;
@@ -327,10 +304,7 @@ export class WorkingHoursAndPricesComponent implements OnInit {
 
   private applyHolidays(schedule: FacilityScheduleDTO): void {
     this.serverHolidays = schedule.holidays ?? [];
-    this.holidays = this.serverHolidays.map((h) => {
-      const [year, month, day] = h.date.split('-').map(Number);
-      return new TuiDay(year, month - 1, day);
-    });
+    this.holidays = this.serverHolidays.map((h) => h.date).sort();
   }
 
   private initializePricesForm(): void {
@@ -445,13 +419,6 @@ export class WorkingHoursAndPricesComponent implements OnInit {
     this.onSave();
   }
 
-  private tuiDayToIso(day: TuiDay): string {
-    const year = day.year;
-    const month = (day.month + 1).toString().padStart(2, '0');
-    const dayNum = day.day.toString().padStart(2, '0');
-    return `${year}-${month}-${dayNum}`;
-  }
-
   /**
    * Reconciles the picked holiday dates against the server's holiday subdocs:
    * deletes removed ones by `_id`, adds new ones. The schedule resource is the
@@ -461,7 +428,7 @@ export class WorkingHoursAndPricesComponent implements OnInit {
     const facilityId = this.selectedFacilityId();
     if (!facilityId) return;
 
-    const pickedIso = new Set(this.holidays.map((d) => this.tuiDayToIso(d)));
+    const pickedIso = new Set(this.holidays);
     const existingIso = new Set(this.serverHolidays.map((h) => h.date));
 
     // A server holiday the user un-picked should be deleted — but we can only

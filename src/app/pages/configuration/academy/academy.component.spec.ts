@@ -5,7 +5,6 @@ import { Router } from '@angular/router';
 import { of, throwError, Subject } from 'rxjs';
 import { provideAnimations } from '@angular/platform-browser/animations';
 
-import { TuiAlertService } from '@taiga-ui/core';
 
 import { AcademyComponent } from './academy.component';
 import { AcademyService } from '../../../services/http-services/academy.service';
@@ -14,6 +13,7 @@ import { TenantService } from '../../../shared/services/tenant.service';
 import { Academy, AcademyStatus } from '../../../shared/models/academy.model';
 import { SportType } from '../../../shared/enums/court-type.enum';
 
+import { SsToastService } from '../../../shared/ui/toast.service';
 // ─── Test data ────────────────────────────────────────────────────────────────
 
 const mockAcademy: Academy = {
@@ -36,7 +36,7 @@ describe('AcademyComponent', () => {
   let fixture: ComponentFixture<AcademyComponent>;
   let academyServiceSpy: jasmine.SpyObj<AcademyService>;
   let tenantServiceSpy: jasmine.SpyObj<TenantService>;
-  let alertServiceSpy: jasmine.SpyObj<TuiAlertService>;
+  let alertServiceSpy: jasmine.SpyObj<SsToastService>;
   let routerSpy: jasmine.SpyObj<Router>;
 
   function makeTenantSpy(academyData?: Academy) {
@@ -60,7 +60,7 @@ describe('AcademyComponent', () => {
       'updateAcademy',
     ]);
     tenantServiceSpy = makeTenantSpy(academyData);
-    alertServiceSpy = jasmine.createSpyObj('TuiAlertService', ['open']);
+    alertServiceSpy = jasmine.createSpyObj('SsToastService', ['open']);
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
 
     alertServiceSpy.open.and.returnValue(of(undefined) as any);
@@ -72,7 +72,7 @@ describe('AcademyComponent', () => {
         { provide: AcademyService, useValue: academyServiceSpy },
         { provide: MediaService, useValue: jasmine.createSpyObj('MediaService', ['upload']) },
         { provide: TenantService, useValue: tenantServiceSpy },
-        { provide: TuiAlertService, useValue: alertServiceSpy },
+        { provide: SsToastService, useValue: alertServiceSpy },
         { provide: Router, useValue: routerSpy },
       ],
       schemas: [NO_ERRORS_SCHEMA],

@@ -12,8 +12,6 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { take } from 'rxjs';
-import { TuiAlertService } from '@taiga-ui/core';
-import { SHARED_TAIGA_IMPORTS } from '../../../shared/shared.module';
 import { AcademyService } from '../../../services/http-services/academy.service';
 import {
   MediaService,
@@ -30,13 +28,15 @@ import { TenantService } from '../../../shared/services/tenant.service';
 import { SportType } from '../../../shared/enums/court-type.enum';
 import { gelToTetri, tetriToGel } from '../../../shared/utils/money.util';
 
+import { SsToastService } from '../../../shared/ui/toast.service';
 /** A padel game needs 4 rackets (docs/20) — the academy decides how many are included. */
 const PADEL_MAX_RACKETS = 4;
 
+/** Academy configuration — Taiga-free template (ss-* kit; alerts stay for toasts). */
 @Component({
   selector: 'app-academy',
   standalone: true,
-  imports: [...SHARED_TAIGA_IMPORTS, ReactiveFormsModule, CommonModule],
+  imports: [ReactiveFormsModule, CommonModule],
   templateUrl: './academy.component.html',
   styleUrls: ['./academy.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,7 +53,7 @@ export class AcademyComponent implements OnInit {
   private readonly mediaService = inject(MediaService);
   private readonly fb = inject(FormBuilder);
   private readonly academyService = inject(AcademyService);
-  private readonly alerts = inject(TuiAlertService);
+  private readonly alerts = inject(SsToastService);
   private readonly router = inject(Router);
   private readonly cdr = inject(ChangeDetectorRef);
 

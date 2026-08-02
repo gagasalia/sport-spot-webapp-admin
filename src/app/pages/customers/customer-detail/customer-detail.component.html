@@ -1,0 +1,252 @@
+<div class="pt-8 p-0 sm:p-8">
+  <a class="back-link mb-4" routerLink="/customers">
+    <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/chevron-down.svg'); transform: rotate(90deg)"></i>
+    <span class="georgian-text" lang="ka">მომხმარებლები</span>
+  </a>
+
+  @if (hasError()) {
+    <div class="ss-card p-6 text-center">
+      <p class="georgian-text mb-3" lang="ka">მომხმარებელი ვერ მოიძებნა</p>
+      <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="load()">
+        <span class="georgian-text" lang="ka">თავიდან ცდა</span>
+      </button>
+    </div>
+  } @else if (isLoading() || !detail()) {
+    <div class="space-y-3 animate-pulse">
+      <div class="h-28 rounded-xl" style="background: var(--tui-background-neutral-1)"></div>
+      <div class="h-24 rounded-xl" style="background: var(--tui-background-neutral-1)"></div>
+      <div class="h-64 rounded-xl" style="background: var(--tui-background-neutral-1)"></div>
+    </div>
+  } @else {
+    @let d = detail()!;
+
+    <!-- Moderation banners -->
+    @if (d.moderation.banned) {
+      <div class="mod-banner mod-banner--danger mb-4" automation-id="banned-banner">
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/shield.svg')"></i>
+        <div>
+          <div class="font-semibold georgian-text" lang="ka">ანგარიში დაბლოკილია</div>
+          <div class="text-sm georgian-text" lang="ka">
+            {{ d.moderation.banReason || '—' }}
+            @if (d.moderation.bannedAt) {
+              · {{ d.moderation.bannedAt | date: 'dd/MM/yyyy HH:mm' }}
+            }
+          </div>
+        </div>
+      </div>
+    } @else if (d.moderation.flagged) {
+      <div class="mod-banner mod-banner--warning mb-4" automation-id="flagged-banner">
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/info.svg')"></i>
+        <div>
+          <div class="font-semibold georgian-text" lang="ka">მონიშნული მომხმარებელი</div>
+          <div class="text-sm georgian-text" lang="ka">{{ d.moderation.flagReason || '—' }}</div>
+        </div>
+      </div>
+    }
+
+    <!-- Profile card -->
+    <div class="ss-card p-5 mb-6">
+      <div class="profile-head">
+        <span class="ss-avatar ss-avatar--l">{{ initials() }}</span>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-2xl font-semibold truncate">{{ fullName() }}</h1>
+          <div class="profile-meta">
+            <span>{{ d.profile.email }}</span>
+            @if (d.profile.phone) {
+              <span>{{ d.profile.phone }}</span>
+            }
+            @if (d.profile.createdAt) {
+              <span class="georgian-text" lang="ka">
+                წევრია {{ d.profile.createdAt | date: 'dd/MM/yyyy' }}-დან
+              </span>
+            }
+          </div>
+          <div class="flex flex-wrap gap-1 mt-2">
+            @if (d.profile.emailVerified) {
+              <span class="ss-badge ss-badge--info georgian-text" lang="ka">ელ. ფოსტა ✓</span>
+            }
+            @if (d.profile.phoneVerified) {
+              <span class="ss-badge ss-badge--info georgian-text" lang="ka">ტელეფონი ✓</span>
+            }
+            @if (isSuperAdmin() && d.profile.balanceTetri != null) {
+              <span class="ss-badge georgian-text" lang="ka">
+                ბალანსი: {{ gel(d.profile.balanceTetri) }}
+              </span>
+            }
+          </div>
+        </div>
+        <div class="profile-actions">
+          <button
+            automation-id="customer-edit"
+            class="ss-btn ss-btn--outline ss-btn--s"
+            type="button"
+            (click)="editContact()"
+          >
+            <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+            <span class="georgian-text" lang="ka">შესწორება</span>
+          </button>
+          @if (d.moderation.flagged) {
+            <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="unflag()">
+              <span class="georgian-text" lang="ka">მონიშვნის მოხსნა</span>
+            </button>
+          } @else {
+            <button
+              automation-id="customer-flag"
+              class="ss-btn ss-btn--outline ss-btn--s"
+              type="button"
+              (click)="flagCustomer()"
+            >
+              <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/info.svg')"></i>
+              <span class="georgian-text" lang="ka">მონიშვნა</span>
+            </button>
+          }
+          @if (d.moderation.banned) {
+            <button
+              automation-id="customer-unban"
+              class="ss-btn ss-btn--primary ss-btn--s"
+              type="button"
+              (click)="unban()"
+            >
+              <span class="georgian-text" lang="ka">განბლოკვა</span>
+            </button>
+          } @else {
+            <button
+              automation-id="customer-ban"
+              class="ss-btn ss-btn--danger ss-btn--s"
+              type="button"
+              (click)="ban()"
+            >
+              <span class="georgian-text" lang="ka">დაბლოკვა</span>
+            </button>
+          }
+          @if (isSuperAdmin()) {
+            <button class="ss-btn ss-btn--flat ss-btn--s" type="button" (click)="openFullAccount()">
+              <span class="georgian-text" lang="ka">სრული ანგარიში</span>
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="kpi-grid mb-6">
+      <ss-kpi-card label="ჯავშნები" [value]="num(d.stats.bookings)" hint="ამ სივრცეში" />
+      <ss-kpi-card label="გაუქმებები" [value]="num(d.stats.cancelled)" [hint]="pct(d.stats.cancelRate)" />
+      <ss-kpi-card label="არ გამოცხადდა" [value]="num(d.stats.noShows)" [hint]="pct(d.stats.noShowRate)" />
+      <ss-kpi-card label="დახარჯული" [value]="gel(d.stats.spentTetri)" hint="წმინდა" />
+      <ss-kpi-card label="მომავალი ჯავშნები" [value]="num(d.stats.upcoming)" />
+      <ss-kpi-card
+        label="ბოლო ჯავშანი"
+        [value]="d.stats.lastBookingAt ? (d.stats.lastBookingAt | date: 'dd/MM/yyyy') ?? '—' : '—'"
+      />
+    </div>
+
+    <div class="detail-grid">
+      <!-- Booking history -->
+      <div class="ss-card p-4 history-card">
+        <h2 class="text-lg font-semibold mb-3 georgian-text" lang="ka">ჯავშნების ისტორია</h2>
+        @if (bookingsLoading()) {
+          <div class="space-y-2 animate-pulse">
+            @for (n of [1, 2, 3, 4]; track n) {
+              <div class="h-10 rounded" style="background: var(--tui-background-neutral-1)"></div>
+            }
+          </div>
+        } @else if (bookingRows().length === 0) {
+          <p class="py-6 text-center georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+            ჯავშნები არ მოიძებნა
+          </p>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="ss-table">
+              <thead>
+                <tr>
+                  <th class="georgian-text" lang="ka">თარიღი</th>
+                  <th class="georgian-text" lang="ka">დრო</th>
+                  <th class="georgian-text" lang="ka">ობიექტი</th>
+                  <th class="georgian-text" lang="ka">ფასი</th>
+                  <th class="georgian-text" lang="ka">გადახდა</th>
+                  <th class="georgian-text" lang="ka">სტატუსი</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of bookingRows(); track row._id) {
+                  <tr>
+                    <td class="whitespace-nowrap">{{ row.date }}</td>
+                    <td class="whitespace-nowrap">{{ row.start }}–{{ row.end }}</td>
+                    <td class="text-sm">
+                      {{ row.facilityName || '—' }}
+                      @if (row.courtNumber != null) {
+                        · კორტი {{ row.courtNumber }}
+                      }
+                    </td>
+                    <td class="whitespace-nowrap">{{ gel(row.priceTetri) }}</td>
+                    <td class="text-sm georgian-text" lang="ka">{{ paymentLabel(row) }}</td>
+                    <td>
+                      <span [class]="statusBadgeClass(row.status)">
+                        <span class="georgian-text" lang="ka">
+                          {{ statusLabels[row.status] || row.status }}
+                        </span>
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (bookingsPages() > 1) {
+            <div class="flex items-center justify-center gap-3 mt-4">
+              <button
+                class="ss-btn ss-btn--outline ss-btn--s"
+                type="button"
+                [disabled]="bookingsPage() === 1"
+                (click)="loadBookings(bookingsPage() - 1)"
+              >
+                <span class="georgian-text" lang="ka">წინა</span>
+              </button>
+              <span class="text-sm" style="color: var(--tui-text-secondary)">
+                {{ bookingsPage() }} / {{ bookingsPages() }}
+              </span>
+              <button
+                class="ss-btn ss-btn--outline ss-btn--s"
+                type="button"
+                [disabled]="bookingsPage() >= bookingsPages()"
+                (click)="loadBookings(bookingsPage() + 1)"
+              >
+                <span class="georgian-text" lang="ka">შემდეგი</span>
+              </button>
+            </div>
+          }
+        }
+      </div>
+
+      <!-- Moderation history -->
+      <div class="ss-card p-4 modlog-card">
+        <h2 class="text-lg font-semibold mb-3 georgian-text" lang="ka">მოდერაციის ისტორია</h2>
+        @if (d.moderation.history.length === 0) {
+          <p class="py-6 text-center georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+            ჩანაწერები არ არის
+          </p>
+        } @else {
+          <ol class="modlog">
+            @for (entry of d.moderation.history; track $index) {
+              <li class="modlog-entry" [class.is-danger]="entry.action === 'ban'">
+                <div class="modlog-head">
+                  <span class="font-medium georgian-text" lang="ka">
+                    {{ actionLabels[entry.action] || entry.action }}
+                  </span>
+                  <span class="modlog-date">{{ entry.at | date: 'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+                @if (entry.reason) {
+                  <div class="text-sm georgian-text" lang="ka">{{ entry.reason }}</div>
+                }
+                @if (entry.actorEmail) {
+                  <div class="modlog-actor">{{ entry.actorEmail }}</div>
+                }
+              </li>
+            }
+          </ol>
+        }
+      </div>
+    </div>
+  }
+</div>
