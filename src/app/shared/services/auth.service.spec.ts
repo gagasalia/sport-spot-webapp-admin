@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { provideHttpClient } from '@angular/common/http';
 
 import { AuthService, TOKEN_STORAGE_KEY } from './auth.service';
+import { NonAdminLoginError } from '../models/auth.model';
 import { UserType } from '../models/user.model';
 import { environment } from '../../../environments/environment';
 
@@ -20,15 +21,22 @@ function makeJwt(payload: Record<string, unknown>): string {
 
 const adminClaims = {
   sub: 'user-1',
-  email: 'admin@example.com',
+  phone: '995511111111',
   userType: [UserType.ADMIN],
   academies: ['ac-1'],
 };
 
 const superAdminClaims = {
   sub: 'user-2',
-  email: 'super@example.com',
+  phone: '995500000000',
   userType: [UserType.SUPERADMIN],
+  academies: [],
+};
+
+const playerClaims = {
+  sub: 'user-3',
+  phone: '995533333333',
+  userType: [UserType.USER],
   academies: [],
 };
 
@@ -60,17 +68,17 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('should POST credentials to /auth/login', () => {
-      service.login('admin@example.com', 'secret').subscribe();
+      service.login('995511111111', 'secret').subscribe();
 
       const req = httpMock.expectOne(`${base}/auth/login`);
       expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({ email: 'admin@example.com', password: 'secret' });
+      expect(req.request.body).toEqual({ phone: '995511111111', password: 'secret' });
       req.flush({ result: { data: { accessToken: makeJwt(adminClaims), user: {} } }, errors: [] });
     });
 
     it('should persist the token in localStorage under ss_token', () => {
       const token = makeJwt(adminClaims);
-      service.login('admin@example.com', 'secret').subscribe();
+      service.login('995511111111', 'secret').subscribe();
 
       httpMock
         .expectOne(`${base}/auth/login`)
@@ -80,13 +88,13 @@ describe('AuthService', () => {
     });
 
     it('should populate currentUser from the decoded token on success', () => {
-      service.login('admin@example.com', 'secret').subscribe();
+      service.login('995511111111', 'secret').subscribe();
 
       httpMock
         .expectOne(`${base}/auth/login`)
         .flush({ result: { data: { accessToken: makeJwt(adminClaims), user: {} } }, errors: [] });
 
-      expect(service.currentUser()?.email).toBe('admin@example.com');
+      expect(service.currentUser()?.phone).toBe('995511111111');
       expect(service.currentUser()?.sub).toBe('user-1');
       expect(service.isAuthenticated()).toBeTrue();
     });
@@ -101,6 +109,20 @@ describe('AuthService', () => {
         .flush({ result: { data: { accessToken: token, user: {} } }, errors: [] });
 
       expect(emitted?.accessToken).toBe(token);
+    });
+
+    it('should reject a non-admin (player) login with NonAdminLoginError', () => {
+      let error: unknown;
+      service.login('995533333333', 'secret').subscribe({ error: (e) => (error = e) });
+
+      httpMock
+        .expectOne(`${base}/auth/login`)
+        .flush({ result: { data: { accessToken: makeJwt(playerClaims), user: {} } }, errors: [] });
+
+      expect(error instanceof NonAdminLoginError).toBeTrue();
+      expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBeNull();
+      expect(service.currentUser()).toBeNull();
+      expect(service.isAuthenticated()).toBeFalse();
     });
 
     it('should not persist a token on a 401 error', () => {
@@ -122,7 +144,7 @@ describe('AuthService', () => {
   describe('logout', () => {
     it('should remove the token and clear currentUser', () => {
       // Log in first so there is a session to clear.
-      service.login('admin@example.com', 'x').subscribe();
+      service.login('995511111111', 'x').subscribe();
       httpMock
         .expectOne(`${base}/auth/login`)
         .flush({ result: { data: { accessToken: makeJwt(adminClaims), user: {} } }, errors: [] });
@@ -148,12 +170,12 @@ describe('AuthService', () => {
       });
       const fresh = TestBed.inject(AuthService);
 
-      expect(fresh.currentUser()?.email).toBe('super@example.com');
+      expect(fresh.currentUser()?.phone).toBe('995500000000');
       expect(fresh.isSuperAdmin()).toBeTrue();
     });
 
     it('should report isSuperAdmin true for a superadmin token', () => {
-      service.login('super@example.com', 'x').subscribe();
+      service.login('995500000000', 'x').subscribe();
       httpMock
         .expectOne(`${base}/auth/login`)
         .flush({ result: { data: { accessToken: makeJwt(superAdminClaims), user: {} } }, errors: [] });
@@ -162,7 +184,7 @@ describe('AuthService', () => {
     });
 
     it('should report isSuperAdmin false for an admin token', () => {
-      service.login('admin@example.com', 'x').subscribe();
+      service.login('995511111111', 'x').subscribe();
       httpMock
         .expectOne(`${base}/auth/login`)
         .flush({ result: { data: { accessToken: makeJwt(adminClaims), user: {} } }, errors: [] });
@@ -170,8 +192,40 @@ describe('AuthService', () => {
       expect(service.isSuperAdmin()).toBeFalse();
     });
 
+    it('should report isAdmin true for an admin token', () => {
+      service.login('995511111111', 'x').subscribe();
+      httpMock
+        .expectOne(`${base}/auth/login`)
+        .flush({ result: { data: { accessToken: makeJwt(adminClaims), user: {} } }, errors: [] });
+
+      expect(service.isAdmin()).toBeTrue();
+    });
+
+    it('should report isAdmin true for a superadmin token', () => {
+      service.login('995500000000', 'x').subscribe();
+      httpMock
+        .expectOne(`${base}/auth/login`)
+        .flush({ result: { data: { accessToken: makeJwt(superAdminClaims), user: {} } }, errors: [] });
+
+      expect(service.isAdmin()).toBeTrue();
+    });
+
+    it('should report isAdmin false for a persisted player token', () => {
+      // Seed a player token (e.g. left over from before the role check), then
+      // build a fresh injector so the constructor reads it.
+      localStorage.setItem(TOKEN_STORAGE_KEY, makeJwt(playerClaims));
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [AuthService, provideHttpClient(), provideHttpClientTesting()],
+      });
+      const fresh = TestBed.inject(AuthService);
+
+      expect(fresh.isAuthenticated()).toBeTrue();
+      expect(fresh.isAdmin()).toBeFalse();
+    });
+
     it('should expose the academies claim through currentUser', () => {
-      service.login('admin@example.com', 'x').subscribe();
+      service.login('995511111111', 'x').subscribe();
       httpMock
         .expectOne(`${base}/auth/login`)
         .flush({ result: { data: { accessToken: makeJwt(adminClaims), user: {} } }, errors: [] });
@@ -180,13 +234,13 @@ describe('AuthService', () => {
     });
 
     it('should decode UTF-8 (multi-byte) claims correctly', () => {
-      const claims = { ...adminClaims, email: 'გიო@example.com' };
+      const claims = { ...adminClaims, sub: 'გიო-1' };
       service.login('x', 'y').subscribe();
       httpMock
         .expectOne(`${base}/auth/login`)
         .flush({ result: { data: { accessToken: makeJwt(claims), user: {} } }, errors: [] });
 
-      expect(service.currentUser()?.email).toBe('გიო@example.com');
+      expect(service.currentUser()?.sub).toBe('გიო-1');
     });
 
     it('should treat a malformed token as logged out', () => {

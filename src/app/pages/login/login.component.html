@@ -15,23 +15,20 @@
     <p class="auth-sub georgian-text" lang="ka">შედი მართვის პანელში</p>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4">
-      <!-- Email -->
+      <!-- Phone -->
       <label class="ss-field">
         <span class="ss-label georgian-text" lang="ka">
-          ელ. ფოსტა <span class="auth-req">*</span>
+          ტელეფონი <span class="auth-req">*</span>
         </span>
         <input
           class="ss-input"
-          [class.ss-input--invalid]="loginForm.get('email')?.touched && loginForm.get('email')?.invalid"
-          type="email"
-          formControlName="email"
-          autocomplete="email"
+          [class.ss-input--invalid]="loginForm.get('phone')?.touched && loginForm.get('phone')?.invalid"
+          type="tel"
+          formControlName="phone"
+          autocomplete="tel"
         />
-        @if (loginForm.get('email')?.touched && loginForm.get('email')?.hasError('required')) {
-          <span class="ss-error georgian-text" lang="ka">ელ. ფოსტა სავალდებულოა</span>
-        }
-        @if (loginForm.get('email')?.touched && loginForm.get('email')?.hasError('email')) {
-          <span class="ss-error georgian-text" lang="ka">არასწორი ელ. ფოსტის ფორმატი</span>
+        @if (loginForm.get('phone')?.touched && loginForm.get('phone')?.hasError('required')) {
+          <span class="ss-error georgian-text" lang="ka">ტელეფონი სავალდებულოა</span>
         }
       </label>
 

@@ -3,7 +3,7 @@ import { HttpClient, HttpContext } from '@angular/common/http';
 import { Observable, map, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
-import { JwtPayload, LoginResponse } from '../models/auth.model';
+import { JwtPayload, LoginResponse, NonAdminLoginError } from '../models/auth.model';
 import { UserType } from '../models/user.model';
 import { decodeJwt } from '../utils/jwt.util';
 import { SKIP_LOADING } from '../interceptors/loading.interceptor';
@@ -27,19 +27,31 @@ export class AuthService {
     (this._currentUser()?.userType ?? []).includes(UserType.SUPERADMIN),
   );
 
-  /** Authenticates the user, persists the token, and updates `currentUser`. */
-  login(email: string, password: string): Observable<LoginResponse> {
+  /** True when the session belongs to an admin or superadmin account. */
+  readonly isAdmin = computed(() => hasAdminRole(this._currentUser()));
+
+  /**
+   * Authenticates the user, persists the token, and updates `currentUser`.
+   * Non-admin accounts are rejected with {@link NonAdminLoginError} and their
+   * token is never persisted — the admin panel is operator-only.
+   */
+  login(phone: string, password: string): Observable<LoginResponse> {
     return this.http
       .post<ApiResponse<LoginResponse>>(
         `${this.apiUrl}/auth/login`,
-        { email, password },
+        { phone, password },
         // The login form has its own `isSubmitting` indicator, so skip the global
         // overlay spinner that would otherwise cover the form during the request.
         { context: new HttpContext().set(SKIP_LOADING, true) },
       )
       .pipe(
         map((res) => res.result.data),
-        tap((data) => this.setToken(data.accessToken)),
+        tap((data) => {
+          if (!hasAdminRole(decodeJwt(data.accessToken))) {
+            throw new NonAdminLoginError();
+          }
+          this.setToken(data.accessToken);
+        }),
       );
   }
 
@@ -62,6 +74,12 @@ export class AuthService {
   private readTokenPayload(): JwtPayload | null {
     return decodeJwt(localStorage.getItem(TOKEN_STORAGE_KEY));
   }
+}
+
+/** True when the decoded token carries an admin or superadmin role. */
+function hasAdminRole(payload: JwtPayload | null): boolean {
+  const types = payload?.userType ?? [];
+  return types.includes(UserType.ADMIN) || types.includes(UserType.SUPERADMIN);
 }
 
 /** Suppresses the global loading spinner; re-exported for callers that need it. */

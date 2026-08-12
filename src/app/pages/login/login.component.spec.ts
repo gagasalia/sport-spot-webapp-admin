@@ -9,6 +9,7 @@ import { of, throwError } from 'rxjs';
 import { LoginComponent } from './login.component';
 import { AuthService } from '../../shared/services/auth.service';
 import { TenantService } from '../../shared/services/tenant.service';
+import { NonAdminLoginError } from '../../shared/models/auth.model';
 
 describe('LoginComponent', () => {
   let component: LoginComponent;
@@ -62,18 +63,13 @@ describe('LoginComponent', () => {
       expect(component.loginForm.invalid).toBeTrue();
     });
 
-    it('should require email and password', () => {
-      expect(component.loginForm.get('email')?.hasError('required')).toBeTrue();
+    it('should require phone and password', () => {
+      expect(component.loginForm.get('phone')?.hasError('required')).toBeTrue();
       expect(component.loginForm.get('password')?.hasError('required')).toBeTrue();
     });
 
-    it('should flag an invalid email format', () => {
-      component.loginForm.get('email')!.setValue('not-an-email');
-      expect(component.loginForm.get('email')?.hasError('email')).toBeTrue();
-    });
-
-    it('should be valid with a proper email and password', () => {
-      component.loginForm.setValue({ email: 'a@b.c', password: 'secret' });
+    it('should be valid with a phone and password', () => {
+      component.loginForm.setValue({ phone: '995500000000', password: 'secret' });
       expect(component.loginForm.valid).toBeTrue();
     });
 
@@ -90,17 +86,17 @@ describe('LoginComponent', () => {
 
     it('should call AuthService.login with the credentials', fakeAsync(() => {
       authSpy.login.and.returnValue(of({ accessToken: 't', user: {} as any }));
-      component.loginForm.setValue({ email: 'a@b.c', password: 'secret' });
+      component.loginForm.setValue({ phone: '995500000000', password: 'secret' });
 
       component.onSubmit();
       tick();
 
-      expect(authSpy.login).toHaveBeenCalledWith('a@b.c', 'secret');
+      expect(authSpy.login).toHaveBeenCalledWith('995500000000', 'secret');
     }));
 
     it('should resolve the tenant before navigating', fakeAsync(() => {
       authSpy.login.and.returnValue(of({ accessToken: 't', user: {} as any }));
-      component.loginForm.setValue({ email: 'a@b.c', password: 'secret' });
+      component.loginForm.setValue({ phone: '995500000000', password: 'secret' });
 
       component.onSubmit();
       tick();
@@ -110,7 +106,7 @@ describe('LoginComponent', () => {
 
     it('should navigate to "/" by default', fakeAsync(() => {
       authSpy.login.and.returnValue(of({ accessToken: 't', user: {} as any }));
-      component.loginForm.setValue({ email: 'a@b.c', password: 'secret' });
+      component.loginForm.setValue({ phone: '995500000000', password: 'secret' });
 
       component.onSubmit();
       tick();
@@ -120,7 +116,7 @@ describe('LoginComponent', () => {
 
     it('should clear isSubmitting after success', fakeAsync(() => {
       authSpy.login.and.returnValue(of({ accessToken: 't', user: {} as any }));
-      component.loginForm.setValue({ email: 'a@b.c', password: 'secret' });
+      component.loginForm.setValue({ phone: '995500000000', password: 'secret' });
 
       component.onSubmit();
       tick();
@@ -135,7 +131,7 @@ describe('LoginComponent', () => {
     it('should navigate to the returnUrl query param when present', fakeAsync(async () => {
       await setup('/configuration/courts');
       authSpy.login.and.returnValue(of({ accessToken: 't', user: {} as any }));
-      component.loginForm.setValue({ email: 'a@b.c', password: 'secret' });
+      component.loginForm.setValue({ phone: '995500000000', password: 'secret' });
 
       component.onSubmit();
       tick();
@@ -146,7 +142,7 @@ describe('LoginComponent', () => {
     it('should reject an absolute external returnUrl and fall back to "/"', fakeAsync(async () => {
       await setup('https://evil.com');
       authSpy.login.and.returnValue(of({ accessToken: 't', user: {} as any }));
-      component.loginForm.setValue({ email: 'a@b.c', password: 'secret' });
+      component.loginForm.setValue({ phone: '995500000000', password: 'secret' });
 
       component.onSubmit();
       tick();
@@ -157,7 +153,7 @@ describe('LoginComponent', () => {
     it('should reject a protocol-relative returnUrl ("//evil.com") and fall back to "/"', fakeAsync(async () => {
       await setup('//evil.com');
       authSpy.login.and.returnValue(of({ accessToken: 't', user: {} as any }));
-      component.loginForm.setValue({ email: 'a@b.c', password: 'secret' });
+      component.loginForm.setValue({ phone: '995500000000', password: 'secret' });
 
       component.onSubmit();
       tick();
@@ -175,19 +171,19 @@ describe('LoginComponent', () => {
       authSpy.login.and.returnValue(
         throwError(() => new HttpErrorResponse({ status: 401 })),
       );
-      component.loginForm.setValue({ email: 'a@b.c', password: 'wrong' });
+      component.loginForm.setValue({ phone: '995500000000', password: 'wrong' });
 
       component.onSubmit();
       tick();
 
-      expect(component.loginError()).toBe('ელ. ფოსტა ან პაროლი არასწორია');
+      expect(component.loginError()).toBe('ტელეფონი ან პაროლი არასწორია');
     }));
 
     it('should not navigate on a 401', fakeAsync(() => {
       authSpy.login.and.returnValue(
         throwError(() => new HttpErrorResponse({ status: 401 })),
       );
-      component.loginForm.setValue({ email: 'a@b.c', password: 'wrong' });
+      component.loginForm.setValue({ phone: '995500000000', password: 'wrong' });
 
       component.onSubmit();
       tick();
@@ -199,7 +195,7 @@ describe('LoginComponent', () => {
       authSpy.login.and.returnValue(
         throwError(() => new HttpErrorResponse({ status: 401 })),
       );
-      component.loginForm.setValue({ email: 'a@b.c', password: 'wrong' });
+      component.loginForm.setValue({ phone: '995500000000', password: 'wrong' });
 
       component.onSubmit();
       tick();
@@ -211,12 +207,38 @@ describe('LoginComponent', () => {
       authSpy.login.and.returnValue(
         throwError(() => new HttpErrorResponse({ status: 500 })),
       );
-      component.loginForm.setValue({ email: 'a@b.c', password: 'x' });
+      component.loginForm.setValue({ phone: '995500000000', password: 'x' });
 
       component.onSubmit();
       tick();
 
       expect(component.loginError()).toBe('მოხდა შეცდომა, გთხოვთ სცადოთ მოგვიანებით');
+    }));
+  });
+
+  // ─── non-admin login ─────────────────────────────────────────────────────
+
+  describe('non-admin login', () => {
+    beforeEach(async () => setup());
+
+    it('should show the admins-only message on NonAdminLoginError', fakeAsync(() => {
+      authSpy.login.and.returnValue(throwError(() => new NonAdminLoginError()));
+      component.loginForm.setValue({ phone: '995533333333', password: 'secret' });
+
+      component.onSubmit();
+      tick();
+
+      expect(component.loginError()).toBe('შესვლა შესაძლებელია მხოლოდ ადმინისტრატორის ანგარიშით');
+    }));
+
+    it('should not navigate on NonAdminLoginError', fakeAsync(() => {
+      authSpy.login.and.returnValue(throwError(() => new NonAdminLoginError()));
+      component.loginForm.setValue({ phone: '995533333333', password: 'secret' });
+
+      component.onSubmit();
+      tick();
+
+      expect(routerSpy.navigateByUrl).not.toHaveBeenCalled();
     }));
   });
 });

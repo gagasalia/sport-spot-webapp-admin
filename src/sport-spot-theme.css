@@ -580,6 +580,10 @@ select.ss-input {
 @supports (appearance: base-select) {
   select.ss-input:not([multiple]):not([size]) {
     appearance: base-select;
+    /* .ss-input's display:block would override the UA's inline-flex and drop
+       the selected value to the top of the 44px box — re-center it. */
+    display: flex;
+    align-items: center;
   }
   /* the kit draws its own chevron; drop the UA triangle base-select adds */
   select.ss-input::picker-icon {

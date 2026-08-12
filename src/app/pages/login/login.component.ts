@@ -6,6 +6,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, finalize, of, switchMap, take } from 'rxjs';
 import { AuthService } from '../../shared/services/auth.service';
 import { TenantService } from '../../shared/services/tenant.service';
+import { NonAdminLoginError } from '../../shared/models/auth.model';
 
 /**
  * First fully Taiga-free page (Phase 1 of the Taiga exit): native elements +
@@ -32,7 +33,7 @@ export class LoginComponent {
   readonly loginError = signal<string | null>(null);
 
   readonly loginForm = this.fb.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
+    phone: ['', [Validators.required]],
     password: ['', [Validators.required]],
   });
 
@@ -45,10 +46,10 @@ export class LoginComponent {
     this.loginError.set(null);
     this.isSubmitting.set(true);
 
-    const { email, password } = this.loginForm.getRawValue();
+    const { phone, password } = this.loginForm.getRawValue();
 
     this.auth
-      .login(email, password)
+      .login(phone, password)
       .pipe(
         // Resolve the operator's tenant before entering the app; superadmins
         // resolve to null and proceed. A tenant-resolution failure must not
@@ -64,9 +65,11 @@ export class LoginComponent {
           );
           this.router.navigateByUrl(returnUrl);
         },
-        error: (err: HttpErrorResponse) => {
-          if (err.status === 401) {
-            this.loginError.set('ელ. ფოსტა ან პაროლი არასწორია');
+        error: (err: unknown) => {
+          if (err instanceof NonAdminLoginError) {
+            this.loginError.set('შესვლა შესაძლებელია მხოლოდ ადმინისტრატორის ანგარიშით');
+          } else if (err instanceof HttpErrorResponse && err.status === 401) {
+            this.loginError.set('ტელეფონი ან პაროლი არასწორია');
           } else {
             this.loginError.set('მოხდა შეცდომა, გთხოვთ სცადოთ მოგვიანებით');
           }
