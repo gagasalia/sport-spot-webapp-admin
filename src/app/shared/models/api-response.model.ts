@@ -1,5 +1,5 @@
 /**
- * Standard API response envelope used across every Sport Spot endpoint.
+ * Standard API response envelope used across every Sport Space endpoint.
  * The backend wraps all payloads as `{ result: { data, page? }, errors }`.
  */
 export interface ApiPage {

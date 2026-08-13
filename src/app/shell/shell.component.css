@@ -23,19 +23,19 @@
 .brand-dot {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 9px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
   background: var(--accent);
   color: #fff;
   box-shadow: var(--glow);
 }
 .brand-dot .ss-ic {
-  width: 15px;
-  height: 15px;
+  width: 26px;
+  height: 26px;
 }
 .brand-name {
-  font-size: 16px;
+  font-size: 19px;
   font-weight: 700;
   letter-spacing: -0.02em;
   white-space: nowrap;

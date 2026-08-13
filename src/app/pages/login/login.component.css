@@ -77,19 +77,19 @@
 .auth-brand-dot {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
   background: var(--accent);
   color: #fff;
   box-shadow: var(--glow);
 }
 .auth-brand-dot .ss-ic {
-  width: 16px;
-  height: 16px;
+  width: 30px;
+  height: 30px;
 }
 .auth-brand-name {
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text);
