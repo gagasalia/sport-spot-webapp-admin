@@ -6,7 +6,9 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#060E0D" />
-    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <!-- ?v=3 busts stale favicons out of browser caches -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg?v=3" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico?v=3" sizes="any" />
     <!-- Paint the premium-dark canvas before any bundle loads (no white flash).
          The light theme re-colors <html> via the [tuiTheme='light'] override. -->
     <style>
