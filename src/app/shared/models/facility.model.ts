@@ -16,9 +16,16 @@ export interface WorkingHours {
 // ── API types ────────────────────────────────────────────────────────────────
 
 export interface IMedia {
+  /** Public URL of the full-size (web) rendition. */
   url: string;
   type: string;
   size: number;
+  /** Public URL of the small (card/list) rendition; absent on legacy uploads. */
+  thumbUrl?: string;
+  /** S3 object key behind `url` — the API's usage tracker keys cleanup off it. */
+  key?: string;
+  /** S3 object key behind `thumbUrl`. */
+  thumbKey?: string;
   metadata?: unknown;
 }
 

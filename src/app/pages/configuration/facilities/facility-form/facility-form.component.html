@@ -226,8 +226,10 @@
           @for (item of mediaItems(); track item; let i = $index) {
             <div class="relative group">
               <img
-                [src]="item.url"
+                [src]="item.thumbUrl || item.url"
                 [alt]="'ფოტო ' + (i + 1)"
+                loading="lazy"
+                decoding="async"
                 class="w-full h-24 object-cover rounded border"
                 style="border-color: var(--tui-border-normal)"
               />

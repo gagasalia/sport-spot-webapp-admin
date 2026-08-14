@@ -262,7 +262,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
 
     imageFiles.forEach((file) => {
       this.mediaService
-        .upload(file, 'facility-media')
+        .uploadImage(file, 'facility-media')
         .pipe(take(1))
         .subscribe({
           next: (media: IMedia) => {

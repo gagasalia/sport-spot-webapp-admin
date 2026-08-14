@@ -87,6 +87,9 @@ export class AcademyComponent implements OnInit {
         url: [''],
         type: [''],
         size: [0],
+        thumbUrl: [''],
+        key: [''],
+        thumbKey: [''],
         metadata: [null],
       }),
       // Padel equipment rule (docs/20): counts + GEL prices; empty price =
@@ -225,10 +228,18 @@ export class AcademyComponent implements OnInit {
     }
 
     // Only attach the logo when a real one was uploaded (non-empty url). The
-    // initial/cleared placeholder `{url:'', type:''}` must never be sent.
+    // initial/cleared placeholder `{url:'', type:''}` must never be sent, and
+    // the optional rendition fields are omitted rather than sent as ''.
     const logo = v.logo as IMedia | undefined;
     if (logo?.url) {
-      payload.logo = logo;
+      payload.logo = {
+        url: logo.url,
+        type: logo.type,
+        size: logo.size,
+        ...(logo.thumbUrl ? { thumbUrl: logo.thumbUrl } : {}),
+        ...(logo.key ? { key: logo.key } : {}),
+        ...(logo.thumbKey ? { thumbKey: logo.thumbKey } : {}),
+      };
     }
 
     const padelRule = this.buildPadelRule();
@@ -325,12 +336,20 @@ export class AcademyComponent implements OnInit {
 
     this.isUploadingLogo.set(true);
     this.mediaService
-      .upload(file, 'academy-logo')
+      .uploadImage(file, 'academy-logo')
       .pipe(take(1))
       .subscribe({
         next: (media) => {
           this.academyForm.patchValue({
-            logo: { url: media.url, type: media.type, size: media.size, metadata: null },
+            logo: {
+              url: media.url,
+              type: media.type,
+              size: media.size,
+              thumbUrl: media.thumbUrl ?? '',
+              key: media.key ?? '',
+              thumbKey: media.thumbKey ?? '',
+              metadata: null,
+            },
           });
           this.academyForm.markAsDirty();
           this.isUploadingLogo.set(false);
@@ -366,7 +385,7 @@ export class AcademyComponent implements OnInit {
 
   removeLogo(): void {
     this.academyForm.patchValue({
-      logo: { url: '', type: '', size: 0, metadata: null },
+      logo: { url: '', type: '', size: 0, thumbUrl: '', key: '', thumbKey: '', metadata: null },
     });
     this.academyForm.markAsDirty();
     this.cdr.markForCheck();
