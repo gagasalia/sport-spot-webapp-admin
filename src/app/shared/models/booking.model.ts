@@ -20,6 +20,8 @@ export interface BookingUserRef {
   firstName?: string;
   lastName?: string;
   phone?: string;
+  /** Profile picture (set by players in the player app). */
+  avatarUrl?: string;
 }
 
 export type BookingStatus = 'confirmed' | 'cancelled' | 'completed';

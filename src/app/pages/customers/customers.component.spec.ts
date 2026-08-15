@@ -118,7 +118,8 @@ describe('CustomersComponent', () => {
       expect(routerSpy.navigate).toHaveBeenCalledWith(['/customers', 'u1']);
 
       routerSpy.navigate.calls.reset();
-      component['open']({ ...row, email: undefined });
+      // A missing phone marks a deleted account (phone is the identifier now).
+      component['open']({ ...row, phone: undefined });
       expect(routerSpy.navigate).not.toHaveBeenCalled();
     });
   });

@@ -42,5 +42,7 @@ export interface AdminMatchPlayer {
   playerName?: string;
   playerEmail?: string;
   playerPhone?: string;
+  /** Snapshot of the player's profile picture (refreshed on avatar change). */
+  playerAvatar?: string;
   createdAt?: string;
 }

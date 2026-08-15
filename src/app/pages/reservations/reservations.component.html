@@ -478,6 +478,11 @@
                           title="მომხმარებლის გვერდი"
                           (click)="openPlayer(b, $event)"
                         >
+                          <ss-avatar
+                            [name]="displayName(b)"
+                            [url]="bookingPlayer(b)?.avatarUrl"
+                            [size]="22"
+                          />
                           {{ displayName(b) || '—' }}
                         </button>
                       } @else {

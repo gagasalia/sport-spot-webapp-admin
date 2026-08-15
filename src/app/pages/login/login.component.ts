@@ -48,8 +48,11 @@ export class LoginComponent {
 
     const { phone, password } = this.loginForm.getRawValue();
 
+    // Admin numbers are Georgian: the API accepts +995…, 995… or the bare
+    // 9-digit number and matches legacy stored shapes server-side — send the
+    // input as typed, only trimmed.
     this.auth
-      .login(phone, password)
+      .login(phone.trim(), password)
       .pipe(
         // Resolve the operator's tenant before entering the app; superadmins
         // resolve to null and proceed. A tenant-resolution failure must not

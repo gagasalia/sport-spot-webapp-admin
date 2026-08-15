@@ -51,6 +51,7 @@ import {
 import { SsToastService } from '../../shared/ui/toast.service';
 import { SsConfirmComponent, SsConfirmData } from '../../shared/ui/confirm.component';
 import { SsDialogService } from '../../shared/ui/dialog.service';
+import { SsAvatarComponent } from '../../shared/ui/ss-avatar.component';
 type CalendarTab = 'day' | 'week' | 'list';
 
 /** One chip on the horizontal date rail. */
@@ -78,7 +79,7 @@ const WEEKDAY_SHORT = ['ორშ', 'სამ', 'ოთხ', 'ხუთ', 'პ�
 @Component({
   selector: 'app-reservations',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, SsAvatarComponent],
   templateUrl: './reservations.component.html',
   styleUrl: './reservations.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

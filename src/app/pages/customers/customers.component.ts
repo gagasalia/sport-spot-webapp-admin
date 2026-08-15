@@ -21,6 +21,7 @@ import {
   CustomerFlagFilter,
   CustomerRow,
 } from '../../shared/models/customer.model';
+import { SsAvatarComponent } from '../../shared/ui/ss-avatar.component';
 
 const PAGE_SIZE = 20;
 
@@ -32,7 +33,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, SsAvatarComponent],
   templateUrl: './customers.component.html',
   styleUrl: './customers.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -144,7 +145,9 @@ export class CustomersComponent implements OnInit {
 
   protected open(row: CustomerRow): void {
     // A deleted account still shows its history line but has no detail page.
-    if (!row.email) return;
+    // Presence of the phone (the account identifier since the phone-only
+    // migration — email is no longer served) marks a live account.
+    if (!row.phone) return;
     void this.router.navigate(['/customers', row.userId]);
   }
 

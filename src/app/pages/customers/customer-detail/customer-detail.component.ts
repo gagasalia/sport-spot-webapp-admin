@@ -22,6 +22,7 @@ import {
   ModerationActionType,
 } from '../../../shared/models/customer.model';
 import { KpiCardComponent } from '../../statistics/charts/kpi-card.component';
+import { SsAvatarComponent } from '../../../shared/ui/ss-avatar.component';
 import { ReasonDialogComponent, ReasonDialogData } from '../reason-dialog.component';
 import { ContactDialogComponent, ContactDialogData } from '../contact-dialog.component';
 
@@ -35,7 +36,7 @@ const BOOKINGS_PAGE_SIZE = 10;
 @Component({
   selector: 'app-customer-detail',
   standalone: true,
-  imports: [DatePipe, RouterLink, KpiCardComponent],
+  imports: [DatePipe, RouterLink, KpiCardComponent, SsAvatarComponent],
   templateUrl: './customer-detail.component.html',
   styleUrl: './customer-detail.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -9,6 +9,7 @@ import {
   CustomerProfile,
   UpdateCustomerContactDto,
 } from '../../shared/models/customer.model';
+import { phoneFormatValidator } from '../../shared/validators/phone-format.validator';
 
 /** Payload for {@link ContactDialogComponent}. */
 export interface ContactDialogData {
@@ -41,7 +42,18 @@ export interface ContactDialogData {
       </div>
       <label class="ss-field">
         <span class="ss-label georgian-text" lang="ka">ტელეფონი</span>
-        <input class="ss-input" type="text" formControlName="phone" />
+        <input
+          class="ss-input"
+          type="tel"
+          inputmode="tel"
+          placeholder="5XX XX XX XX"
+          formControlName="phone"
+        />
+        @if (form.get('phone')?.touched && form.get('phone')?.hasError('phoneFormat')) {
+          <span class="ss-error georgian-text" lang="ka">
+            ჩაწერეთ 9-ნიშნა ნომერი (ან +995…), უცხოური ნომრისთვის — ქვეყნის კოდი (+…)
+          </span>
+        }
       </label>
       @if (data.allowEmail) {
         <label class="ss-field">
@@ -83,7 +95,7 @@ export class ContactDialogComponent {
   protected readonly form = this.fb.group({
     firstName: [this.data.profile.firstName ?? ''],
     lastName: [this.data.profile.lastName ?? ''],
-    phone: [this.data.profile.phone ?? ''],
+    phone: [this.data.profile.phone ?? '', [phoneFormatValidator]],
     email: [
       this.data.profile.email ?? '',
       [Validators.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)],

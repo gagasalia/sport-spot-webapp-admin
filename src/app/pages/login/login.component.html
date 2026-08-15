@@ -24,6 +24,8 @@
           class="ss-input"
           [class.ss-input--invalid]="loginForm.get('phone')?.touched && loginForm.get('phone')?.invalid"
           type="tel"
+          inputmode="tel"
+          placeholder="5XX XX XX XX"
           formControlName="phone"
           autocomplete="tel"
         />

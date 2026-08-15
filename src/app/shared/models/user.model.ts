@@ -12,6 +12,8 @@ export interface User {
   lastName?: string;
   pid?: string;
   phone: string;
+  /** Profile picture (set by players in the player app). */
+  avatarUrl?: string;
   dateOfBirth?: string;
   academies?: string[];
 }

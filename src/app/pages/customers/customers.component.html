@@ -102,11 +102,11 @@
             @for (row of rows(); track row.userId) {
               <tr
                 class="customer-row"
-                [class.is-open]="!!row.email"
+                [class.is-open]="!!row.phone"
                 (click)="open(row)"
               >
                 <td>
-                  <span class="ss-avatar">{{ initials(row) }}</span>
+                  <ss-avatar [name]="fullName(row)" [url]="row.avatarUrl" [size]="36" />
                 </td>
                 <td>
                   <div class="font-medium">{{ fullName(row) }}</div>
@@ -166,7 +166,7 @@
         @for (row of rows(); track row.userId) {
           <div class="ss-card p-4" (click)="open(row)">
             <div class="flex items-center gap-3 mb-3">
-              <span class="ss-avatar ss-avatar--m">{{ initials(row) }}</span>
+              <ss-avatar [name]="fullName(row)" [url]="row.avatarUrl" [size]="44" />
               <div class="flex-1 min-w-0">
                 <h3 class="font-semibold truncate">{{ fullName(row) }}</h3>
                 <p class="text-sm truncate" style="color: var(--tui-text-secondary)">

@@ -8,6 +8,7 @@ import {
 } from '../../shared/models/tournament.model';
 
 import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../shared/ui/dialog.service';
+import { SsAvatarComponent } from '../../shared/ui/ss-avatar.component';
 const PAYMENT_LABELS: Record<string, string> = {
   pay_at_venue: 'ადგილზე',
   paid: 'გადახდილი',
@@ -18,7 +19,7 @@ const PAYMENT_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-registrations-dialog',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe, SsAvatarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-h-[70vh] overflow-y-auto">
@@ -36,6 +37,7 @@ const PAYMENT_LABELS: Record<string, string> = {
               style="border-color: var(--tui-border-normal)"
               [class.opacity-50]="reg.status === 'cancelled'"
             >
+              <ss-avatar [name]="reg.playerName" [url]="reg.playerAvatar" [size]="36" />
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium">
                   {{ reg.playerName || reg.playerEmail || '—' }}

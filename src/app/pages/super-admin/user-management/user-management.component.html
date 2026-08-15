@@ -98,7 +98,7 @@
             @for (user of users(); track user._id) {
               <tr>
                 <td>
-                  <span class="ss-avatar">{{ getInitials(user) }}</span>
+                  <ss-avatar [name]="getFullName(user)" [url]="user.avatarUrl" [size]="36" />
                 </td>
                 <td class="font-medium">{{ getFullName(user) }}</td>
                 <td class="text-sm">{{ user.email }}</td>
@@ -170,7 +170,7 @@
         @for (user of users(); track user._id) {
           <div class="ss-card p-4">
             <div class="flex items-center gap-3 mb-3">
-              <span class="ss-avatar ss-avatar--m">{{ getInitials(user) }}</span>
+              <ss-avatar [name]="getFullName(user)" [url]="user.avatarUrl" [size]="44" />
               <div class="flex-1 min-w-0">
                 <h3 class="font-semibold truncate">{{ getFullName(user) }}</h3>
                 <p class="text-sm truncate" style="color: var(--tui-text-secondary)">

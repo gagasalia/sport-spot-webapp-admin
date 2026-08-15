@@ -442,6 +442,11 @@
   text-decoration: underline;
   text-decoration-color: transparent;
   transition: text-decoration-color 0.15s ease;
+  /* leading avatar sits on the text line */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
 }
 .player-link:hover {
   text-decoration-color: currentColor;

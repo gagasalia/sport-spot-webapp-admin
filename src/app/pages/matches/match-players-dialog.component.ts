@@ -9,6 +9,7 @@ import {
 } from '../../shared/models/match.model';
 
 import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../shared/ui/dialog.service';
+import { SsAvatarComponent } from '../../shared/ui/ss-avatar.component';
 const STATUS_LABELS: Record<MatchPlayerStatus, string> = {
   joined: 'შეერთებული',
   left: 'გავიდა',
@@ -25,7 +26,7 @@ const STATUS_CLASSES: Record<MatchPlayerStatus, string> = {
 @Component({
   selector: 'app-match-players-dialog',
   standalone: true,
-  imports: [CommonModule, DatePipe],
+  imports: [CommonModule, DatePipe, SsAvatarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="max-h-[70vh] overflow-y-auto">
@@ -43,6 +44,7 @@ const STATUS_CLASSES: Record<MatchPlayerStatus, string> = {
               style="border-color: var(--tui-border-normal)"
               [class.opacity-50]="p.status !== 'joined'"
             >
+              <ss-avatar [name]="p.playerName" [url]="p.playerAvatar" [size]="36" />
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium">
                   {{ p.playerName || p.playerEmail || '—' }}

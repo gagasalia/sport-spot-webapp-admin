@@ -25,12 +25,13 @@ import { DatePipe } from '@angular/common';
 import { SsToastService } from '../../../shared/ui/toast.service';
 import { SsDialogService } from '../../../shared/ui/dialog.service';
 import { SsConfirmComponent, SsConfirmData } from '../../../shared/ui/confirm.component';
+import { SsAvatarComponent } from '../../../shared/ui/ss-avatar.component';
 const DEFAULT_PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, SsAvatarComponent],
   templateUrl: './user-management.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
