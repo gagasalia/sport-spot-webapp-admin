@@ -1,0 +1,331 @@
+<div class="pt-8 p-0 sm:p-8">
+  <header class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-semibold georgian-text" lang="ka">პრომოკოდები</h1>
+    <button
+      automation-id="promocodes-add"
+      class="ss-btn ss-btn--primary"
+      type="button"
+      (click)="addPromocode()"
+    >
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
+      <span class="georgian-text" lang="ka">დამატება</span>
+    </button>
+  </header>
+
+  <!-- Filters -->
+  <div class="ss-card p-4 mb-6">
+    <div class="filter-row">
+      <label class="ss-field search-field">
+        <span class="ss-label georgian-text" lang="ka">ძებნა</span>
+        <input
+          automation-id="promocodes-search"
+          class="ss-input"
+          type="text"
+          placeholder="კოდი ან სახელი"
+          [ngModel]="q()"
+          (ngModelChange)="onSearchChange($event)"
+        />
+      </label>
+
+      @if (isSuperAdmin()) {
+        <label class="ss-field academy-field">
+          <span class="ss-label georgian-text" lang="ka">აკადემია</span>
+          <select
+            automation-id="promocodes-academy"
+            class="ss-input georgian-text"
+            lang="ka"
+            [ngModel]="academyId()"
+            (ngModelChange)="onAcademyChange($event)"
+          >
+            <option value="">ყველა აკადემია</option>
+            @for (academy of academies(); track academy._id) {
+              <option [value]="academy._id">{{ academy.name }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      <div class="chip-rail">
+        <button
+          type="button"
+          class="pick-chip"
+          [class.is-active]="activeFilter() === null"
+          (click)="setActiveFilter(null)"
+        >
+          <span class="georgian-text" lang="ka">ყველა</span>
+        </button>
+        <button
+          automation-id="promocodes-filter-active"
+          type="button"
+          class="pick-chip"
+          [class.is-active]="activeFilter() === true"
+          (click)="setActiveFilter(true)"
+        >
+          <span class="georgian-text" lang="ka">აქტიური</span>
+        </button>
+        <button
+          automation-id="promocodes-filter-inactive"
+          type="button"
+          class="pick-chip"
+          [class.is-active]="activeFilter() === false"
+          (click)="setActiveFilter(false)"
+        >
+          <span class="georgian-text" lang="ka">გამორთული</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (hasError()) {
+    <div
+      class="rounded-lg p-4 mb-4 georgian-text"
+      lang="ka"
+      style="background: var(--tui-status-negative-pale); color: var(--tui-status-negative)"
+    >
+      მონაცემების ჩატვირთვა ვერ მოხერხდა. სცადეთ თავიდან.
+    </div>
+    <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="retry()">
+      <span class="georgian-text" lang="ka">თავიდან ცდა</span>
+    </button>
+  } @else if (isLoading()) {
+    <div class="space-y-2 animate-pulse">
+      @for (n of [1, 2, 3, 4, 5]; track n) {
+        <div class="h-12 rounded" style="background: var(--tui-background-neutral-1)"></div>
+      }
+    </div>
+  } @else {
+    <!-- Desktop Table View -->
+    @if (!isMobile()) {
+      <div class="ss-card overflow-x-auto">
+        <table class="ss-table">
+          <thead>
+            <tr>
+              <th class="georgian-text" lang="ka">კოდი</th>
+              <th class="georgian-text" lang="ka">სახელი</th>
+              <th class="georgian-text" lang="ka">ფასდაკლება</th>
+              <th class="georgian-text" lang="ka">ვისთვის</th>
+              <th class="georgian-text" lang="ka">მოქმედების ვადა</th>
+              <th class="georgian-text" lang="ka">გამოყენება</th>
+              <th class="georgian-text" lang="ka">სტატუსი</th>
+              @if (isSuperAdmin()) {
+                <th class="georgian-text" lang="ka">აკადემია</th>
+              }
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of rows(); track p._id) {
+              <tr>
+                <td class="font-mono whitespace-nowrap">{{ p.code }}</td>
+                <td>
+                  @if (p.name) {
+                    <span class="georgian-text" lang="ka">{{ p.name }}</span>
+                  } @else {
+                    —
+                  }
+                </td>
+                <td class="whitespace-nowrap">
+                  {{ discountLabel(p) }}
+                  @if (maxDiscountHint(p); as hint) {
+                    <div class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+                      {{ hint }}
+                    </div>
+                  }
+                </td>
+                <td class="text-sm georgian-text" lang="ka">{{ eligibilityLabel(p) }}</td>
+                <td class="text-sm georgian-text whitespace-nowrap" lang="ka">{{ windowLabel(p) }}</td>
+                <td class="text-sm whitespace-nowrap">{{ usageLabel(p) }}</td>
+                <td>
+                  <span
+                    class="georgian-text"
+                    lang="ka"
+                    [class]="statusClass(derivedStatus(p))"
+                    data-testid="promocode-status"
+                  >
+                    {{ statusLabel(derivedStatus(p)) }}
+                  </span>
+                </td>
+                @if (isSuperAdmin()) {
+                  <td class="text-sm">
+                    @if (p.academy) {
+                      {{ p.academyName || '—' }}
+                    } @else {
+                      <span class="ss-badge ss-badge--info">
+                        <span class="georgian-text" lang="ka">პლატფორმა</span>
+                      </span>
+                    }
+                  </td>
+                }
+                <td class="text-sm">
+                  <div class="flex items-center gap-2 justify-end">
+                    <input
+                      class="ss-switch"
+                      type="checkbox"
+                      [ngModel]="p.active"
+                      (ngModelChange)="onActiveToggle(p, $event)"
+                      [attr.aria-label]="'აქტიური'"
+                    />
+                    <button
+                      class="ss-icon-btn"
+                      type="button"
+                      aria-label="რედაქტირება"
+                      title="რედაქტირება"
+                      (click)="editPromocode(p)"
+                    >
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+                    </button>
+                    <button
+                      class="ss-icon-btn"
+                      type="button"
+                      aria-label="გამოყენებები"
+                      title="გამოყენებები"
+                      (click)="openRedemptions(p)"
+                    >
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/list.svg')"></i>
+                    </button>
+                    @if (p.usedCount === 0) {
+                      <button
+                        class="ss-icon-btn ss-icon-btn--danger"
+                        type="button"
+                        aria-label="წაშლა"
+                        title="წაშლა"
+                        (click)="deletePromocode(p)"
+                      >
+                        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td
+                  [attr.colspan]="isSuperAdmin() ? 9 : 8"
+                  class="px-4 py-8 text-center georgian-text"
+                  lang="ka"
+                >
+                  პრომოკოდები არ მოიძებნა
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- Mobile Cards View -->
+    @if (isMobile()) {
+      <div class="flex flex-col gap-4">
+        @for (p of rows(); track p._id) {
+          <div class="ss-card p-4">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="min-w-0">
+                <h3 class="font-semibold font-mono truncate">{{ p.code }}</h3>
+                @if (p.name) {
+                  <p class="text-sm truncate georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+                    {{ p.name }}
+                  </p>
+                }
+              </div>
+              <span
+                class="georgian-text shrink-0"
+                lang="ka"
+                [class]="statusClass(derivedStatus(p))"
+              >
+                {{ statusLabel(derivedStatus(p)) }}
+              </span>
+            </div>
+            <div
+              class="flex flex-wrap gap-2 text-xs georgian-text mb-3"
+              lang="ka"
+              style="color: var(--tui-text-secondary)"
+            >
+              <span>{{ discountLabel(p) }}</span>
+              @if (maxDiscountHint(p); as hint) {
+                <span>·</span>
+                <span>{{ hint }}</span>
+              }
+              <span>·</span>
+              <span>{{ eligibilityLabel(p) }}</span>
+              <span>·</span>
+              <span>{{ windowLabel(p) }}</span>
+              <span>·</span>
+              <span>{{ usageLabel(p) }}</span>
+              @if (isSuperAdmin() && !p.academy) {
+                <span>·</span>
+                <span>პლატფორმა</span>
+              } @else if (isSuperAdmin() && p.academyName) {
+                <span>·</span>
+                <span>{{ p.academyName }}</span>
+              }
+            </div>
+            <div class="flex items-center gap-2 justify-end">
+              <input
+                class="ss-switch"
+                type="checkbox"
+                [ngModel]="p.active"
+                (ngModelChange)="onActiveToggle(p, $event)"
+                [attr.aria-label]="'აქტიური'"
+              />
+              <button
+                class="ss-icon-btn"
+                type="button"
+                aria-label="რედაქტირება"
+                (click)="editPromocode(p)"
+              >
+                <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+              </button>
+              <button
+                class="ss-icon-btn"
+                type="button"
+                aria-label="გამოყენებები"
+                (click)="openRedemptions(p)"
+              >
+                <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/list.svg')"></i>
+              </button>
+              @if (p.usedCount === 0) {
+                <button
+                  class="ss-icon-btn ss-icon-btn--danger"
+                  type="button"
+                  aria-label="წაშლა"
+                  (click)="deletePromocode(p)"
+                >
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                </button>
+              }
+            </div>
+          </div>
+        } @empty {
+          <div class="ss-card p-6 text-center">
+            <p class="georgian-text" lang="ka">პრომოკოდები არ მოიძებნა</p>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() === 1"
+          (click)="onPageChange(page() - 1)"
+        >
+          <span class="georgian-text" lang="ka">წინა</span>
+        </button>
+        <span class="text-sm" style="color: var(--tui-text-secondary)">
+          {{ page() }} / {{ totalPages() }}
+        </span>
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() >= totalPages()"
+          (click)="onPageChange(page() + 1)"
+        >
+          <span class="georgian-text" lang="ka">შემდეგი</span>
+        </button>
+      </div>
+    }
+  }
+</div>

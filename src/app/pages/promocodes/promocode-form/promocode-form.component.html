@@ -1,0 +1,209 @@
+<div class="max-h-[80vh] overflow-y-auto p-1">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-4">
+    <!-- Code + Name -->
+    <div class="grid grid-cols-2 gap-4">
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">
+          კოდი <span class="text-red-500">*</span>
+        </span>
+        <input
+          class="ss-input font-mono"
+          [class.ss-input--invalid]="form.get('code')?.touched && form.get('code')?.invalid"
+          formControlName="code"
+          placeholder="SUMMER-25"
+          autocomplete="off"
+        />
+        @if (form.get('code')?.touched && form.get('code')?.hasError('conflict')) {
+          <span class="ss-error georgian-text" lang="ka">ეს კოდი უკვე არსებობს</span>
+        } @else if (form.get('code')?.touched && form.get('code')?.invalid) {
+          <span class="ss-error georgian-text" lang="ka">
+            3–24 სიმბოლო: A–Z, 0–9, ტირე; დასაწყისი და დასასრული ასო-ციფრით
+          </span>
+        }
+      </label>
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">სახელი</span>
+        <input class="ss-input georgian-text" lang="ka" formControlName="name" />
+      </label>
+    </div>
+
+    <!-- Academy scope (superadmin only; admins are scoped server-side) -->
+    @if (isSuperAdmin()) {
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">აკადემია</span>
+        <select class="ss-input georgian-text" lang="ka" formControlName="academyId">
+          <option value="">პლატფორმა (ყველა აკადემია)</option>
+          @for (academy of academies(); track academy._id) {
+            <option [value]="academy._id">{{ academy.name }}</option>
+          }
+        </select>
+      </label>
+    }
+
+    <!-- Discount type + amount -->
+    <div class="grid grid-cols-2 gap-4">
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">
+          ფასდაკლების ტიპი <span class="text-red-500">*</span>
+        </span>
+        <select class="ss-input georgian-text" lang="ka" formControlName="discountType">
+          @for (option of discountTypeOptions; track option) {
+            <option [value]="option">{{ stringifyDiscountType(option) }}</option>
+          }
+        </select>
+      </label>
+      @if (discountType() === 'percent') {
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">
+            პროცენტი (%) <span class="text-red-500">*</span>
+          </span>
+          <input
+            class="ss-input"
+            [class.ss-input--invalid]="
+              form.get('percentOff')?.touched && form.get('percentOff')?.invalid
+            "
+            formControlName="percentOff"
+            type="number"
+            min="1"
+            max="100"
+          />
+          @if (form.get('percentOff')?.touched && form.get('percentOff')?.invalid) {
+            <span class="ss-error georgian-text" lang="ka">შეიყვანეთ 1–100</span>
+          }
+        </label>
+      } @else {
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">
+            თანხა (₾) <span class="text-red-500">*</span>
+          </span>
+          <input
+            class="ss-input"
+            [class.ss-input--invalid]="
+              form.get('amountGel')?.touched && form.get('amountGel')?.invalid
+            "
+            formControlName="amountGel"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            step="0.5"
+          />
+          @if (form.get('amountGel')?.touched && form.get('amountGel')?.invalid) {
+            <span class="ss-error georgian-text" lang="ka">შეიყვანეთ დადებითი თანხა</span>
+          }
+        </label>
+      }
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+      @if (discountType() === 'percent') {
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">მაქს. ფასდაკლება (₾)</span>
+          <input
+            class="ss-input"
+            formControlName="maxDiscountGel"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            step="0.5"
+          />
+        </label>
+      }
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">მინ. ჯავშნის ფასი (₾)</span>
+        <input
+          class="ss-input"
+          formControlName="minPriceGel"
+          type="number"
+          inputmode="decimal"
+          min="0"
+          step="0.5"
+        />
+      </label>
+    </div>
+
+    @if (discountLocked) {
+      <p class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+        ფასდაკლების პირობები დაბლოკილია — კოდი უკვე გამოყენებულია
+      </p>
+    }
+
+    <!-- Eligibility -->
+    <label class="ss-field">
+      <span class="ss-label georgian-text" lang="ka">ვისთვის</span>
+      <select class="ss-input georgian-text" lang="ka" formControlName="eligibility">
+        @for (option of eligibilityOptions; track option) {
+          <option [value]="option">{{ stringifyEligibility(option) }}</option>
+        }
+      </select>
+    </label>
+
+    @if (eligibility() === 'booking_count_range') {
+      <div class="grid grid-cols-2 gap-4">
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">
+            მინ. ჯავშნები <span class="text-red-500">*</span>
+          </span>
+          <input
+            class="ss-input"
+            [class.ss-input--invalid]="
+              form.get('minBookings')?.touched && form.get('minBookings')?.invalid
+            "
+            formControlName="minBookings"
+            type="number"
+            min="0"
+          />
+          @if (form.get('minBookings')?.touched && form.get('minBookings')?.invalid) {
+            <span class="ss-error georgian-text" lang="ka">სავალდებულო ველი (მინ. 0)</span>
+          }
+        </label>
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">მაქს. ჯავშნები</span>
+          <input class="ss-input" formControlName="maxBookings" type="number" min="0" />
+        </label>
+      </div>
+    }
+
+    <!-- Validity window -->
+    <div class="grid grid-cols-2 gap-4">
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">დაწყების თარიღი</span>
+        <input class="ss-input" type="date" formControlName="startsAt" />
+      </label>
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">ვადა</span>
+        <input class="ss-input" type="date" formControlName="expiresAt" />
+        <span class="text-xs georgian-text" style="color: var(--tui-text-secondary)" lang="ka">
+          მოქმედებს არჩეული დღის ბოლომდე
+        </span>
+      </label>
+    </div>
+
+    <!-- Usage limits -->
+    <div class="grid grid-cols-2 gap-4">
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">ლიმიტი (სულ)</span>
+        <input class="ss-input" formControlName="usageLimitTotal" type="number" min="1" />
+      </label>
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">ლიმიტი (თითო მომხმარებელზე)</span>
+        <input class="ss-input" formControlName="usageLimitPerUser" type="number" min="1" />
+      </label>
+    </div>
+
+    <!-- Active -->
+    <label class="flex items-center gap-3">
+      <input class="ss-switch" type="checkbox" formControlName="active" />
+      <span class="ss-label georgian-text" lang="ka">აქტიური</span>
+    </label>
+
+    <!-- Actions -->
+    <div class="flex justify-end gap-2 pt-2">
+      <button class="ss-btn ss-btn--outline" type="button" (click)="cancel()">
+        <span class="georgian-text" lang="ka">გაუქმება</span>
+      </button>
+      <button class="ss-btn ss-btn--primary" type="submit" [disabled]="isSaving()">
+        <span class="georgian-text" lang="ka">შენახვა</span>
+      </button>
+    </div>
+  </form>
+</div>

@@ -341,7 +341,10 @@ export class CustomerDetailComponent implements OnInit {
           ? 'გადახდილი (ბარათი)'
           : row.paymentMethod === 'balance'
             ? 'გადახდილი (ბალანსი)'
-            : 'გადახდილი';
+            : // The waterfall rail: voucher/balance covered part, a card the rest.
+              row.paymentMethod === 'split'
+              ? 'გადახდილი (ბალანსი + ბარათი)'
+              : 'გადახდილი';
       case 'refunded':
         return 'დაბრუნებული';
       case 'processing':
