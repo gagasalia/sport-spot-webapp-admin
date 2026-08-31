@@ -1,0 +1,56 @@
+/* ── filter row: search + (academy) + active chips ───────────────────────── */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+.search-field {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+.academy-field {
+  flex: 0 1 240px;
+  min-width: 200px;
+}
+
+/* pick-chip rail (same look as the promocodes/customers filters) */
+.chip-rail {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+.chip-rail::-webkit-scrollbar {
+  display: none;
+}
+.pick-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--tui-border-normal);
+  background: var(--tui-background-base);
+  color: var(--tui-text-primary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.pick-chip:hover {
+  border-color: var(--tui-border-hover);
+}
+.pick-chip.is-active {
+  background: var(--tui-background-accent-1-pale, rgba(124, 108, 246, 0.12));
+  border-color: var(--tui-background-accent-1);
+  color: var(--tui-text-action);
+  font-weight: 600;
+}

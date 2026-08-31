@@ -148,6 +148,7 @@ export class VouchersComponent implements OnInit {
     depleted: 'ამოწურული',
     expired: 'ვადაგასული',
     pending_activation: 'ელოდება აქტივაციას',
+    revoked: 'გაუქმებული',
   };
 
   readonly sourceLabels: Record<VoucherSource, string> = {
@@ -155,6 +156,7 @@ export class VouchersComponent implements OnInit {
     admin_grant: 'გრანტი',
     purchase: 'ყიდვა',
     gift: 'საჩუქარი',
+    campaign: 'კამპანია',
   };
 
   private static phoneValidator(control: AbstractControl): ValidationErrors | null {
@@ -467,8 +469,9 @@ export class VouchersComponent implements OnInit {
   }
 
   // table display helpers
-  /** Derive the display status: pending -> depleted -> expired -> active. */
+  /** Derive the display status: revoked -> pending -> depleted -> expired -> active. */
   derivedStatus(v: Voucher): VoucherDerivedStatus {
+    if (v.status === 'revoked') return 'revoked';
     if (v.status === 'pending_activation') return 'pending_activation';
     if (v.balanceTetri <= 0) return 'depleted';
     if (v.expiresAt && new Date(v.expiresAt).getTime() <= Date.now()) return 'expired';
@@ -486,6 +489,8 @@ export class VouchersComponent implements OnInit {
         return 'ss-badge ss-badge--negative';
       case 'pending_activation':
         return 'ss-badge ss-badge--warning';
+      case 'revoked':
+        return 'ss-badge ss-badge--negative';
     }
   }
 

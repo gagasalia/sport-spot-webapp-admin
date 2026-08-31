@@ -6,13 +6,26 @@
  * the edge (`gelToTetri`).
  */
 
-/** Lifecycle status persisted on the doc. "depleted"/"expired" are DERIVED. */
-export type VoucherStatus = 'active' | 'pending_activation';
+/** Lifecycle status persisted on the doc. "depleted"/"expired" are DERIVED.
+ * `revoked` = a campaign reward clawed back after its qualifying bookings
+ * were cancelled (docs/24 §3) — terminal, balance zeroed. */
+export type VoucherStatus = 'active' | 'pending_activation' | 'revoked';
 
-export type VoucherSource = 'migration' | 'admin_grant' | 'purchase' | 'gift';
+/** `campaign` = earned by completing a loyalty campaign (docs/24 §3). */
+export type VoucherSource =
+  | 'migration'
+  | 'admin_grant'
+  | 'purchase'
+  | 'gift'
+  | 'campaign';
 
-/** The four states the admin list surfaces as a chip (three derived). */
-export type VoucherDerivedStatus = 'active' | 'depleted' | 'expired' | 'pending_activation';
+/** The states the admin list surfaces as a chip (depleted/expired derived). */
+export type VoucherDerivedStatus =
+  | 'active'
+  | 'depleted'
+  | 'expired'
+  | 'pending_activation'
+  | 'revoked';
 
 /**
  * One scope of the voucher lists/writes: a facility, an academy (its

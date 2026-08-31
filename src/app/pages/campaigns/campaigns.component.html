@@ -1,0 +1,324 @@
+<div class="pt-8 p-0 sm:p-8">
+  <header class="mb-6 flex items-center justify-between">
+    <h1 class="text-2xl font-semibold georgian-text" lang="ka">კამპანიები</h1>
+    <button
+      automation-id="campaigns-add"
+      class="ss-btn ss-btn--primary"
+      type="button"
+      (click)="addCampaign()"
+    >
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
+      <span class="georgian-text" lang="ka">დამატება</span>
+    </button>
+  </header>
+
+  <!-- Filters (no text search: campaigns store no copy — the offer IS the row) -->
+  <div class="ss-card p-4 mb-6">
+    <div class="filter-row">
+      @if (isSuperAdmin()) {
+        <label class="ss-field academy-field">
+          <span class="ss-label georgian-text" lang="ka">აკადემია</span>
+          <select
+            automation-id="campaigns-academy"
+            class="ss-input georgian-text"
+            lang="ka"
+            [ngModel]="academyId()"
+            (ngModelChange)="onAcademyChange($event)"
+          >
+            <option value="">ყველა აკადემია</option>
+            @for (academy of academies(); track academy._id) {
+              <option [value]="academy._id">{{ academy.name }}</option>
+            }
+          </select>
+        </label>
+      }
+
+      <div class="chip-rail">
+        <button
+          type="button"
+          class="pick-chip"
+          [class.is-active]="activeFilter() === null"
+          (click)="setActiveFilter(null)"
+        >
+          <span class="georgian-text" lang="ka">ყველა</span>
+        </button>
+        <button
+          automation-id="campaigns-filter-active"
+          type="button"
+          class="pick-chip"
+          [class.is-active]="activeFilter() === true"
+          (click)="setActiveFilter(true)"
+        >
+          <span class="georgian-text" lang="ka">აქტიური</span>
+        </button>
+        <button
+          automation-id="campaigns-filter-inactive"
+          type="button"
+          class="pick-chip"
+          [class.is-active]="activeFilter() === false"
+          (click)="setActiveFilter(false)"
+        >
+          <span class="georgian-text" lang="ka">გამორთული</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (hasError()) {
+    <div
+      class="rounded-lg p-4 mb-4 georgian-text"
+      lang="ka"
+      style="background: var(--tui-status-negative-pale); color: var(--tui-status-negative)"
+    >
+      მონაცემების ჩატვირთვა ვერ მოხერხდა. სცადეთ თავიდან.
+    </div>
+    <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="retry()">
+      <span class="georgian-text" lang="ka">თავიდან ცდა</span>
+    </button>
+  } @else if (isLoading()) {
+    <div class="space-y-2 animate-pulse">
+      @for (n of [1, 2, 3, 4, 5]; track n) {
+        <div class="h-12 rounded" style="background: var(--tui-background-neutral-1)"></div>
+      }
+    </div>
+  } @else {
+    <!-- Desktop Table View -->
+    @if (!isMobile()) {
+      <div class="ss-card overflow-x-auto">
+        <table class="ss-table">
+          <thead>
+            <tr>
+              <th class="georgian-text" lang="ka">შეთავაზება</th>
+              <th class="georgian-text" lang="ka">მიზანი</th>
+              <th class="georgian-text" lang="ka">ჯილდო</th>
+              <th class="georgian-text" lang="ka">მოედნები</th>
+              <th class="georgian-text" lang="ka">პერიოდი</th>
+              <th class="georgian-text" lang="ka">მონაწილე / დასრ.</th>
+              <th class="georgian-text" lang="ka">სტატუსი</th>
+              @if (isSuperAdmin()) {
+                <th class="georgian-text" lang="ka">აკადემია</th>
+              }
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of rows(); track c._id) {
+              <tr>
+                <td>
+                  <span class="georgian-text font-medium" lang="ka">{{ offerLabel(c) }}</span>
+                </td>
+                <td class="text-sm georgian-text whitespace-nowrap" lang="ka">
+                  {{ goalLabel(c) }}
+                </td>
+                <td class="whitespace-nowrap">
+                  {{ rewardLabel(c) }}
+                  @if (rewardHint(c); as hint) {
+                    <div
+                      class="text-xs georgian-text"
+                      lang="ka"
+                      style="color: var(--tui-text-secondary)"
+                    >
+                      {{ hint }}
+                    </div>
+                  }
+                </td>
+                <td class="text-sm georgian-text" lang="ka">{{ scopeLabel(c) }}</td>
+                <td class="text-sm georgian-text whitespace-nowrap" lang="ka">
+                  {{ periodLabel(c) }}
+                </td>
+                <td class="text-sm whitespace-nowrap">{{ participantsLabel(c) }}</td>
+                <td>
+                  <span
+                    class="georgian-text"
+                    lang="ka"
+                    [class]="statusClass(derivedStatus(c))"
+                    data-testid="campaign-status"
+                  >
+                    {{ statusLabel(derivedStatus(c)) }}
+                  </span>
+                </td>
+                @if (isSuperAdmin()) {
+                  <td class="text-sm">
+                    @if (c.academy) {
+                      {{ c.academyName || '—' }}
+                    } @else {
+                      <span class="ss-badge ss-badge--info">
+                        <span class="georgian-text" lang="ka">პლატფორმა</span>
+                      </span>
+                    }
+                  </td>
+                }
+                <td class="text-sm">
+                  <div class="flex items-center gap-2 justify-end">
+                    <input
+                      class="ss-switch"
+                      type="checkbox"
+                      [ngModel]="c.active"
+                      (ngModelChange)="onActiveToggle(c, $event)"
+                      [attr.aria-label]="'აქტიური'"
+                    />
+                    <button
+                      class="ss-icon-btn"
+                      type="button"
+                      aria-label="რედაქტირება"
+                      title="რედაქტირება"
+                      (click)="editCampaign(c)"
+                    >
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+                    </button>
+                    <button
+                      class="ss-icon-btn"
+                      type="button"
+                      aria-label="მონაწილეები"
+                      title="მონაწილეები"
+                      (click)="openParticipants(c)"
+                    >
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/list.svg')"></i>
+                    </button>
+                    @if (c.enrolledCount === 0) {
+                      <button
+                        class="ss-icon-btn ss-icon-btn--danger"
+                        type="button"
+                        aria-label="წაშლა"
+                        title="წაშლა"
+                        (click)="deleteCampaign(c)"
+                      >
+                        <i
+                          class="ss-ic"
+                          style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"
+                        ></i>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td
+                  [attr.colspan]="isSuperAdmin() ? 9 : 8"
+                  class="px-4 py-8 text-center georgian-text"
+                  lang="ka"
+                >
+                  კამპანიები არ მოიძებნა
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- Mobile Cards View -->
+    @if (isMobile()) {
+      <div class="flex flex-col gap-4">
+        @for (c of rows(); track c._id) {
+          <div class="ss-card p-4">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="min-w-0">
+                <h3 class="font-semibold truncate georgian-text" lang="ka">{{ offerLabel(c) }}</h3>
+                <p
+                  class="text-sm truncate georgian-text"
+                  lang="ka"
+                  style="color: var(--tui-text-secondary)"
+                >
+                  {{ scopeLabel(c) }}
+                </p>
+              </div>
+              <span
+                class="georgian-text shrink-0"
+                lang="ka"
+                [class]="statusClass(derivedStatus(c))"
+              >
+                {{ statusLabel(derivedStatus(c)) }}
+              </span>
+            </div>
+            <div
+              class="flex flex-wrap gap-2 text-xs georgian-text mb-3"
+              lang="ka"
+              style="color: var(--tui-text-secondary)"
+            >
+              <span>{{ goalLabel(c) }}</span>
+              <span>·</span>
+              <span>{{ rewardLabel(c) }}</span>
+              <span>·</span>
+              <span>{{ periodLabel(c) }}</span>
+              <span>·</span>
+              <span>{{ participantsLabel(c) }}</span>
+              @if (isSuperAdmin() && !c.academy) {
+                <span>·</span>
+                <span>პლატფორმა</span>
+              } @else if (isSuperAdmin() && c.academyName) {
+                <span>·</span>
+                <span>{{ c.academyName }}</span>
+              }
+            </div>
+            <div class="flex items-center gap-2 justify-end">
+              <input
+                class="ss-switch"
+                type="checkbox"
+                [ngModel]="c.active"
+                (ngModelChange)="onActiveToggle(c, $event)"
+                [attr.aria-label]="'აქტიური'"
+              />
+              <button
+                class="ss-icon-btn"
+                type="button"
+                aria-label="რედაქტირება"
+                (click)="editCampaign(c)"
+              >
+                <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+              </button>
+              <button
+                class="ss-icon-btn"
+                type="button"
+                aria-label="მონაწილეები"
+                (click)="openParticipants(c)"
+              >
+                <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/list.svg')"></i>
+              </button>
+              @if (c.enrolledCount === 0) {
+                <button
+                  class="ss-icon-btn ss-icon-btn--danger"
+                  type="button"
+                  aria-label="წაშლა"
+                  (click)="deleteCampaign(c)"
+                >
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                </button>
+              }
+            </div>
+          </div>
+        } @empty {
+          <div class="ss-card p-6 text-center">
+            <p class="georgian-text" lang="ka">კამპანიები არ მოიძებნა</p>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() === 1"
+          (click)="onPageChange(page() - 1)"
+        >
+          <span class="georgian-text" lang="ka">წინა</span>
+        </button>
+        <span class="text-sm" style="color: var(--tui-text-secondary)">
+          {{ page() }} / {{ totalPages() }}
+        </span>
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() >= totalPages()"
+          (click)="onPageChange(page() + 1)"
+        >
+          <span class="georgian-text" lang="ka">შემდეგი</span>
+        </button>
+      </div>
+    }
+  }
+</div>

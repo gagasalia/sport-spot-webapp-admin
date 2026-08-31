@@ -1,0 +1,97 @@
+<div class="max-h-[70vh] overflow-y-auto">
+  @if (isLoading()) {
+    <p class="py-8 text-center georgian-text" lang="ka">იტვირთება...</p>
+  } @else if (participants().length === 0) {
+    <p class="py-8 text-center georgian-text" lang="ka" data-testid="participants-empty">
+      მონაწილეები ჯერ არ არიან
+    </p>
+  } @else {
+    <div class="overflow-x-auto">
+      <table class="ss-table">
+        <thead>
+          <tr>
+            <!-- No per-row deadline: it is the CAMPAIGN's end date, shared by
+                 everyone (docs/24 v2) — shown once on the list row instead. -->
+            <th class="georgian-text" lang="ka">მოთამაშე</th>
+            <th class="georgian-text" lang="ka">პროგრესი</th>
+            <th class="georgian-text" lang="ka">ციკლი</th>
+            <th class="georgian-text" lang="ka">სტატუსი</th>
+            <th class="georgian-text" lang="ka">ვაუჩერი</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of participants(); track p._id) {
+            <tr>
+              <td>
+                <div class="text-sm font-medium">{{ userName(p) }}</div>
+                @if (userPhone(p); as phone) {
+                  <div class="text-xs" style="color: var(--tui-text-secondary)">
+                    {{ phone }}
+                  </div>
+                }
+              </td>
+              <td class="whitespace-nowrap">
+                <div class="text-sm">{{ progressLabel(p) }}</div>
+                <div class="cp-bar" aria-hidden="true">
+                  <span class="cp-bar-fill" [style.width.%]="progressPercent(p)"></span>
+                </div>
+              </td>
+              <td class="text-sm whitespace-nowrap">#{{ p.cycle }}</td>
+              <td>
+                <span class="georgian-text" lang="ka" [class]="statusClass(p)">
+                  {{ statusLabel(p) }}
+                </span>
+              </td>
+              <td class="text-sm font-mono whitespace-nowrap">
+                {{ p.voucherCode || '—' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (totalPages() > 1) {
+      <div class="flex items-center justify-center gap-3 mt-4">
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() === 1"
+          (click)="onPageChange(page() - 1)"
+        >
+          <span class="georgian-text" lang="ka">წინა</span>
+        </button>
+        <span class="text-sm" style="color: var(--tui-text-secondary)">
+          {{ page() }} / {{ totalPages() }}
+        </span>
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() >= totalPages()"
+          (click)="onPageChange(page() + 1)"
+        >
+          <span class="georgian-text" lang="ka">შემდეგი</span>
+        </button>
+      </div>
+    }
+  }
+</div>
+
+<style>
+  /* Inline progress bar — same shape as the player app's, at table scale. */
+  .cp-bar {
+    margin-top: 4px;
+    height: 5px;
+    width: 110px;
+    border-radius: 999px;
+    background: var(--tui-background-neutral-1);
+    overflow: hidden;
+  }
+  .cp-bar-fill {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--tui-background-accent-1);
+    transition: width 0.3s ease;
+  }
+</style>

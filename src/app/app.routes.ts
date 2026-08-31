@@ -59,6 +59,11 @@ export const routes: Routes = [
           import('./pages/promocodes/promocodes.component').then((m) => m.PromocodesComponent),
       },
       {
+        path: 'campaigns',
+        loadComponent: () =>
+          import('./pages/campaigns/campaigns.component').then((m) => m.CampaignsComponent),
+      },
+      {
         path: 'tournaments',
         loadComponent: () =>
           import('./pages/tournaments/tournaments.component').then(

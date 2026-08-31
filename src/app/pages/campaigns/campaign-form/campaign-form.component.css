@@ -1,0 +1,95 @@
+/* ── the live preview sentence ───────────────────────────────────────────── */
+.cf-preview {
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--tui-background-accent-1-pale, rgba(124, 108, 246, 0.12));
+  border: 1px solid var(--tui-background-accent-1);
+}
+.cf-preview-eyebrow {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--tui-text-secondary);
+}
+.cf-preview-text {
+  margin-top: 4px;
+  font-size: 16px;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--tui-text-primary);
+}
+
+/* A locked term must LOOK locked. The app's base .ss-input styles disabled
+   fields identically to editable ones, so the notice below would be the only
+   clue that the goal/window/reward cannot be touched — an operator would type
+   into them and wonder why nothing happened. */
+.ss-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Locked-terms notice (players already joined) */
+.cf-lock {
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  background: var(--tui-status-warning-pale, rgba(251, 191, 36, 0.14));
+  color: var(--tui-text-primary);
+}
+
+/* ── grouped sections: the form reads in the order an operator thinks ───── */
+.cf-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 0 4px;
+  border-top: 1px solid var(--tui-border-normal);
+}
+.cf-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--tui-text-secondary);
+}
+
+/* ── venue multiselect chips ─────────────────────────────────────────────── */
+.cf-facilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.cf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--tui-border-normal);
+  background: var(--tui-background-base);
+  color: var(--tui-text-primary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.cf-chip:hover {
+  border-color: var(--tui-border-hover);
+}
+.cf-chip.is-active {
+  background: var(--tui-background-accent-1-pale, rgba(124, 108, 246, 0.12));
+  border-color: var(--tui-background-accent-1);
+  color: var(--tui-text-action);
+  font-weight: 600;
+}
+
+.ss-hint {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--tui-text-secondary);
+}
