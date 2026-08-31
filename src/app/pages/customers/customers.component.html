@@ -12,7 +12,7 @@
           automation-id="customers-search"
           class="ss-input"
           type="text"
-          placeholder="სახელი, ელ. ფოსტა ან ტელეფონი"
+          placeholder="სახელი, ტელეფონი ან ID"
           [ngModel]="q()"
           (ngModelChange)="onSearchChange($event)"
         />
@@ -89,6 +89,7 @@
             <tr>
               <th></th>
               <th class="georgian-text" lang="ka">მომხმარებელი</th>
+              <th>ID</th>
               <th class="georgian-text" lang="ka">ტელეფონი</th>
               <th class="georgian-text num-col" lang="ka">ჯავშნები</th>
               <th class="georgian-text num-col" lang="ka">გაუქმება</th>
@@ -116,6 +117,7 @@
                     </div>
                   }
                 </td>
+                <td class="text-sm whitespace-nowrap">{{ memberIdOf(row) || '—' }}</td>
                 <td class="text-sm whitespace-nowrap">{{ row.phone || '—' }}</td>
                 <td class="num-col">{{ row.bookings }}</td>
                 <td class="num-col">{{ row.cancelled }}</td>
@@ -146,7 +148,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="9" class="px-4 py-8 text-center georgian-text" lang="ka">
+                <td colspan="10" class="px-4 py-8 text-center georgian-text" lang="ka">
                   @if (q().trim() || flag()) {
                     ამ ფილტრით მომხმარებლები ვერ მოიძებნა
                   } @else {
@@ -170,7 +172,7 @@
               <div class="flex-1 min-w-0">
                 <h3 class="font-semibold truncate">{{ fullName(row) }}</h3>
                 <p class="text-sm truncate" style="color: var(--tui-text-secondary)">
-                  {{ row.phone || row.email || '—' }}
+                  {{ mobileSubtitle(row) }}
                 </p>
               </div>
               @if (row.banned) {

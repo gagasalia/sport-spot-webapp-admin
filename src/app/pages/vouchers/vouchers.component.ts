@@ -10,12 +10,24 @@ import {
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { forkJoin, take } from 'rxjs';
 import { VoucherService } from '../../services/http-services/voucher.service';
 import { FacilityService } from '../../services/http-services/facility.service';
+import { AcademyService } from '../../services/http-services/academy.service';
+import { AuthService } from '../../shared/services/auth.service';
 import { TenantService } from '../../shared/services/tenant.service';
 import { gelToTetri, tetriToGel } from '../../shared/utils/money.util';
+import { formatMemberId } from '../../shared/utils/member-id.util';
+import { Academy } from '../../shared/models/academy.model';
 import { Facility } from '../../shared/models/facility.model';
 import {
   GrantVoucherDto,
@@ -23,6 +35,7 @@ import {
   PendingGrant,
   Voucher,
   VoucherDerivedStatus,
+  VoucherScopeQuery,
   VoucherSource,
   isVoucher,
 } from '../../shared/models/voucher.model';
@@ -34,36 +47,62 @@ interface ParsedImport {
   errors: string[];
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/**
+ * The page's selected scope — mirrors the API's one-scope-per-request rule:
+ * a facility chip, the "whole academy" chip (academy-WIDE vouchers), or the
+ * universal pool (superadmin with no academy picked).
+ */
+type ScopeSelection =
+  | { kind: 'facility'; facilityId: string }
+  | { kind: 'academy'; academyId: string }
+  | { kind: 'universal' };
+
+/** Phone as the admin may type it: optional +, 9–15 digits (spaces/dashes stripped). */
+const PHONE_RE = /^\+?\d{9,15}$/;
 
 /**
- * Admin voucher page (design section 21.6). Taiga-free (ss-* kit): a facility
- * chip rail (first selected by default, ?facilityId= override) gates three
- * blocks — a single grant form, a bulk-import textarea, and two tables
- * (facility vouchers + pending grants). Expiry dates use native date inputs
- * ('YYYY-MM-DD' strings). Amounts are entered/shown in GEL and converted to
- * integer tetri at the wire edge. SsToastService remains for toasts until the
- * kit grows its own (machinery is the last migration phase).
+ * Admin voucher page (design section 21.6). Taiga-free (ss-* kit): a scope
+ * chip rail — facility chips plus a "whole academy" chip, first facility
+ * selected by default (?facilityId= / ?scope=academy override) — gates three
+ * blocks: a single grant form, a bulk-import textarea, and two tables
+ * (scope vouchers + pending grants). A superadmin gets an academy select
+ * instead of the tenant academy; leaving it empty targets the UNIVERSAL pool
+ * (platform-wide vouchers). Expiry dates use native date inputs ('YYYY-MM-DD'
+ * strings). Amounts are entered/shown in GEL and converted to integer tetri at
+ * the wire edge. SsToastService remains for toasts until the kit grows its own
+ * (machinery is the last migration phase).
  */
 @Component({
   selector: 'app-vouchers',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './vouchers.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VouchersComponent implements OnInit {
   private readonly voucherService = inject(VoucherService);
   private readonly facilityService = inject(FacilityService);
+  private readonly academyService = inject(AcademyService);
+  private readonly auth = inject(AuthService);
   private readonly tenant = inject(TenantService);
   private readonly alerts = inject(SsToastService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  // facility selection
+  readonly isSuperAdmin = this.auth.isSuperAdmin;
+
+  // scope selection
+  readonly academies = signal<Academy[]>([]); // superadmin select
+  readonly selectedAcademyId = signal<string>(''); // '' = universal (superadmin)
   readonly facilities = signal<Facility[]>([]);
-  readonly selectedFacilityId = signal<string | null>(null);
+  readonly selectedScope = signal<ScopeSelection | null>(null);
+
+  readonly isFacilitySelected = (f: Facility): boolean => {
+    const scope = this.selectedScope();
+    return scope?.kind === 'facility' && scope.facilityId === this.facilityIdOf(f);
+  };
+  readonly isAcademyScopeSelected = computed(() => this.selectedScope()?.kind === 'academy');
 
   // lists (each paginated independently — imports can make both grow)
   readonly vouchers = signal<Voucher[]>([]);
@@ -89,9 +128,9 @@ export class VouchersComponent implements OnInit {
 
   // grant form — expiresAt is a native-date 'YYYY-MM-DD' string ('' = none)
   readonly grantForm = new FormGroup({
-    email: new FormControl<string>('', {
+    phone: new FormControl<string>('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.email],
+      validators: [Validators.required, VouchersComponent.phoneValidator],
     }),
     amountGel: new FormControl<number | null>(null, {
       validators: [Validators.required, Validators.min(0.01)],
@@ -118,6 +157,11 @@ export class VouchersComponent implements OnInit {
     gift: 'საჩუქარი',
   };
 
+  private static phoneValidator(control: AbstractControl): ValidationErrors | null {
+    const normalized = String(control.value ?? '').replace(/[\s-]/g, '');
+    return !normalized || PHONE_RE.test(normalized) ? null : { phone: true };
+  }
+
   private facilityIdOf(f: Facility): string | null {
     return f._id ?? f.id ?? null;
   }
@@ -127,18 +171,36 @@ export class VouchersComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (this.isSuperAdmin()) {
+      // Superadmin: academy select instead of the tenant academy; no academy
+      // picked = the universal (platform-wide) pool.
+      this.academyService
+        .getAllAcademies()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (academies) => this.academies.set(academies ?? []),
+          error: () => this.hasError.set(true),
+        });
+      this.selectScope({ kind: 'universal' });
+      return;
+    }
     this.tenant
       .ensure()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.loadFacilities());
   }
 
+  /** The academy whose scopes the rail currently shows (tenant or picked). */
+  private railAcademyId(): string | null {
+    return this.isSuperAdmin() ? this.selectedAcademyId() || null : this.tenant.academyId();
+  }
+
   // facility resolution (mirrors the reservations page)
   private loadFacilities(): void {
-    const academyId = this.tenant.academyId();
+    const academyId = this.railAcademyId();
     if (!academyId) {
       this.facilities.set([]);
-      this.selectedFacilityId.set(null);
+      this.selectScope(this.isSuperAdmin() ? { kind: 'universal' } : null);
       return;
     }
     this.facilityService
@@ -147,36 +209,67 @@ export class VouchersComponent implements OnInit {
       .subscribe({
         next: (facilities) => {
           this.facilities.set(facilities);
-          this.resolveSelection(facilities);
+          this.resolveSelection(facilities, academyId);
         },
         error: () => this.hasError.set(true),
       });
   }
 
-  /** The first chip is selected by default; a valid ?facilityId= overrides it. */
-  private resolveSelection(facilities: Facility[]): void {
+  /**
+   * Admin default: the first facility chip; `?facilityId=` / `?scope=academy`
+   * override. Superadmin lands on the "whole academy" chip after picking an
+   * academy (query params are not persisted for the superadmin select,
+   * mirroring the promocodes filter).
+   */
+  private resolveSelection(facilities: Facility[], academyId: string): void {
+    if (this.isSuperAdmin()) {
+      this.selectScope({ kind: 'academy', academyId });
+      return;
+    }
     this.route.queryParams.pipe(take(1)).subscribe((params) => {
+      if (params['scope'] === 'academy') {
+        this.selectScope({ kind: 'academy', academyId });
+        return;
+      }
       if (facilities.length === 0) {
-        this.selectFacility(null);
+        this.selectScope({ kind: 'academy', academyId });
         return;
       }
       const fromQuery = params['facilityId'];
       const match = facilities.find((f) => this.facilityIdOf(f) === fromQuery);
       const fId = match ? this.facilityIdOf(match) : this.facilityIdOf(facilities[0]);
-      if (fromQuery !== fId) this.updateQueryParam(fId);
-      this.selectFacility(fId);
+      if (fromQuery !== fId) this.updateQueryParams(fId);
+      this.selectScope(fId ? { kind: 'facility', facilityId: fId } : { kind: 'academy', academyId });
     });
   }
 
   onFacilityChipClick(facility: Facility): void {
     const fId = this.facilityIdOf(facility);
-    if (fId === this.selectedFacilityId()) return;
-    this.updateQueryParam(fId);
-    this.selectFacility(fId);
+    if (!fId || this.isFacilitySelected(facility)) return;
+    if (!this.isSuperAdmin()) this.updateQueryParams(fId);
+    this.selectScope({ kind: 'facility', facilityId: fId });
   }
 
-  private selectFacility(facilityId: string | null): void {
-    this.selectedFacilityId.set(facilityId);
+  onAcademyChipClick(): void {
+    const academyId = this.railAcademyId();
+    if (!academyId || this.selectedScope()?.kind === 'academy') return;
+    if (!this.isSuperAdmin()) this.updateQueryParams(null, 'academy');
+    this.selectScope({ kind: 'academy', academyId });
+  }
+
+  /** Superadmin academy select: '' = the universal (platform-wide) pool. */
+  onAcademyChange(academyId: string): void {
+    this.selectedAcademyId.set(academyId);
+    if (!academyId) {
+      this.facilities.set([]);
+      this.selectScope({ kind: 'universal' });
+      return;
+    }
+    this.loadFacilities();
+  }
+
+  private selectScope(scope: ScopeSelection | null): void {
+    this.selectedScope.set(scope);
     this.vouchers.set([]);
     this.grants.set([]);
     this.vouchersPage.set(1);
@@ -184,36 +277,35 @@ export class VouchersComponent implements OnInit {
     this.grantsPage.set(1);
     this.grantsTotal.set(0);
     this.importErrors.set([]);
-    if (facilityId) {
-      this.loadLists(facilityId);
+    if (scope) {
+      this.loadLists(this.scopeQuery(scope));
     }
   }
 
-  private updateQueryParam(facilityId: string | null): void {
+  /** The wire shape of a scope: facilityId, academyId, or neither (universal). */
+  private scopeQuery(scope: ScopeSelection): VoucherScopeQuery {
+    if (scope.kind === 'facility') return { facilityId: scope.facilityId };
+    if (scope.kind === 'academy') return { academyId: scope.academyId };
+    return {};
+  }
+
+  private updateQueryParams(facilityId: string | null, scope?: 'academy'): void {
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { facilityId: facilityId || null },
+      queryParams: { facilityId: facilityId || null, scope: scope ?? null },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
   }
 
-  private loadLists(facilityId: string): void {
+  private loadLists(scope: VoucherScopeQuery): void {
     this.isLoading.set(true);
     this.hasError.set(false);
     // A hard failure of either list surfaces the error banner (the reservations
     // pattern); a successful pair replaces both signals atomically.
     forkJoin({
-      vouchers: this.voucherService.getVouchers(
-        facilityId,
-        this.vouchersPage(),
-        this.listLimit,
-      ),
-      grants: this.voucherService.getGrants(
-        facilityId,
-        this.grantsPage(),
-        this.listLimit,
-      ),
+      vouchers: this.voucherService.getVouchers(scope, this.vouchersPage(), this.listLimit),
+      grants: this.voucherService.getGrants(scope, this.grantsPage(), this.listLimit),
     })
       .pipe(take(1))
       .subscribe({
@@ -247,21 +339,21 @@ export class VouchersComponent implements OnInit {
       this.vouchersPage.set(1);
       this.grantsPage.set(1);
     }
-    const facilityId = this.selectedFacilityId();
-    if (facilityId) this.loadLists(facilityId);
+    const scope = this.selectedScope();
+    if (scope) this.loadLists(this.scopeQuery(scope));
   }
 
   // grant
   submitGrant(): void {
-    const facilityId = this.selectedFacilityId();
-    if (!facilityId || this.grantForm.invalid) {
+    const scope = this.selectedScope();
+    if (!scope || this.grantForm.invalid) {
       this.grantForm.markAllAsTouched();
       return;
     }
-    const { email, amountGel, expiresAt, note } = this.grantForm.getRawValue();
+    const { phone, amountGel, expiresAt, note } = this.grantForm.getRawValue();
     const dto: GrantVoucherDto = {
-      email: email.trim().toLowerCase(),
-      facilityId,
+      ...this.scopeQuery(scope),
+      phone: phone.replace(/[\s-]/g, ''),
       amountTetri: gelToTetri(amountGel ?? 0),
     };
     if (expiresAt) dto.expiresAt = expiresAt;
@@ -296,13 +388,13 @@ export class VouchersComponent implements OnInit {
   }
 
   private resetGrantForm(): void {
-    this.grantForm.reset({ email: '', amountGel: null, expiresAt: '', note: '' });
+    this.grantForm.reset({ phone: '', amountGel: null, expiresAt: '', note: '' });
   }
 
   // bulk import
   /**
-   * Parse the `email,amountGel` textarea. Blank lines are ignored; every other
-   * line must be exactly two comma-separated fields with a valid email and a
+   * Parse the `phone,amountGel` textarea. Blank lines are ignored; every other
+   * line must be exactly two comma-separated fields with a valid phone and a
    * positive amount. Returns valid entries (amount already in tetri) alongside a
    * Georgian error per malformed line (1-based line numbers).
    */
@@ -319,24 +411,24 @@ export class VouchersComponent implements OnInit {
         errors.push(`ხაზი ${n}: არასწორი ფორმატი`);
         return;
       }
-      const email = parts[0].trim().toLowerCase();
+      const phone = parts[0].replace(/[\s-]/g, '');
       const amount = Number(parts[1].trim());
-      if (!EMAIL_RE.test(email)) {
-        errors.push(`ხაზი ${n}: არასწორი ელფოსტა`);
+      if (!PHONE_RE.test(phone)) {
+        errors.push(`ხაზი ${n}: არასწორი ტელეფონი`);
         return;
       }
       if (!Number.isFinite(amount) || amount <= 0) {
         errors.push(`ხაზი ${n}: არასწორი თანხა`);
         return;
       }
-      entries.push({ email, amountTetri: gelToTetri(amount) });
+      entries.push({ phone, amountTetri: gelToTetri(amount) });
     });
     return { entries, errors };
   }
 
   submitImport(): void {
-    const facilityId = this.selectedFacilityId();
-    if (!facilityId) return;
+    const scope = this.selectedScope();
+    if (!scope) return;
     const { entries, errors } = this.parseImport(this.importControl.value ?? '');
     if (errors.length > 0) {
       this.importErrors.set(errors);
@@ -351,7 +443,7 @@ export class VouchersComponent implements OnInit {
 
     this.importSubmitting.set(true);
     this.voucherService
-      .import(facilityId, entries, expiresAt)
+      .import(this.scopeQuery(scope), entries, expiresAt)
       .pipe(take(1))
       .subscribe({
         next: (res) => {
@@ -415,7 +507,11 @@ export class VouchersComponent implements OnInit {
   }
 
   ownerLabel(v: Voucher): string {
-    return v.ownerEmail || v.owner || '—';
+    // "000042 · +9955…" once the member ID exists; phone/raw-id fallbacks keep
+    // legacy rows readable.
+    const id = formatMemberId(v.ownerMemberId);
+    if (id && v.ownerPhone) return `${id} · ${v.ownerPhone}`;
+    return id || v.ownerPhone || v.owner || '—';
   }
 
   navigateToFacilities(): void {

@@ -32,14 +32,15 @@ export class AuthService {
 
   /**
    * Authenticates the user, persists the token, and updates `currentUser`.
+   * Admin accounts sign in by USERNAME (stored lowercased, so lowercase here).
    * Non-admin accounts are rejected with {@link NonAdminLoginError} and their
    * token is never persisted — the admin panel is operator-only.
    */
-  login(phone: string, password: string): Observable<LoginResponse> {
+  login(username: string, password: string): Observable<LoginResponse> {
     return this.http
       .post<ApiResponse<LoginResponse>>(
         `${this.apiUrl}/auth/login`,
-        { phone, password },
+        { username: username.trim().toLowerCase(), password },
         // The login form has its own `isSubmitting` indicator, so skip the global
         // overlay spinner that would otherwise cover the form during the request.
         { context: new HttpContext().set(SKIP_LOADING, true) },

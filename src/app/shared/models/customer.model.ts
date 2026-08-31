@@ -18,6 +18,8 @@ export interface CustomersQuery {
 /** One list row: identity + per-scope stats from the booking_events log. */
 export interface CustomerRow {
   userId: string;
+  /** Public numeric member ID — absent on legacy docs until the API backfill. */
+  memberId?: number;
   firstName?: string;
   lastName?: string;
   /** Absent when the account was hard-deleted after booking. */
@@ -63,6 +65,8 @@ export interface CustomerModeration {
 
 export interface CustomerProfile {
   _id: string;
+  /** Public numeric member ID — absent on legacy docs until the API backfill. */
+  memberId?: number;
   email: string;
   firstName?: string;
   lastName?: string;

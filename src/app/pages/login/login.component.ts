@@ -33,7 +33,7 @@ export class LoginComponent {
   readonly loginError = signal<string | null>(null);
 
   readonly loginForm = this.fb.nonNullable.group({
-    phone: ['', [Validators.required]],
+    username: ['', [Validators.required]],
     password: ['', [Validators.required]],
   });
 
@@ -46,13 +46,10 @@ export class LoginComponent {
     this.loginError.set(null);
     this.isSubmitting.set(true);
 
-    const { phone, password } = this.loginForm.getRawValue();
+    const { username, password } = this.loginForm.getRawValue();
 
-    // Admin numbers are Georgian: the API accepts +995…, 995… or the bare
-    // 9-digit number and matches legacy stored shapes server-side — send the
-    // input as typed, only trimmed.
     this.auth
-      .login(phone.trim(), password)
+      .login(username.trim(), password)
       .pipe(
         // Resolve the operator's tenant before entering the app; superadmins
         // resolve to null and proceed. A tenant-resolution failure must not
@@ -72,7 +69,7 @@ export class LoginComponent {
           if (err instanceof NonAdminLoginError) {
             this.loginError.set('შესვლა შესაძლებელია მხოლოდ ადმინისტრატორის ანგარიშით');
           } else if (err instanceof HttpErrorResponse && err.status === 401) {
-            this.loginError.set('ტელეფონი ან პაროლი არასწორია');
+            this.loginError.set('მომხმარებლის სახელი ან პაროლი არასწორია');
           } else {
             this.loginError.set('მოხდა შეცდომა, გთხოვთ სცადოთ მოგვიანებით');
           }

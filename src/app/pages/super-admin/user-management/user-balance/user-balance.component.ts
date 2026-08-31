@@ -19,6 +19,7 @@ import {
   WalletTransactionType,
 } from '../../../../shared/models/wallet.model';
 import { gelToTetri, tetriToGel } from '../../../../shared/utils/money.util';
+import { formatMemberId } from '../../../../shared/utils/member-id.util';
 
 import {
   SS_DIALOG_CONTEXT,
@@ -93,7 +94,9 @@ export class UserBalanceComponent implements OnInit {
 
   protected get userLabel(): string {
     const parts = [this.user.firstName, this.user.lastName].filter(Boolean);
-    return parts.length > 0 ? parts.join(' ') : this.user.email;
+    const name = parts.length > 0 ? parts.join(' ') : this.user.email;
+    const id = formatMemberId(this.user.memberId);
+    return id ? `${name} · ID ${id}` : name;
   }
 
   ngOnInit(): void {

@@ -26,6 +26,7 @@ import { SsToastService } from '../../../shared/ui/toast.service';
 import { SsDialogService } from '../../../shared/ui/dialog.service';
 import { SsConfirmComponent, SsConfirmData } from '../../../shared/ui/confirm.component';
 import { SsAvatarComponent } from '../../../shared/ui/ss-avatar.component';
+import { formatMemberId, parseMemberId } from '../../../shared/utils/member-id.util';
 const DEFAULT_PAGE_SIZE = 20;
 
 @Component({
@@ -51,6 +52,8 @@ export class UserManagementComponent implements OnInit {
   protected readonly filterEmail = signal('');
   protected readonly filterPhone = signal('');
   protected readonly filterPid = signal('');
+  /** Public member ID digits ("42" / "000042"); '' = unset. */
+  protected readonly filterMemberId = signal('');
   protected readonly filterRole = signal<UserType | null>(null);
   protected readonly roleOptions = Object.values(UserType);
 
@@ -76,6 +79,7 @@ export class UserManagementComponent implements OnInit {
       this.filterEmail();
       this.filterPhone();
       this.filterPid();
+      this.filterMemberId();
       this.filterRole();
 
       // Skip the effect's initial run (registration/seed from query params) — only
@@ -119,6 +123,7 @@ export class UserManagementComponent implements OnInit {
         !!params['email'] ||
         !!params['phone'] ||
         !!params['pid'] ||
+        !!params['memberId'] ||
         !!params['role'];
       if (hasSeed) this.suppressNextFilterEffect = true;
 
@@ -126,6 +131,7 @@ export class UserManagementComponent implements OnInit {
       if (params['email']) this.filterEmail.set(params['email']);
       if (params['phone']) this.filterPhone.set(params['phone']);
       if (params['pid']) this.filterPid.set(params['pid']);
+      if (params['memberId']) this.filterMemberId.set(params['memberId']);
       if (params['role']) this.filterRole.set(params['role'] as UserType);
       const parsedPage = Number(params['page']);
       if (parsedPage >= 1) this.page.set(parsedPage);
@@ -170,6 +176,7 @@ export class UserManagementComponent implements OnInit {
     this.filterEmail.set('');
     this.filterPhone.set('');
     this.filterPid.set('');
+    this.filterMemberId.set('');
     this.filterRole.set(null);
     this.page.set(1);
 
@@ -196,12 +203,14 @@ export class UserManagementComponent implements OnInit {
     const email = this.filterEmail().trim();
     const phone = this.filterPhone().trim();
     const pid = this.filterPid().trim();
+    const memberId = parseMemberId(this.filterMemberId());
     const role = this.filterRole();
 
     if (name) filters.name = name;
     if (email) filters.email = email;
     if (phone) filters.phone = phone;
     if (pid) filters.pid = pid;
+    if (memberId !== null) filters.memberId = memberId;
     if (role) filters.userType = [role];
     return filters;
   }
@@ -212,6 +221,7 @@ export class UserManagementComponent implements OnInit {
     if (filters.email) params.set('email', filters.email);
     if (filters.phone) params.set('phone', filters.phone);
     if (filters.pid) params.set('pid', filters.pid);
+    if (filters.memberId !== undefined) params.set('memberId', String(filters.memberId));
     if (filters.userType?.length) params.set('role', filters.userType[0]);
     if (filters.page && filters.page > 1) params.set('page', String(filters.page));
 
@@ -312,6 +322,11 @@ export class UserManagementComponent implements OnInit {
   protected getFullName(user: User): string {
     const parts = [user.firstName, user.lastName].filter(Boolean);
     return parts.length > 0 ? parts.join(' ') : '—';
+  }
+
+  /** Public member ID, zero-padded ("000042"); '—' until the API backfill runs. */
+  protected getMemberId(user: User): string {
+    return formatMemberId(user.memberId) || '—';
   }
 
   protected getInitials(user: User): string {

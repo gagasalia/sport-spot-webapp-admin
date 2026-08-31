@@ -10,6 +10,7 @@ import {
 
 import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../shared/ui/dialog.service';
 import { SsAvatarComponent } from '../../shared/ui/ss-avatar.component';
+import { formatMemberId } from '../../shared/utils/member-id.util';
 const STATUS_LABELS: Record<MatchPlayerStatus, string> = {
   joined: 'შეერთებული',
   left: 'გავიდა',
@@ -57,6 +58,7 @@ const STATUS_CLASSES: Record<MatchPlayerStatus, string> = {
                   }
                 </div>
                 <div class="text-xs truncate" style="color: var(--tui-text-secondary)">
+                  @if (memberIdOf(p)) { ID {{ memberIdOf(p) }} · }
                   {{ p.playerEmail }} @if (p.playerPhone) { · {{ p.playerPhone }} } ·
                   {{ p.createdAt | date: 'dd/MM/yyyy HH:mm' }}
                 </div>
@@ -104,5 +106,10 @@ export class MatchPlayersDialogComponent implements OnInit {
 
   protected statusClass(status: MatchPlayerStatus): string {
     return STATUS_CLASSES[status] ?? STATUS_CLASSES.joined;
+  }
+
+  /** Snapshotted public member ID ("000042"); '' on legacy rows. */
+  protected memberIdOf(p: AdminMatchPlayer): string {
+    return formatMemberId(p.playerMemberId);
   }
 }

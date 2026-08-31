@@ -23,6 +23,7 @@ import {
 } from '../../../shared/models/customer.model';
 import { KpiCardComponent } from '../../statistics/charts/kpi-card.component';
 import { SsAvatarComponent } from '../../../shared/ui/ss-avatar.component';
+import { formatMemberId } from '../../../shared/utils/member-id.util';
 import { ReasonDialogComponent, ReasonDialogData } from '../reason-dialog.component';
 import { ContactDialogComponent, ContactDialogData } from '../contact-dialog.component';
 
@@ -239,9 +240,10 @@ export class CustomerDetailComponent implements OnInit {
       });
   }
 
+  /** Superadmin-only: a plain admin may not edit a player's name or phone. */
   protected editContact(): void {
     const detail = this.detail();
-    if (!detail) return;
+    if (!detail || !this.isSuperAdmin()) return;
     this.dialogs
       .open<Parameters<CustomersService['fixContact']>[1] | null>(
         ContactDialogComponent,
@@ -299,6 +301,11 @@ export class CustomerDetailComponent implements OnInit {
     if (!p) return '';
     const parts = [p.firstName, p.lastName].filter(Boolean);
     return parts.length > 0 ? parts.join(' ') : p.email;
+  }
+
+  /** Public member ID, zero-padded ("000042"); '' until the API backfill runs. */
+  protected memberId(): string {
+    return formatMemberId(this.detail()?.profile.memberId);
   }
 
   protected initials(): string {

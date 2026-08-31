@@ -169,6 +169,25 @@ describe('CustomerDetailComponent', () => {
       expect(component['detail']()?.moderation.banned).toBeFalse();
     });
 
+    it('cannot edit identity: no contact dialog, no PATCH', () => {
+      dialogsSpy.open.calls.reset();
+      component['editContact']();
+      expect(dialogsSpy.open).not.toHaveBeenCalled();
+      expect(customersSpy.fixContact).not.toHaveBeenCalled();
+    });
+
+    it('hides the edit button', () => {
+      fixture.detectChanges();
+      const btn = (
+        fixture.nativeElement as HTMLElement
+      ).querySelector('[automation-id="customer-edit"]');
+      expect(btn).toBeNull();
+    });
+  });
+
+  describe('as a superadmin', () => {
+    beforeEach(async () => setup(true));
+
     it('contact fix reloads the whole detail (profile + audit trail changed)', () => {
       dialogsSpy.open.and.returnValue(of({ firstName: 'Ana' }));
       customersSpy.fixContact.and.returnValue(of(detail.profile));
@@ -181,19 +200,6 @@ describe('CustomerDetailComponent', () => {
       });
       expect(customersSpy.detail).toHaveBeenCalledTimes(1);
     });
-
-    it('passes allowEmail=false to the contact dialog for a plain admin', () => {
-      dialogsSpy.open.and.returnValue(of(null));
-      component['editContact']();
-      const options = dialogsSpy.open.calls.mostRecent().args[1] as {
-        data: { allowEmail: boolean };
-      };
-      expect(options.data.allowEmail).toBeFalse();
-    });
-  });
-
-  describe('as a superadmin', () => {
-    beforeEach(async () => setup(true));
 
     it('passes allowEmail=true to the contact dialog', () => {
       dialogsSpy.open.and.returnValue(of(null));

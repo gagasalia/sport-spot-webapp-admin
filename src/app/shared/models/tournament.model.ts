@@ -77,6 +77,8 @@ export interface TournamentRegistration {
   playerName?: string;
   playerEmail?: string;
   playerPhone?: string;
+  /** Public numeric member ID snapshot (absent on legacy registrations). */
+  playerMemberId?: number;
   /** Snapshot of the player's profile picture (refreshed on avatar change). */
   playerAvatar?: string;
   createdAt?: string;

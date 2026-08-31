@@ -17,6 +17,8 @@ export type BookingType = 'booking' | 'block';
  */
 export interface BookingUserRef {
   _id: string;
+  /** Public numeric member ID — absent on legacy docs until the API backfill. */
+  memberId?: number;
   firstName?: string;
   lastName?: string;
   phone?: string;
@@ -129,14 +131,38 @@ export interface CreateBlockDto {
   note?: string;
 }
 
+/**
+ * List-view sort orders (server-side; mirrors the API's BookingSort).
+ * 'created' = reservation moment (createdAt), newest first — the default.
+ * 'playing' = playing date with FUTURE slots on top (upcoming soonest-first,
+ * then past most-recent-first).
+ */
+export type BookingSort = 'created' | 'playing';
+
 /** Query params for GET /facilities/:facilityId/bookings (calendar + list reads). */
 export interface BookingQuery {
   date?: string; // single-day (calendar)
-  from?: string; // range start (list)
-  to?: string; // range end (list)
+  from?: string; // playing-date range start (list)
+  to?: string; // playing-date range end (list)
   courtId?: string;
   status?: BookingStatus;
   type?: BookingType;
+  /** Exact player id (list-view userId column filter). */
+  userId?: string;
+  /** Exact public member ID (list-view ID column filter; server drops leading zeros). */
+  memberId?: number;
+  /** Customer/player name search, case-insensitive (list-view user column filter). */
+  customer?: string;
+  /** Facility-local start hour 0–23 (list-view time column filter). */
+  startHour?: number;
+  /** Reservation-moment (createdAt) day range, "YYYY-MM-DD" inclusive. */
+  createdFrom?: string;
+  createdTo?: string;
+  /** Price bounds in integer tetri, inclusive. */
+  priceMinTetri?: number;
+  priceMaxTetri?: number;
+  /** Omitted = legacy {date, start} ascending (calendar/week reads). */
+  sortBy?: BookingSort;
   page?: number;
   limit?: number;
 }

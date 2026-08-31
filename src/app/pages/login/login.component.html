@@ -15,22 +15,22 @@
     <p class="auth-sub georgian-text" lang="ka">შედი მართვის პანელში</p>
 
     <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4">
-      <!-- Phone -->
+      <!-- Username -->
       <label class="ss-field">
         <span class="ss-label georgian-text" lang="ka">
-          ტელეფონი <span class="auth-req">*</span>
+          მომხმარებლის სახელი <span class="auth-req">*</span>
         </span>
         <input
           class="ss-input"
-          [class.ss-input--invalid]="loginForm.get('phone')?.touched && loginForm.get('phone')?.invalid"
-          type="tel"
-          inputmode="tel"
-          placeholder="5XX XX XX XX"
-          formControlName="phone"
-          autocomplete="tel"
+          [class.ss-input--invalid]="loginForm.get('username')?.touched && loginForm.get('username')?.invalid"
+          type="text"
+          autocapitalize="none"
+          spellcheck="false"
+          formControlName="username"
+          autocomplete="username"
         />
-        @if (loginForm.get('phone')?.touched && loginForm.get('phone')?.hasError('required')) {
-          <span class="ss-error georgian-text" lang="ka">ტელეფონი სავალდებულოა</span>
+        @if (loginForm.get('username')?.touched && loginForm.get('username')?.hasError('required')) {
+          <span class="ss-error georgian-text" lang="ka">მომხმარებლის სახელი სავალდებულოა</span>
         }
       </label>
 

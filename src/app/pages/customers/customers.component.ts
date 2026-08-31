@@ -22,6 +22,7 @@ import {
   CustomerRow,
 } from '../../shared/models/customer.model';
 import { SsAvatarComponent } from '../../shared/ui/ss-avatar.component';
+import { formatMemberId } from '../../shared/utils/member-id.util';
 
 const PAGE_SIZE = 20;
 
@@ -168,5 +169,17 @@ export class CustomersComponent implements OnInit {
   protected gel(tetri: number | null | undefined): string {
     if (tetri == null) return '—';
     return `${new Intl.NumberFormat('ka-GE', { maximumFractionDigits: 2 }).format(tetri / 100)} ₾`;
+  }
+
+  /** Public member ID, zero-padded ("000042"); '' for legacy/deleted accounts. */
+  protected memberIdOf(row: CustomerRow): string {
+    return formatMemberId(row.memberId);
+  }
+
+  /** Mobile card subtitle: "ID 000042 · +9955…" (whichever parts exist). */
+  protected mobileSubtitle(row: CustomerRow): string {
+    const id = formatMemberId(row.memberId);
+    const parts = [id ? `ID ${id}` : '', row.phone ?? ''].filter(Boolean);
+    return parts.join(' · ') || '—';
   }
 }

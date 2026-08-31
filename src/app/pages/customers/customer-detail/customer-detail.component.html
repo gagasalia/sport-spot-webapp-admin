@@ -51,6 +51,9 @@
         <div class="flex-1 min-w-0">
           <h1 class="text-2xl font-semibold truncate">{{ fullName() }}</h1>
           <div class="profile-meta">
+            @if (memberId()) {
+              <span class="whitespace-nowrap">ID - {{ memberId() }}</span>
+            }
             <span>{{ d.profile.email }}</span>
             @if (d.profile.phone) {
               <span>{{ d.profile.phone }}</span>
@@ -76,15 +79,18 @@
           </div>
         </div>
         <div class="profile-actions">
-          <button
-            automation-id="customer-edit"
-            class="ss-btn ss-btn--outline ss-btn--s"
-            type="button"
-            (click)="editContact()"
-          >
-            <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
-            <span class="georgian-text" lang="ka">შესწორება</span>
-          </button>
+          <!-- Identity (name/phone) is superadmin-only; the API 403s a plain admin. -->
+          @if (isSuperAdmin()) {
+            <button
+              automation-id="customer-edit"
+              class="ss-btn ss-btn--outline ss-btn--s"
+              type="button"
+              (click)="editContact()"
+            >
+              <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+              <span class="georgian-text" lang="ka">შესწორება</span>
+            </button>
+          }
           @if (d.moderation.flagged) {
             <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="unflag()">
               <span class="georgian-text" lang="ka">მონიშვნის მოხსნა</span>

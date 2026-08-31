@@ -21,14 +21,14 @@ function makeJwt(payload: Record<string, unknown>): string {
 
 const adminClaims = {
   sub: 'user-1',
-  phone: '995511111111',
+  username: 'admin.sportspace',
   userType: [UserType.ADMIN],
   academies: ['ac-1'],
 };
 
 const superAdminClaims = {
   sub: 'user-2',
-  phone: '995500000000',
+  username: 'super.admin',
   userType: [UserType.SUPERADMIN],
   academies: [],
 };
@@ -68,17 +68,17 @@ describe('AuthService', () => {
 
   describe('login', () => {
     it('should POST credentials to /auth/login', () => {
-      service.login('995511111111', 'secret').subscribe();
+      service.login('admin.sportspace', 'secret').subscribe();
 
       const req = httpMock.expectOne(`${base}/auth/login`);
       expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({ phone: '995511111111', password: 'secret' });
+      expect(req.request.body).toEqual({ username: 'admin.sportspace', password: 'secret' });
       req.flush({ result: { data: { accessToken: makeJwt(adminClaims), user: {} } }, errors: [] });
     });
 
     it('should persist the token in localStorage under ss_token', () => {
       const token = makeJwt(adminClaims);
-      service.login('995511111111', 'secret').subscribe();
+      service.login('admin.sportspace', 'secret').subscribe();
 
       httpMock
         .expectOne(`${base}/auth/login`)
@@ -88,13 +88,13 @@ describe('AuthService', () => {
     });
 
     it('should populate currentUser from the decoded token on success', () => {
-      service.login('995511111111', 'secret').subscribe();
+      service.login('admin.sportspace', 'secret').subscribe();
 
       httpMock
         .expectOne(`${base}/auth/login`)
         .flush({ result: { data: { accessToken: makeJwt(adminClaims), user: {} } }, errors: [] });
 
-      expect(service.currentUser()?.phone).toBe('995511111111');
+      expect(service.currentUser()?.username).toBe('admin.sportspace');
       expect(service.currentUser()?.sub).toBe('user-1');
       expect(service.isAuthenticated()).toBeTrue();
     });
@@ -144,7 +144,7 @@ describe('AuthService', () => {
   describe('logout', () => {
     it('should remove the token and clear currentUser', () => {
       // Log in first so there is a session to clear.
-      service.login('995511111111', 'x').subscribe();
+      service.login('admin.sportspace', 'x').subscribe();
       httpMock
         .expectOne(`${base}/auth/login`)
         .flush({ result: { data: { accessToken: makeJwt(adminClaims), user: {} } }, errors: [] });
@@ -170,12 +170,12 @@ describe('AuthService', () => {
       });
       const fresh = TestBed.inject(AuthService);
 
-      expect(fresh.currentUser()?.phone).toBe('995500000000');
+      expect(fresh.currentUser()?.username).toBe('super.admin');
       expect(fresh.isSuperAdmin()).toBeTrue();
     });
 
     it('should report isSuperAdmin true for a superadmin token', () => {
-      service.login('995500000000', 'x').subscribe();
+      service.login('super.admin', 'x').subscribe();
       httpMock
         .expectOne(`${base}/auth/login`)
         .flush({ result: { data: { accessToken: makeJwt(superAdminClaims), user: {} } }, errors: [] });
@@ -184,7 +184,7 @@ describe('AuthService', () => {
     });
 
     it('should report isSuperAdmin false for an admin token', () => {
-      service.login('995511111111', 'x').subscribe();
+      service.login('admin.sportspace', 'x').subscribe();
       httpMock
         .expectOne(`${base}/auth/login`)
         .flush({ result: { data: { accessToken: makeJwt(adminClaims), user: {} } }, errors: [] });
@@ -193,7 +193,7 @@ describe('AuthService', () => {
     });
 
     it('should report isAdmin true for an admin token', () => {
-      service.login('995511111111', 'x').subscribe();
+      service.login('admin.sportspace', 'x').subscribe();
       httpMock
         .expectOne(`${base}/auth/login`)
         .flush({ result: { data: { accessToken: makeJwt(adminClaims), user: {} } }, errors: [] });
@@ -202,7 +202,7 @@ describe('AuthService', () => {
     });
 
     it('should report isAdmin true for a superadmin token', () => {
-      service.login('995500000000', 'x').subscribe();
+      service.login('super.admin', 'x').subscribe();
       httpMock
         .expectOne(`${base}/auth/login`)
         .flush({ result: { data: { accessToken: makeJwt(superAdminClaims), user: {} } }, errors: [] });
@@ -225,7 +225,7 @@ describe('AuthService', () => {
     });
 
     it('should expose the academies claim through currentUser', () => {
-      service.login('995511111111', 'x').subscribe();
+      service.login('admin.sportspace', 'x').subscribe();
       httpMock
         .expectOne(`${base}/auth/login`)
         .flush({ result: { data: { accessToken: makeJwt(adminClaims), user: {} } }, errors: [] });

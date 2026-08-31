@@ -9,7 +9,18 @@
 
   <!-- Filters -->
   <div class="ss-card p-4 mb-6">
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
+      <label class="ss-field">
+        <span class="ss-label">ID</span>
+        <input
+          class="ss-input"
+          type="text"
+          inputmode="numeric"
+          [ngModel]="filterMemberId()"
+          (ngModelChange)="filterMemberId.set($event)"
+        />
+      </label>
+
       <label class="ss-field">
         <span class="ss-label georgian-text" lang="ka">სახელი</span>
         <input
@@ -86,8 +97,10 @@
             <tr>
               <th></th>
               <th class="georgian-text" lang="ka">სახელი</th>
+              <th>ID</th>
               <th class="georgian-text" lang="ka">ელ. ფოსტა</th>
-              <th class="georgian-text" lang="ka">ტელეფონი</th>
+              <!-- players show phone, admins show their login username -->
+              <th class="georgian-text" lang="ka">ტელეფონი / სახელი</th>
               <th class="georgian-text" lang="ka">პირადი ნომერი</th>
               <th class="georgian-text" lang="ka">დაბადების თარიღი</th>
               <th class="georgian-text" lang="ka">როლი</th>
@@ -101,8 +114,9 @@
                   <ss-avatar [name]="getFullName(user)" [url]="user.avatarUrl" [size]="36" />
                 </td>
                 <td class="font-medium">{{ getFullName(user) }}</td>
+                <td class="text-sm whitespace-nowrap">{{ getMemberId(user) }}</td>
                 <td class="text-sm">{{ user.email }}</td>
-                <td class="text-sm">{{ user.phone || '—' }}</td>
+                <td class="text-sm">{{ user.phone || user.username || '—' }}</td>
                 <td class="text-sm">{{ user.pid || '—' }}</td>
                 <td class="text-sm whitespace-nowrap">
                   {{ user.dateOfBirth ? (user.dateOfBirth | date: 'dd/MM/yyyy') : '—' }}
@@ -154,7 +168,7 @@
               </tr>
             } @empty {
               <tr>
-                <td colspan="8" class="px-4 py-8 text-center georgian-text" lang="ka">
+                <td colspan="9" class="px-4 py-8 text-center georgian-text" lang="ka">
                   იუზერები ვერ მოიძებნა
                 </td>
               </tr>
@@ -222,10 +236,22 @@
             </div>
 
             <div class="flex flex-col gap-1 text-sm">
+              @if (user.memberId != null) {
+                <div class="flex items-center gap-2">
+                  <span style="color: var(--tui-text-secondary)">ID</span>
+                  <span>{{ getMemberId(user) }}</span>
+                </div>
+              }
               @if (user.phone) {
                 <div class="flex items-center gap-2">
                   <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/phone.svg'); width: 12px; height: 12px; color: var(--tui-text-secondary)"></i>
                   <span>{{ user.phone }}</span>
+                </div>
+              }
+              @if (user.username) {
+                <div class="flex items-center gap-2">
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/user-round.svg'); width: 12px; height: 12px; color: var(--tui-text-secondary)"></i>
+                  <span>{{ user.username }}</span>
                 </div>
               }
               @if (user.pid) {

@@ -11,6 +11,7 @@ import {
   ImportVouchersDto,
   PendingGrant,
   Voucher,
+  VoucherScopeQuery,
 } from '../../shared/models/voucher.model';
 
 export interface PaginatedVouchers {
@@ -28,8 +29,11 @@ export interface PaginatedGrants {
  * **tetri**; the page converts to/from GEL at its edge. Every payload is the
  * standard `SsResponse` envelope (`{ result: { data }, errors }`).
  *
- * Two write endpoints (`grant`, `import`) and two facility-scoped reads
- * (`getVouchers`, `getGrants`), all roles-guarded + academy-scoped server-side.
+ * Two write endpoints (`grant`, `import`) and two scope-filtered reads
+ * (`getVouchers`, `getGrants`). One SCOPE per request: `facilityId` → that
+ * facility's vouchers; `academyId` → the academy-WIDE ones; neither → the
+ * universal pool (superadmin-only). All roles-guarded + tenancy-checked
+ * server-side.
  */
 @Injectable({ providedIn: 'root' })
 export class VoucherService {
@@ -37,8 +41,8 @@ export class VoucherService {
   private readonly apiUrl = `${environment.apiUrl}/vouchers`;
 
   /**
-   * POST /vouchers/grant — grant to a single email. An existing user gets an
-   * immediate active `Voucher` (carries `code`); an unknown email becomes a
+   * POST /vouchers/grant — grant to a single phone. An existing user gets an
+   * immediate active `Voucher` (carries `code`); an unknown phone becomes a
    * `PendingGrant`. The caller discriminates via `isVoucher()`.
    */
   grant(dto: GrantVoucherDto): Observable<GrantResult> {
@@ -48,37 +52,42 @@ export class VoucherService {
   }
 
   /**
-   * POST /vouchers/grants/import — bulk grant for one facility. Existing users
-   * are granted vouchers, unknown emails queued as pending grants; the result
+   * POST /vouchers/grants/import — bulk grant under one scope. Existing users
+   * are granted vouchers, unknown phones queued as pending grants; the result
    * reports the split `{ granted, pending }`.
    */
-  import(facilityId: string, entries: ImportEntry[], expiresAt?: string): Observable<ImportResult> {
-    const dto: ImportVouchersDto = { facilityId, entries };
+  import(
+    scope: VoucherScopeQuery,
+    entries: ImportEntry[],
+    expiresAt?: string,
+  ): Observable<ImportResult> {
+    const dto: ImportVouchersDto = { ...scope, entries };
     if (expiresAt) dto.expiresAt = expiresAt;
     return this.http
       .post<ApiResponse<ImportResult>>(`${this.apiUrl}/grants/import`, dto)
       .pipe(map((res) => res.result.data));
   }
 
-  /** GET /vouchers?facilityId= — vouchers of a facility (admin-scoped, paginated). */
-  getVouchers(facilityId: string, page = 1, limit = 20): Observable<PaginatedVouchers> {
-    const params = new HttpParams()
-      .set('facilityId', facilityId)
-      .set('page', page)
-      .set('limit', limit);
+  /** GET /vouchers — vouchers of one scope (admin-scoped, paginated). */
+  getVouchers(scope: VoucherScopeQuery, page = 1, limit = 20): Observable<PaginatedVouchers> {
     return this.http
-      .get<ApiResponse<Voucher[]>>(this.apiUrl, { params })
+      .get<ApiResponse<Voucher[]>>(this.apiUrl, { params: this.scopeParams(scope, page, limit) })
       .pipe(map((res) => ({ data: res.result.data ?? [], page: res.result.page })));
   }
 
-  /** GET /vouchers/grants?facilityId= — pending grants of a facility (paginated). */
-  getGrants(facilityId: string, page = 1, limit = 20): Observable<PaginatedGrants> {
-    const params = new HttpParams()
-      .set('facilityId', facilityId)
-      .set('page', page)
-      .set('limit', limit);
+  /** GET /vouchers/grants — pending grants of one scope (paginated). */
+  getGrants(scope: VoucherScopeQuery, page = 1, limit = 20): Observable<PaginatedGrants> {
     return this.http
-      .get<ApiResponse<PendingGrant[]>>(`${this.apiUrl}/grants`, { params })
+      .get<ApiResponse<PendingGrant[]>>(`${this.apiUrl}/grants`, {
+        params: this.scopeParams(scope, page, limit),
+      })
       .pipe(map((res) => ({ data: res.result.data ?? [], page: res.result.page })));
+  }
+
+  private scopeParams(scope: VoucherScopeQuery, page: number, limit: number): HttpParams {
+    let params = new HttpParams().set('page', page).set('limit', limit);
+    if (scope.facilityId) params = params.set('facilityId', scope.facilityId);
+    else if (scope.academyId) params = params.set('academyId', scope.academyId);
+    return params;
   }
 }

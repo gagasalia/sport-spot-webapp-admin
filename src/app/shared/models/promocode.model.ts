@@ -71,6 +71,8 @@ export interface Promocode {
 /** The populated `user` of a redemption row (deleted accounts come as null). */
 export interface PromoRedemptionUser {
   _id: string;
+  /** Public numeric member ID (absent on legacy docs). */
+  memberId?: number;
   firstName?: string;
   lastName?: string;
   phone?: string;

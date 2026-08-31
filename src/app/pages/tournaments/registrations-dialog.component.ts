@@ -9,6 +9,7 @@ import {
 
 import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../shared/ui/dialog.service';
 import { SsAvatarComponent } from '../../shared/ui/ss-avatar.component';
+import { formatMemberId } from '../../shared/utils/member-id.util';
 const PAYMENT_LABELS: Record<string, string> = {
   pay_at_venue: 'ადგილზე',
   paid: 'გადახდილი',
@@ -46,6 +47,7 @@ const PAYMENT_LABELS: Record<string, string> = {
                   }
                 </div>
                 <div class="text-xs truncate" style="color: var(--tui-text-secondary)">
+                  @if (memberIdOf(reg)) { ID {{ memberIdOf(reg) }} · }
                   {{ reg.playerEmail }} @if (reg.playerPhone) { · {{ reg.playerPhone }} }
                   · {{ reg.createdAt | date: 'dd/MM/yyyy HH:mm' }}
                 </div>
@@ -95,5 +97,10 @@ export class RegistrationsDialogComponent implements OnInit {
 
   protected paymentLabel(reg: TournamentRegistration): string {
     return PAYMENT_LABELS[reg.paymentStatus] ?? reg.paymentStatus;
+  }
+
+  /** Snapshotted public member ID ("000042"); '' on legacy registrations. */
+  protected memberIdOf(reg: TournamentRegistration): string {
+    return formatMemberId(reg.playerMemberId);
   }
 }

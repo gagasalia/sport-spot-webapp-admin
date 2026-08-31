@@ -44,28 +44,56 @@
       </label>
     </div>
 
-    <!-- Phone -->
-    <label class="ss-field">
-      <span class="ss-label georgian-text" lang="ka">
-        ტელეფონი <span class="text-red-500">*</span>
-      </span>
-      <input
-        class="ss-input"
-        [class.ss-input--invalid]="userForm.get('phone')?.touched && userForm.get('phone')?.invalid"
-        type="tel"
-        formControlName="phone"
-        [maskito]="phoneMask"
-        placeholder="+9955XXXXXXXX"
-      />
-      @if (userForm.get('phone')?.touched && userForm.get('phone')?.hasError('required')) {
-        <span class="ss-error georgian-text" lang="ka">ტელეფონის ნომერი სავალდებულოა</span>
-      }
-      @if (userForm.get('phone')?.touched && userForm.get('phone')?.hasError('pattern')) {
-        <span class="ss-error georgian-text" lang="ka">
-          ნომერი უნდა იწყებოდეს 5-ით და იყოს 9 ციფრი
+    <!-- Identity: admins sign in by username (no phone), players by phone -->
+    @if (isAdminAccount) {
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">
+          მომხმარებლის სახელი <span class="text-red-500">*</span>
         </span>
-      }
-    </label>
+        <input
+          class="ss-input"
+          [class.ss-input--invalid]="userForm.get('username')?.touched && userForm.get('username')?.invalid"
+          type="text"
+          autocapitalize="none"
+          spellcheck="false"
+          formControlName="username"
+          placeholder="admin.name"
+        />
+        @if (userForm.get('username')?.touched && userForm.get('username')?.hasError('required')) {
+          <span class="ss-error georgian-text" lang="ka">მომხმარებლის სახელი სავალდებულოა</span>
+        }
+        @if (userForm.get('username')?.touched && userForm.get('username')?.hasError('pattern')) {
+          <span class="ss-error georgian-text" lang="ka">
+            3-32 სიმბოლო: ლათინური ასოები, ციფრები, წერტილი, ტირე ან ქვედა ტირე
+          </span>
+        }
+        <span class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+          ადმინის ანგარიშს ტელეფონის ნომერი არ აქვს — შესვლა ხდება მომხმარებლის სახელით
+        </span>
+      </label>
+    } @else {
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">
+          ტელეფონი <span class="text-red-500">*</span>
+        </span>
+        <input
+          class="ss-input"
+          [class.ss-input--invalid]="userForm.get('phone')?.touched && userForm.get('phone')?.invalid"
+          type="tel"
+          formControlName="phone"
+          [maskito]="phoneMask"
+          placeholder="+9955XXXXXXXX"
+        />
+        @if (userForm.get('phone')?.touched && userForm.get('phone')?.hasError('required')) {
+          <span class="ss-error georgian-text" lang="ka">ტელეფონის ნომერი სავალდებულოა</span>
+        }
+        @if (userForm.get('phone')?.touched && userForm.get('phone')?.hasError('pattern')) {
+          <span class="ss-error georgian-text" lang="ka">
+            ნომერი უნდა იწყებოდეს 5-ით და იყოს 9 ციფრი
+          </span>
+        }
+      </label>
+    }
 
     <!-- PID -->
     <label class="ss-field">

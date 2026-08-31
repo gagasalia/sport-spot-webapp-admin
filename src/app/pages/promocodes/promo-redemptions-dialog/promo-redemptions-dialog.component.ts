@@ -11,6 +11,7 @@ import { take } from 'rxjs';
 import { PromocodeService } from '../../../services/http-services/promocode.service';
 import { PromoRedemption, Promocode } from '../../../shared/models/promocode.model';
 import { tetriToGel } from '../../../shared/utils/money.util';
+import { formatMemberId } from '../../../shared/utils/member-id.util';
 import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../../shared/ui/dialog.service';
 
 /**
@@ -77,7 +78,11 @@ export class PromoRedemptionsDialogComponent implements OnInit {
   protected userPhone(r: PromoRedemption): string | null {
     const user = r.user;
     if (!user || typeof user === 'string') return null;
-    return user.phone ?? null;
+    // Prefix the phone with the public member ID once the API backfill served it.
+    const id = formatMemberId(user.memberId);
+    const phone = user.phone ?? null;
+    if (id) return phone ? `ID ${id} · ${phone}` : `ID ${id}`;
+    return phone;
   }
 
   protected discountGel(r: PromoRedemption): number {

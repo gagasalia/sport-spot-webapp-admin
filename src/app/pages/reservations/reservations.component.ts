@@ -19,14 +19,12 @@ import { CourtService } from '../../services/http-services/court.service';
 import { FacilityService } from '../../services/http-services/facility.service';
 import { ScheduleService } from '../../services/http-services/schedule.service';
 import { TenantService } from '../../shared/services/tenant.service';
-import { AuthService } from '../../shared/services/auth.service';
 import { tetriToGel } from '../../shared/utils/money.util';
 import { Court } from '../../shared/models/court.model';
 import { Facility } from '../../shared/models/facility.model';
 import { FacilityScheduleDTO } from '../../shared/models/schedule.model';
-import { Booking, BookingStatus, BookingUserRef } from '../../shared/models/booking.model';
+import { Booking, BookingUserRef } from '../../shared/models/booking.model';
 import {
-  CellRef,
   DayGrid,
   GridCell,
   GridCourt,
@@ -51,7 +49,8 @@ import {
 import { SsToastService } from '../../shared/ui/toast.service';
 import { SsConfirmComponent, SsConfirmData } from '../../shared/ui/confirm.component';
 import { SsDialogService } from '../../shared/ui/dialog.service';
-import { SsAvatarComponent } from '../../shared/ui/ss-avatar.component';
+import { ReservationListComponent } from './reservation-list/reservation-list.component';
+import { bookingDisplayName, bookingPlayer } from './booking-display.util';
 type CalendarTab = 'day' | 'week' | 'list';
 
 /** One chip on the horizontal date rail. */
@@ -74,21 +73,19 @@ const WEEKDAY_SHORT = ['ორშ', 'სამ', 'ოთხ', 'ხუთ', 'პ�
  * Facility, date and (week/mobile) court pickers are single-select chip rails;
  * adjacent free cells are multi-selectable and a floating bar opens the create
  * dialog for the whole range. Week view is one court × 7 days; the list view is
- * a filtered table. All grid math lives in the pure `calendar-grid` module.
+ * its own module (`ReservationListComponent`) — a filtered, sortable table
+ * that owns all of its state. All grid math lives in `calendar-grid`.
  */
 @Component({
   selector: 'app-reservations',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, SsAvatarComponent],
+  imports: [CommonModule, ReactiveFormsModule, ReservationListComponent],
   templateUrl: './reservations.component.html',
   styleUrl: './reservations.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ReservationsComponent implements OnInit {
   private readonly bookingService = inject(BookingService);
-  private readonly auth = inject(AuthService);
-  /** Tip data is superadmin-only (the API omits it for plain admins anyway). */
-  protected readonly isSuperAdmin = this.auth.isSuperAdmin;
   private readonly courtService = inject(CourtService);
   private readonly facilityService = inject(FacilityService);
   private readonly scheduleService = inject(ScheduleService);
@@ -125,18 +122,6 @@ export class ReservationsComponent implements OnInit {
 
   // ── multi-cell selection (day + week grids) ──────────────────────────────────
   readonly selection = signal<Selection>([]);
-
-  // ── list view state ──────────────────────────────────────────────────────────
-  readonly listBookings = signal<Booking[]>([]);
-  readonly listTotal = signal<number>(0);
-  /** One-based page index (matches the `/um/find` + `result.page` convention). */
-  readonly listPage = signal<number>(1);
-  readonly listLimit = 20;
-  /** "YYYY-MM-DD" strings; '' = unset (native date inputs clear to ''). */
-  readonly listFrom = new FormControl<string>('', { nonNullable: true });
-  readonly listTo = new FormControl<string>('', { nonNullable: true });
-  readonly listCourt = new FormControl<string | null>(null);
-  readonly listStatus = new FormControl<BookingStatus | null>(null);
 
   // ── ui state ─────────────────────────────────────────────────────────────────
   readonly isLoading = signal(false);
@@ -207,14 +192,6 @@ export class ReservationsComponent implements OnInit {
     };
   });
 
-  readonly statusOptions: BookingStatus[] = ['confirmed', 'cancelled', 'completed'];
-
-  readonly statusLabels: Record<BookingStatus, string> = {
-    confirmed: 'დადასტურებული',
-    cancelled: 'გაუქმებული',
-    completed: 'დასრულებული',
-  };
-
   private facilityIdOf(f: Facility): string | null {
     return f._id ?? f.id ?? null;
   }
@@ -252,9 +229,9 @@ export class ReservationsComponent implements OnInit {
     if (tab === this.tab()) return;
     this.tab.set(tab);
     this.clearSelection();
+    // The list tab is self-contained: ReservationListComponent fetches on init.
     if (tab === 'day') this.loadDay();
     if (tab === 'week') this.loadWeek();
-    if (tab === 'list') this.loadList();
   }
 
   // ── date rail ────────────────────────────────────────────────────────────────
@@ -375,7 +352,7 @@ export class ReservationsComponent implements OnInit {
           this.schedule.set(schedule);
           this.selectedCourtId.set(this.activeCourts()[0]?.id ?? null);
           if (this.tab() === 'week') this.loadWeek();
-          else if (this.tab() === 'list') this.loadList();
+          else if (this.tab() === 'list') this.isLoading.set(false); // child fetches itself
           else this.loadDay();
         },
         error: () => {
@@ -466,56 +443,6 @@ export class ReservationsComponent implements OnInit {
     this.selectedCourtId.set(courtId);
     this.clearSelection();
     if (this.tab() === 'week') this.loadWeek();
-  }
-
-  // ── list view ────────────────────────────────────────────────────────────────
-  /** `page` is one-based (page 1 = first page), matching the backend contract. */
-  loadList(page = 1): void {
-    const facilityId = this.selectedFacilityId();
-    if (!facilityId) return;
-    this.listPage.set(page);
-    const from = this.listFrom.value || undefined;
-    const to = this.listTo.value || undefined;
-    this.isLoading.set(true);
-    this.hasError.set(false);
-
-    this.bookingService
-      .getBookings(facilityId, {
-        from,
-        to,
-        courtId: this.listCourt.value ?? undefined,
-        status: this.listStatus.value ?? undefined,
-        page,
-        limit: this.listLimit,
-      })
-      .pipe(take(1))
-      .subscribe({
-        next: (res) => {
-          this.listBookings.set(res.data);
-          this.listTotal.set(res.page?.total ?? res.data.length);
-          this.isLoading.set(false);
-        },
-        error: () => {
-          this.isLoading.set(false);
-          this.hasError.set(true);
-        },
-      });
-  }
-
-  applyListFilters(): void {
-    this.loadList(1);
-  }
-
-  nextListPage(): void {
-    // One-based: page N covers items [(N-1)*limit, N*limit). A next page exists
-    // while the current page's last item index is below the total.
-    if (this.listPage() * this.listLimit < this.listTotal()) {
-      this.loadList(this.listPage() + 1);
-    }
-  }
-
-  prevListPage(): void {
-    if (this.listPage() > 1) this.loadList(this.listPage() - 1);
   }
 
   courtLabelById(courtId: string): string {
@@ -667,15 +594,11 @@ export class ReservationsComponent implements OnInit {
       });
   }
 
-  cancelFromList(booking: Booking): void {
-    this.confirmCancel(booking, 'ჯავშნის გაუქმება გსურთ?');
-  }
-
   private refreshActive(): void {
+    // Only the calendar tabs mutate from here; the list module refreshes itself.
     const tab = this.tab();
     if (tab === 'day') this.loadDay();
     else if (tab === 'week') this.loadWeek();
-    else this.loadList(this.listPage());
   }
 
   // ── cell display helpers (kept thin; heavy logic is in calendar-grid) ────────
@@ -693,19 +616,15 @@ export class ReservationsComponent implements OnInit {
   // ── player identity (populated on operator reads) ────────────────────────────
   /** The populated player ref, or null for manual/legacy rows. */
   bookingPlayer(b: Booking): BookingUserRef | null {
-    return b.user && typeof b.user === 'object' ? b.user : null;
+    return bookingPlayer(b);
   }
 
   /** Who the slot belongs to: manual customerName or the player's name. */
   displayName(b: Booking): string | null {
-    if (b.customerName) return b.customerName;
-    const u = this.bookingPlayer(b);
-    if (!u) return null;
-    const parts = [u.firstName, u.lastName].filter(Boolean);
-    return parts.length > 0 ? parts.join(' ') : null;
+    return bookingDisplayName(b);
   }
 
-  /** Open the player's customer page (list row link / cell profile button). */
+  /** Open the player's customer page (cell profile button). */
   openPlayer(b: Booking, event?: Event): void {
     event?.stopPropagation();
     const u = this.bookingPlayer(b);
@@ -742,15 +661,6 @@ export class ReservationsComponent implements OnInit {
     return hhmmToMinutes(cell.end) - hhmmToMinutes(cell.start);
   }
 
-  bookingPriceGel(booking: Booking): number | null {
-    return booking.priceTetri != null ? tetriToGel(booking.priceTetri) : null;
-  }
-
-  /** App-support tip in GEL; null when none (or when the API redacted it). */
-  bookingTipGel(booking: Booking): number | null {
-    return booking.tipTetri ? tetriToGel(booking.tipTetri) : null;
-  }
-
   isPaid(cell: GridCell): boolean {
     return cell.booking?.paymentStatus === 'paid';
   }
@@ -770,16 +680,6 @@ export class ReservationsComponent implements OnInit {
 
   isToday(iso: string): boolean {
     return iso === todayIso();
-  }
-
-  /**
-   * List-view status badge: cancelled → negative, completed → neutral (a
-   * played-out booking is past, not an active green one), confirmed → positive.
-   */
-  statusBadgeClass(status: BookingStatus): string {
-    if (status === 'cancelled') return 'ss-badge ss-badge--negative';
-    if (status === 'completed') return 'ss-badge ss-badge--neutral';
-    return 'ss-badge ss-badge--positive';
   }
 
   navigateToFacilities(): void {

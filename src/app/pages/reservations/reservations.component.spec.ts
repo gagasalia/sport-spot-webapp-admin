@@ -381,47 +381,12 @@ describe('ReservationsComponent', () => {
     expect(bookingSpy.getBookings).not.toHaveBeenCalled();
   });
 
-  // ── list view ────────────────────────────────────────────────────────────────
+  // ── list view (its own module) ───────────────────────────────────────────────
 
-  it('list filters: applyListFilters issues a from/to/court/status query', () => {
+  it('the list tab does NOT fetch from the parent — ReservationListComponent owns it', () => {
     bookingSpy.getBookings.calls.reset();
-    bookingSpy.getBookings.and.returnValue(
-      of({ data: [booking], page: { page: 0, size: 20, total: 1 } }),
-    );
-
     component.setTab('list');
-    component.listCourt.setValue('court-1');
-    component.listStatus.setValue('confirmed');
-    component.applyListFilters();
-
-    expect(bookingSpy.getBookings).toHaveBeenCalledWith(
-      'fac-1',
-      jasmine.objectContaining({ courtId: 'court-1', status: 'confirmed', page: 1, limit: 20 }),
-    );
-    expect(component.listBookings()).toEqual([booking]);
-    expect(component.listTotal()).toBe(1);
-  });
-
-  it('list pagination is one-based: page starts at 1 and next/prev step within bounds', () => {
-    bookingSpy.getBookings.calls.reset();
-    bookingSpy.getBookings.and.returnValue(
-      of({ data: [booking], page: { page: 1, size: 20, total: 45 } }),
-    );
-
-    component.setTab('list');
-    expect(component.listPage()).toBe(1);
-
-    component.nextListPage(); // 1*20=20 < 45 → page 2
-    expect(component.listPage()).toBe(2);
-
-    component.nextListPage(); // 2*20=40 < 45 → page 3
-    expect(component.listPage()).toBe(3);
-
-    component.nextListPage(); // 3*20=60 >= 45 → guarded, stays on 3
-    expect(component.listPage()).toBe(3);
-
-    component.prevListPage();
-    expect(component.listPage()).toBe(2);
+    expect(bookingSpy.getBookings).not.toHaveBeenCalled();
   });
 
   // ── display helpers ──────────────────────────────────────────────────────────
@@ -458,12 +423,6 @@ describe('ReservationsComponent', () => {
     };
     expect(component.cellLabel(blockCell)).toBe('დაბლოკილია');
     expect(component.cellNote(blockCell)).toBe('სარემონტო');
-  });
-
-  it('statusBadgeClass: completed is neutral, cancelled negative, confirmed positive', () => {
-    expect(component.statusBadgeClass('completed')).toBe('ss-badge ss-badge--neutral');
-    expect(component.statusBadgeClass('cancelled')).toBe('ss-badge ss-badge--negative');
-    expect(component.statusBadgeClass('confirmed')).toBe('ss-badge ss-badge--positive');
   });
 
   it('surfaces an error state when the day fetch fails', () => {

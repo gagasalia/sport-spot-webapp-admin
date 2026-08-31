@@ -6,16 +6,20 @@ import { User } from './user.model';
  */
 export interface JwtPayload {
   sub: string;
-  phone: string;
+  /** Player login identifier — absent on admin tokens. */
+  phone?: string;
+  /** Admin login identifier (lowercased) — absent on player tokens. */
+  username?: string;
   userType: string[];
   academies: string[];
   iat?: number;
   exp?: number;
 }
 
-/** Body sent to `POST /auth/login`. */
+/** Body sent to `POST /auth/login` — exactly one identifier. */
 export interface LoginDto {
-  phone: string;
+  phone?: string;
+  username?: string;
   password: string;
 }
 

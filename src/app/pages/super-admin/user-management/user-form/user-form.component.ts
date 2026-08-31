@@ -80,11 +80,43 @@ export class UserFormComponent implements OnInit {
       password: ['', editingUser ? [] : [Validators.required, Validators.minLength(6)]],
       firstName: [editingUser?.firstName || ''],
       lastName: [editingUser?.lastName || ''],
-      phone: [phoneValue, [Validators.required, Validators.pattern(/^\+9955\d{8}$/)]],
+      phone: [phoneValue],
+      username: [editingUser?.username || ''],
       pid: [editingUser?.pid || '', [Validators.pattern(/^\d{11}$/)]],
       dateOfBirth: [dateOfBirth],
       userType: [editingUser?.userType?.length ? [...editingUser.userType] : [UserType.USER], [arrayRequiredValidator]],
     });
+    this.applyIdentityValidators();
+  }
+
+  /**
+   * Player/admin identity split (mirrors the API rule): admin accounts sign in
+   * by USERNAME and carry no phone; player accounts sign in by PHONE and carry
+   * no username. Only the active identity field is validated (and submitted).
+   */
+  protected get isAdminAccount(): boolean {
+    const roles: UserType[] = this.userForm?.get('userType')?.value ?? [];
+    return roles.includes(UserType.ADMIN) || roles.includes(UserType.SUPERADMIN);
+  }
+
+  private applyIdentityValidators(): void {
+    const phone = this.userForm.get('phone');
+    const username = this.userForm.get('username');
+    if (this.isAdminAccount) {
+      phone?.clearValidators();
+      username?.setValidators([
+        Validators.required,
+        Validators.pattern(/^[a-zA-Z0-9._-]{3,32}$/),
+      ]);
+    } else {
+      username?.clearValidators();
+      phone?.setValidators([
+        Validators.required,
+        Validators.pattern(/^\+9955\d{8}$/),
+      ]);
+    }
+    phone?.updateValueAndValidity({ emitEvent: false });
+    username?.updateValueAndValidity({ emitEvent: false });
   }
 
   private formatPhoneForDisplay(phone: string): string {
@@ -115,14 +147,19 @@ export class UserFormComponent implements OnInit {
       const [y, m, d] = String(formValue.dateOfBirth).split('-').map(Number);
       dateOfBirth = new Date(y, m - 1, d).toISOString();
     }
-    const phone = this.extractPhoneDigits(formValue.phone);
+    // Only the identity field the account kind uses is sent — the API rejects
+    // a phone on admin accounts and a username on player accounts, and $unsets
+    // the leftover field itself when a role changes.
+    const identity = this.isAdminAccount
+      ? { username: String(formValue.username).trim().toLowerCase() }
+      : { phone: this.extractPhoneDigits(formValue.phone) };
 
     if (editingUser?._id) {
       const updateDto = {
         email: formValue.email,
         firstName: formValue.firstName || undefined,
         lastName: formValue.lastName || undefined,
-        phone,
+        ...identity,
         pid: formValue.pid || undefined,
         dateOfBirth,
         userType: formValue.userType,
@@ -153,7 +190,7 @@ export class UserFormComponent implements OnInit {
         password: formValue.password,
         firstName: formValue.firstName || undefined,
         lastName: formValue.lastName || undefined,
-        phone,
+        ...identity,
         pid: formValue.pid || undefined,
         dateOfBirth,
         userType: formValue.userType,
@@ -188,11 +225,21 @@ export class UserFormComponent implements OnInit {
   protected toggleRole(type: UserType): void {
     const control = this.userForm.get('userType');
     const current: UserType[] = control?.value ?? [];
-    const next = current.includes(type)
-      ? current.filter((t) => t !== type)
-      : [...current, type];
+    let next: UserType[];
+    if (current.includes(type)) {
+      next = current.filter((t) => t !== type);
+    } else if (type === UserType.USER) {
+      // Player and admin roles are mutually exclusive (API identity split):
+      // an admin's phone must never occupy a player registration slot and
+      // vice versa, so picking one side drops the other.
+      next = [UserType.USER];
+    } else {
+      next = [...current.filter((t) => t !== UserType.USER), type];
+    }
     control?.setValue(next);
     control?.markAsTouched();
+    // The required identity field follows the account kind.
+    this.applyIdentityValidators();
   }
 
   onCancel(): void {

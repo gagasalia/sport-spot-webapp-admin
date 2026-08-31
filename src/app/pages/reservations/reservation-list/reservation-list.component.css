@@ -1,0 +1,97 @@
+/* ── list table ───────────────────────────────────────────────────────────── */
+.rl-table {
+  min-width: 1080px; /* the card scrolls horizontally on narrow screens */
+  font-size: 13px;
+}
+
+/* ── sortable headers (the two date columns) ──────────────────────────────── */
+.rl-sort {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.rl-sort:hover,
+.rl-sort.is-active {
+  color: var(--tui-text-action);
+}
+.rl-sort-ic {
+  block-size: 14px;
+  inline-size: 14px;
+}
+
+/* ── per-column filter row ────────────────────────────────────────────────── */
+.rl-filters th {
+  font-weight: 400;
+  padding-top: 0;
+  vertical-align: top;
+}
+/* stacked from/to pairs (date + price columns) */
+.rl-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.rl-input {
+  height: 30px;
+  min-height: 30px;
+  padding: 0 8px;
+  font-size: 12px;
+  width: 100%;
+  min-width: 84px;
+}
+.rl-input.is-invalid {
+  border-color: var(--tui-status-negative);
+  box-shadow: 0 0 0 1px var(--tui-status-negative);
+}
+
+/* ── cells ────────────────────────────────────────────────────────────────── */
+.rl-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.rl-id {
+  font-size: 11px;
+  color: var(--tui-text-secondary);
+  user-select: all; /* one click selects the whole id for copying */
+  white-space: nowrap;
+}
+.rl-info {
+  flex: 0 0 auto;
+  font-size: 14px;
+  block-size: 14px;
+  inline-size: 14px;
+  cursor: help;
+  opacity: 0.8;
+  vertical-align: middle;
+}
+.rl-info:hover {
+  opacity: 1;
+}
+
+/* player name → customer page link */
+.player-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--tui-text-action);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  transition: text-decoration-color 0.15s ease;
+  /* leading avatar sits on the text line */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  vertical-align: middle;
+}
+.player-link:hover {
+  text-decoration-color: currentColor;
+}

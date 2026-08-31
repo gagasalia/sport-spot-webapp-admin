@@ -1,0 +1,262 @@
+<!-- Error -->
+@if (hasError()) {
+  <div
+    class="rounded-lg p-4 mb-4 georgian-text"
+    lang="ka"
+    style="background: var(--tui-status-negative-pale); color: var(--tui-status-negative)"
+  >
+    მონაცემების ჩატვირთვა ვერ მოხერხდა. სცადეთ თავიდან.
+  </div>
+}
+
+<div class="ss-card overflow-x-auto">
+  <table class="ss-table rl-table">
+    <thead>
+      <!-- Header row: the two date columns carry the server-side sort -->
+      <tr>
+        <th [attr.aria-sort]="sortBy() === 'created' ? 'descending' : null">
+          <button
+            type="button"
+            class="rl-sort"
+            [class.is-active]="sortBy() === 'created'"
+            (click)="setSort('created')"
+            title="ჯერ ბოლოს გაკეთებული ჯავშნები"
+          >
+            <span class="georgian-text" lang="ka">ჯავშნის თარიღი</span>
+            @if (sortBy() === 'created') {
+              <i class="ss-ic rl-sort-ic" style="--ss-ic: url('assets/taiga-ui/icons/chevron-down.svg')"></i>
+            }
+          </button>
+        </th>
+        <th [attr.aria-sort]="sortBy() === 'playing' ? 'ascending' : null">
+          <button
+            type="button"
+            class="rl-sort"
+            [class.is-active]="sortBy() === 'playing'"
+            (click)="setSort('playing')"
+            title="ჯერ მომავალი თამაშები"
+          >
+            <span class="georgian-text" lang="ka">თამაშის თარიღი</span>
+            @if (sortBy() === 'playing') {
+              <i class="ss-ic rl-sort-ic" style="--ss-ic: url('assets/taiga-ui/icons/chevron-down.svg')"></i>
+            }
+          </button>
+        </th>
+        <th class="georgian-text" lang="ka">დრო</th>
+        <th class="georgian-text" lang="ka">კორტი</th>
+        <th class="georgian-text" lang="ka">მომხმარებელი</th>
+        <th>ID</th>
+        <th class="georgian-text" lang="ka">ფასი</th>
+        @if (isSuperAdmin()) {
+          <th class="georgian-text" lang="ka">თიფი</th>
+        }
+        <th class="georgian-text" lang="ka">სტატუსი</th>
+        <th></th>
+      </tr>
+
+      <!-- Per-column filter row -->
+      <tr class="rl-filters">
+        <th>
+          <div class="rl-filter">
+            <input type="date" class="ss-input rl-input" [formControl]="createdFrom" aria-label="ჯავშნის თარიღი — დან" />
+            <input type="date" class="ss-input rl-input" [formControl]="createdTo" aria-label="ჯავშნის თარიღი — მდე" />
+          </div>
+        </th>
+        <th>
+          <div class="rl-filter">
+            <input type="date" class="ss-input rl-input" [formControl]="playFrom" aria-label="თამაშის თარიღი — დან" />
+            <input type="date" class="ss-input rl-input" [formControl]="playTo" aria-label="თამაშის თარიღი — მდე" />
+          </div>
+        </th>
+        <th>
+          <select class="ss-input rl-input" [formControl]="startHour" aria-label="საათი">
+            <option [ngValue]="null" class="georgian-text" lang="ka">ყველა</option>
+            @for (hour of hourOptions; track hour.value) {
+              <option [ngValue]="hour.value">{{ hour.label }}</option>
+            }
+          </select>
+        </th>
+        <th>
+          <select class="ss-input rl-input georgian-text" lang="ka" [formControl]="court" aria-label="კორტი">
+            <option [ngValue]="null">ყველა</option>
+            @for (court of courts(); track court.id) {
+              <option [ngValue]="court.id">{{ court.label }}</option>
+            }
+          </select>
+        </th>
+        <th>
+          <input
+            type="text"
+            class="ss-input rl-input georgian-text"
+            lang="ka"
+            placeholder="სახელი"
+            [formControl]="customer"
+            aria-label="მომხმარებლის ძებნა"
+          />
+        </th>
+        <th>
+          <input
+            type="text"
+            inputmode="numeric"
+            class="ss-input rl-input rl-mono"
+            placeholder="ID"
+            [formControl]="memberId"
+            [class.is-invalid]="memberIdInvalid()"
+            aria-label="ID"
+          />
+        </th>
+        <th>
+          <div class="rl-filter">
+            <input type="number" min="0" class="ss-input rl-input" placeholder="დან ₾" [formControl]="priceMin" aria-label="ფასი — დან" />
+            <input type="number" min="0" class="ss-input rl-input" placeholder="მდე ₾" [formControl]="priceMax" aria-label="ფასი — მდე" />
+          </div>
+        </th>
+        @if (isSuperAdmin()) {
+          <th></th>
+        }
+        <th>
+          <select class="ss-input rl-input georgian-text" lang="ka" [formControl]="status" aria-label="სტატუსი">
+            <option [ngValue]="null">ყველა</option>
+            @for (status of statusOptions; track status) {
+              <option [ngValue]="status">{{ statusLabels[status] }}</option>
+            }
+          </select>
+        </th>
+        <th class="text-right">
+          @if (hasActiveFilters()) {
+            <button
+              class="ss-icon-btn ss-icon-btn--s"
+              type="button"
+              aria-label="ფილტრების გასუფთავება"
+              title="ფილტრების გასუფთავება"
+              (click)="clearFilters()"
+            >
+              <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/x.svg')"></i>
+            </button>
+          }
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      @if (isLoading()) {
+        @for (n of [1, 2, 3, 4, 5]; track n) {
+          <tr>
+            <td [attr.colspan]="isSuperAdmin() ? 10 : 9">
+              <div class="h-8 rounded animate-pulse" style="background: var(--tui-background-neutral-1)"></div>
+            </td>
+          </tr>
+        }
+      } @else {
+        @for (b of bookings(); track b._id) {
+          <tr>
+            <td class="whitespace-nowrap">
+              {{ b.createdAt ? (b.createdAt | date: 'dd.MM.yy HH:mm') : '—' }}
+            </td>
+            <td class="whitespace-nowrap">{{ b.date }}</td>
+            <td class="whitespace-nowrap">{{ b.start }}–{{ b.end }}</td>
+            <td class="whitespace-nowrap">{{ courtLabelById(b.court) }}</td>
+            <td>
+              @if (b.type === 'block') {
+                <span class="georgian-text" lang="ka">დაბლოკილი</span>
+              } @else if (bookingPlayer(b)) {
+                <button
+                  class="player-link"
+                  type="button"
+                  title="მომხმარებლის გვერდი"
+                  (click)="openPlayer(b, $event)"
+                >
+                  <ss-avatar
+                    [name]="displayName(b)"
+                    [url]="bookingPlayer(b)?.avatarUrl"
+                    [size]="22"
+                  />
+                  {{ displayName(b) || '—' }}
+                </button>
+              } @else {
+                {{ displayName(b) || '—' }}
+              }
+              @if (b.note) {
+                <span class="ss-tip ml-1" tabindex="0" [attr.data-tip]="b.note">
+                  <i class="ss-ic rl-info" style="--ss-ic: url('assets/taiga-ui/icons/info.svg')"></i>
+                </span>
+              }
+            </td>
+            <td class="rl-mono rl-id">{{ playerId(b) || '—' }}</td>
+            <td class="whitespace-nowrap">
+              @if (bookingPriceGel(b) !== null) {
+                {{ bookingPriceGel(b) }} GEL
+              } @else {
+                —
+              }
+            </td>
+            @if (isSuperAdmin()) {
+              <td class="whitespace-nowrap">
+                @if (bookingTipGel(b) !== null) {
+                  <span style="color: var(--tui-text-action)">
+                    +{{ bookingTipGel(b) }} GEL
+                    @if (b.tipPercent) {
+                      ({{ b.tipPercent }}%)
+                    }
+                  </span>
+                } @else {
+                  —
+                }
+              </td>
+            }
+            <td>
+              <span [class]="statusBadgeClass(b.status)">
+                <span class="georgian-text" lang="ka">{{ statusLabels[b.status] }}</span>
+              </span>
+            </td>
+            <td class="text-right">
+              @if (b.status === 'confirmed') {
+                <button
+                  class="ss-btn ss-btn--flat ss-btn--s"
+                  type="button"
+                  (click)="cancelFromList(b)"
+                >
+                  <span class="georgian-text" lang="ka">გაუქმება</span>
+                </button>
+              }
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td [attr.colspan]="isSuperAdmin() ? 10 : 9" class="px-4 py-8 text-center georgian-text" lang="ka">
+              @if (hasActiveFilters()) {
+                ამ ფილტრით ჯავშნები ვერ მოიძებნა
+              } @else {
+                ჯავშნები არ მოიძებნა
+              }
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination -->
+@if (totalPages() > 1) {
+  <div class="flex items-center justify-end gap-3 mt-4">
+    <button
+      class="ss-btn ss-btn--outline ss-btn--s"
+      type="button"
+      [disabled]="page() === 1"
+      (click)="prevPage()"
+    >
+      <span class="georgian-text" lang="ka">წინა</span>
+    </button>
+    <span class="text-sm" style="color: var(--tui-text-secondary)">
+      {{ page() }} / {{ totalPages() }}
+    </span>
+    <button
+      class="ss-btn ss-btn--outline ss-btn--s"
+      type="button"
+      [disabled]="page() * limit >= total()"
+      (click)="nextPage()"
+    >
+      <span class="georgian-text" lang="ka">შემდეგი</span>
+    </button>
+  </div>
+}
