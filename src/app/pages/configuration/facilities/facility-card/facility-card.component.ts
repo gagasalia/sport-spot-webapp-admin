@@ -11,6 +11,7 @@ import {
 import { RouterLink } from '@angular/router';
 import { Facility } from '../../../../shared/models/facility.model';
 import { AMENITY_LABELS, AMENITY_ICONS } from '../../../../shared/enums/amenity.enum';
+import { cityName as cityDisplayName } from '../../../../shared/enums/city.enum';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { defaultIfEmpty, take } from 'rxjs';
@@ -62,8 +63,11 @@ export class FacilityCardComponent implements OnChanges {
     return this.facility.media?.length ?? this.facility.photos?.length ?? 0;
   }
 
-  // Single-city/-country MVP — hard-coded until multi-city support lands.
-  readonly cityName = 'თბილისი';
+  // Single-country MVP — the country stays hard-coded; the city comes from the
+  // facility (თბილისი / წყნეთი).
+  get cityName(): string {
+    return cityDisplayName(this.facility.city);
+  }
   readonly countryName = 'საქართველო';
 
   onToggleState(checked: boolean): void {

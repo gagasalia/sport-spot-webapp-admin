@@ -54,8 +54,8 @@ function makeBooking(overrides: Partial<Booking> = {}): Booking {
 }
 
 const courts: GridCourt[] = [
-  { id: 'court-1', courtNumber: 1, label: 'კორტი 1' },
-  { id: 'court-2', courtNumber: 2, label: 'კორტი 2' },
+  { id: 'court-1', name: 'კორტი 1', label: 'კორტი 1' },
+  { id: 'court-2', name: 'კორტი 2', label: 'კორტი 2' },
 ];
 
 describe('calendar-grid time helpers', () => {

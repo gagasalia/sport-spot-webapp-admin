@@ -7,6 +7,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { AcademySelectComponent } from '../../shared/ui/academy-select.component';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -75,7 +76,7 @@ const PHONE_RE = /^\+?\d{9,15}$/;
 @Component({
   selector: 'app-vouchers',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, AcademySelectComponent],
   templateUrl: './vouchers.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

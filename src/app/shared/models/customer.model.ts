@@ -113,6 +113,9 @@ export interface CustomerBookingRow {
   currency?: string;
   facility?: string;
   facilityName?: string;
+  courtName?: string;
+  courtNameEn?: string;
+  /** Legacy snapshot — pre-rename bookings only; superseded by `courtName`. */
   courtNumber?: number;
   createdAt?: string;
   cancelledAt?: string;

@@ -86,38 +86,11 @@
         </h3>
 
         <div formGroupName="address" class="space-y-3">
-          <!-- Address search (Google Places Autocomplete) -->
-          <!-- The associated control is the Places web component injected into
-               #autocompleteContainer at runtime, which the linter cannot see. -->
-          <!-- eslint-disable-next-line @angular-eslint/template/label-has-associated-control -->
-          <label class="ss-field">
-            <span class="ss-label georgian-text" lang="ka">მისამართის ძებნა</span>
-            <div #autocompleteContainer class="w-full"></div>
-          </label>
-
-          <!-- Street (filled from search or manual entry) -->
+          <!-- Street (manual entry) -->
           <label class="ss-field">
             <span class="ss-label georgian-text" lang="ka">ქუჩა / მისამართი</span>
             <input class="ss-input georgian-text" lang="ka" formControlName="street" />
           </label>
-
-          <p class="text-sm georgian-text" style="color: var(--tui-text-secondary)" lang="ka">
-            რუკაზე დაჭერით განსაზღვრეთ კოორდინატები
-          </p>
-          <google-map
-            width="100%"
-            height="260px"
-            [center]="mapCenter()"
-            [zoom]="12"
-            [options]="mapOptions"
-            (mapClick)="onMapClick($event)"
-            class="rounded-lg overflow-hidden block border"
-            style="border-color: var(--tui-border-normal)"
-          >
-            @if (markerPosition()) {
-              <map-marker [position]="markerPosition()!" />
-            }
-          </google-map>
 
           <div class="grid grid-cols-2 gap-4">
             <label class="ss-field">
@@ -169,14 +142,6 @@
           <label class="ss-field">
             <span class="ss-label">Instagram</span>
             <input class="ss-input" formControlName="instagram" placeholder="https://instagram.com/..." />
-          </label>
-          <label class="ss-field">
-            <span class="ss-label">Twitter / X</span>
-            <input class="ss-input" formControlName="twitter" placeholder="https://twitter.com/..." />
-          </label>
-          <label class="ss-field">
-            <span class="ss-label">LinkedIn</span>
-            <input class="ss-input" formControlName="linkedIn" placeholder="https://linkedin.com/in/..." />
           </label>
         </div>
       </div>
@@ -249,7 +214,7 @@
 
     <!-- Amenities -->
     <div>
-      <span class="ss-label georgian-text mb-3" lang="ka">მოხერხებულობები</span>
+      <span class="ss-label georgian-text mb-3" lang="ka">მახასიათებლები</span>
       <div formArrayName="amenities" class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
         @for (amenity of amenities; track amenity; let i = $index) {
           <label class="flex items-center gap-2 cursor-pointer">

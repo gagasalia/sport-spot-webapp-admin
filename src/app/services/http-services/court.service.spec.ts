@@ -22,7 +22,8 @@ const mockCourt: Court = {
   _id: 'court-1',
   facility: FACILITY_ID,
   academy: 'aca-1',
-  courtNumber: 1,
+  name: 'კორტი 1',
+  nameEn: 'Court 1',
   sportType: SportType.Padel,
   locationType: CourtLocationType.Indoor,
   surface: { material: SurfaceMaterial.Synthetic, color: SurfaceColor.Blue },
@@ -73,7 +74,8 @@ describe('CourtService', () => {
 
   it('createCourt POSTs the dto and unwraps the created court', () => {
     const dto: CreateCourtDto = {
-      courtNumber: 2,
+      name: 'კორტი 2',
+      nameEn: 'Court 2',
       sportType: SportType.Padel,
       locationType: CourtLocationType.Outdoor,
       surface: { material: SurfaceMaterial.Clay, color: SurfaceColor.Red },
@@ -86,15 +88,15 @@ describe('CourtService', () => {
     expect(req.request.body).toEqual(dto);
     req.flush(wrapInApiResponse({ ...mockCourt, ...dto }));
 
-    expect(created?.courtNumber).toBe(2);
+    expect(created?.name).toBe('კორტი 2');
   });
 
   it('updateCourt PUTs the dto to the court url', () => {
-    service.updateCourt(FACILITY_ID, 'court-1', { courtNumber: 9 }).subscribe();
+    service.updateCourt(FACILITY_ID, 'court-1', { name: 'ცენტრალური' }).subscribe();
 
     const req = httpMock.expectOne(`${base}/court-1`);
     expect(req.request.method).toBe('PUT');
-    expect(req.request.body).toEqual({ courtNumber: 9 });
+    expect(req.request.body).toEqual({ name: 'ცენტრალური' });
     req.flush(wrapInApiResponse(mockCourt));
   });
 

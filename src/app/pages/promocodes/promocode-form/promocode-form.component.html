@@ -31,12 +31,12 @@
     @if (isSuperAdmin()) {
       <label class="ss-field">
         <span class="ss-label georgian-text" lang="ka">აკადემია</span>
-        <select class="ss-input georgian-text" lang="ka" formControlName="academyId">
-          <option value="">პლატფორმა (ყველა აკადემია)</option>
-          @for (academy of academies(); track academy._id) {
-            <option [value]="academy._id">{{ academy.name }}</option>
-          }
-        </select>
+        <ss-academy-select
+          [academies]="academies()"
+          emptyLabel="პლატფორმა (ყველა აკადემია)"
+          ariaLabel="აკადემია"
+          formControlName="academyId"
+        />
       </label>
     }
 

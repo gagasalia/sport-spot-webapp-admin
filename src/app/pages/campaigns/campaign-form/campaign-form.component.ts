@@ -1,3 +1,4 @@
+import { AcademySelectComponent } from '../../../shared/ui/academy-select.component';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -67,7 +68,7 @@ interface CampaignFormValue {
 @Component({
   selector: 'app-campaign-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, AcademySelectComponent],
   templateUrl: './campaign-form.component.html',
   styleUrl: './campaign-form.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

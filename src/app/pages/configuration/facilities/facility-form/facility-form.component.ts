@@ -1,18 +1,13 @@
 import { CommonModule } from '@angular/common';
 import {
-  AfterViewInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
-  ElementRef,
-  NgZone,
   OnInit,
-  ViewChild,
   inject,
   signal,
 } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormArray } from '@angular/forms';
-import { GoogleMap, MapMarker } from '@angular/google-maps';
 import { take } from 'rxjs';
 import { FacilityService } from '../../../../services/http-services/facility.service';
 import {
@@ -22,6 +17,7 @@ import {
 } from '../../../../services/http-services/media.service';
 import { Facility, IMedia, CreateFacilityDto } from '../../../../shared/models/facility.model';
 import { Amenity, AMENITY_LABELS, AMENITY_ICONS } from '../../../../shared/enums/amenity.enum';
+import { CITY_OPTIONS } from '../../../../shared/enums/city.enum';
 import { DISTRICT_OPTIONS } from '../../../../shared/enums/district.enum';
 import { TenantService } from '../../../../shared/services/tenant.service';
 
@@ -32,40 +28,25 @@ interface CountryItem {
   readonly name: string;
 }
 
-interface CityItem {
-  readonly id: string;
-  readonly name: string;
-}
-
 /**
  * Facility create/edit form — Taiga-free template (ss-* kit, native selects,
  * ss-checkbox amenities, ss-ic mask icons). Renders inside the SsDialogService
- * shell (SS_DIALOG_CONTEXT); Google Maps + Places autocomplete unchanged.
+ * shell (SS_DIALOG_CONTEXT); coordinates are entered manually (lat/lng inputs).
  */
 @Component({
   selector: 'app-facility-form',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, GoogleMap, MapMarker],
+  imports: [ReactiveFormsModule, CommonModule],
   templateUrl: './facility-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class FacilityFormComponent implements OnInit, AfterViewInit {
-  @ViewChild('autocompleteContainer') autocompleteContainer!: ElementRef<HTMLDivElement>;
-
+export class FacilityFormComponent implements OnInit {
   facilityForm!: FormGroup;
 
-  protected readonly markerPosition = signal<google.maps.LatLngLiteral | null>(null);
-  protected readonly mapCenter = signal<google.maps.LatLngLiteral>({ lat: 41.6938, lng: 44.8015 });
   protected readonly mediaItems = signal<IMedia[]>([]);
 
-  readonly mapOptions: google.maps.MapOptions = {
-    mapTypeControl: false,
-    streetViewControl: false,
-    fullscreenControl: false,
-  };
-
   readonly countries: readonly CountryItem[] = [{ id: 'Georgia', name: 'საქართველო' }];
-  readonly cities: readonly CityItem[] = [{ id: 'Tbilisi', name: 'თბილისი' }];
+  readonly cities = CITY_OPTIONS;
   readonly districts = DISTRICT_OPTIONS;
 
   readonly amenities = Object.values(Amenity);
@@ -83,7 +64,6 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
     { facility?: Facility }
   >;
 
-  private readonly ngZone = inject(NgZone);
   private readonly tenant = inject(TenantService);
   private readonly mediaService = inject(MediaService);
 
@@ -103,7 +83,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
       description: [f?.description || ''],
       descriptionEn: [f?.descriptionEn || ''],
       country: [{ value: 'Georgia', disabled: true }],
-      city: [{ value: 'Tbilisi', disabled: true }],
+      city: [f?.city || 'Tbilisi'],
       district: [f?.district || ''],
       amenities: this.createAmenitiesFormArray(f?.amenities as Amenity[] | undefined),
       contactInfo: this.fb.group({
@@ -123,9 +103,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
         }),
         website: [f?.contactInfo?.website || ''],
         facebook: [f?.contactInfo?.facebook || ''],
-        twitter: [f?.contactInfo?.twitter || ''],
         instagram: [f?.contactInfo?.instagram || ''],
-        linkedIn: [f?.contactInfo?.linkedIn || ''],
       }),
     });
 
@@ -133,74 +111,6 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
     if (f?.media?.length) {
       this.mediaItems.set(f.media);
     }
-
-    // Pre-set map marker
-    const latStr =
-      f?.contactInfo?.address?.lat ?? (f?.addressPin?.lat != null ? String(f.addressPin.lat) : '');
-    const lngStr =
-      f?.contactInfo?.address?.lng ?? (f?.addressPin?.lng != null ? String(f.addressPin.lng) : '');
-    if (latStr && lngStr) {
-      const lat = parseFloat(latStr);
-      const lng = parseFloat(lngStr);
-      if (!isNaN(lat) && !isNaN(lng)) {
-        this.markerPosition.set({ lat, lng });
-        this.mapCenter.set({ lat, lng });
-      }
-    }
-  }
-
-  ngAfterViewInit(): void {
-    this.initAutocomplete();
-  }
-
-  private async initAutocomplete(): Promise<void> {
-    try {
-      // The new Places `PlaceAutocompleteElement` / `gmp-select` API is not yet
-      // covered by the installed @types/google.maps, so this interop boundary is
-      // necessarily untyped. `any` is confined to these two lines.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { PlaceAutocompleteElement } = (await google.maps.importLibrary('places')) as any;
-      if (!PlaceAutocompleteElement) return;
-
-      const autocomplete = new PlaceAutocompleteElement({});
-      autocomplete.style.width = '100%';
-      this.autocompleteContainer.nativeElement.appendChild(autocomplete);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      autocomplete.addEventListener('gmp-select', async (event: any) => {
-        const place = event.placePrediction.toPlace();
-        await place.fetchFields({ fields: ['formattedAddress', 'location'] });
-        const location = place.location;
-        if (location) {
-          this.ngZone.run(() => {
-            const lat = location.lat();
-            const lng = location.lng();
-            this.markerPosition.set({ lat, lng });
-            this.mapCenter.set({ lat, lng });
-            this.facilityForm.get('contactInfo.address')?.patchValue({
-              street: place.formattedAddress ?? '',
-              lat: String(lat),
-              lng: String(lng),
-            });
-          });
-        }
-      });
-    } catch (e) {
-      console.warn('Places Autocomplete not available:', e);
-    }
-  }
-
-  protected onMapClick(event: google.maps.MapMouseEvent): void {
-    if (!event.latLng) return;
-    this.ngZone.run(() => {
-      const lat = event.latLng!.lat();
-      const lng = event.latLng!.lng();
-      this.markerPosition.set({ lat, lng });
-      this.facilityForm.get('contactInfo.address')?.patchValue({
-        lat: String(lat),
-        lng: String(lng),
-      });
-    });
   }
 
   createAmenitiesFormArray(selectedAmenities?: Amenity[]): FormArray {
@@ -347,9 +257,7 @@ export class FacilityFormComponent implements OnInit, AfterViewInit {
         },
         website: v.contactInfo.website || undefined,
         facebook: v.contactInfo.facebook || undefined,
-        twitter: v.contactInfo.twitter || undefined,
         instagram: v.contactInfo.instagram || undefined,
-        linkedIn: v.contactInfo.linkedIn || undefined,
       },
     };
 

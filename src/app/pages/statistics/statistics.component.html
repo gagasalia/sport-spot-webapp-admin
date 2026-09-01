@@ -54,16 +54,13 @@
       @if (isSuperAdmin()) {
         <label class="filter-field">
           <span class="ss-label georgian-text" lang="ka">აკადემია</span>
-          <select
-            class="ss-input"
+          <ss-academy-select
+            [academies]="academies()"
+            emptyLabel="ყველა აკადემია"
+            ariaLabel="აკადემია"
             [ngModel]="academyId()"
             (ngModelChange)="onAcademyChange($event)"
-          >
-            <option value="">ყველა აკადემია</option>
-            @for (academy of academies(); track academy._id) {
-              <option [value]="academy._id">{{ academy.name }}</option>
-            }
-          </select>
+          />
         </label>
       }
       <label class="filter-field">
@@ -90,7 +87,7 @@
         >
           <option value="">ყველა კორტი</option>
           @for (court of courts(); track courtIdOf(court)) {
-            <option [value]="courtIdOf(court)">კორტი #{{ court.courtNumber }}</option>
+            <option [value]="courtIdOf(court)">{{ court.name }}</option>
           }
         </select>
       </label>
@@ -238,7 +235,7 @@
                     @for (row of data.courts; track row.courtId) {
                       <tr>
                         <td class="georgian-text" lang="ka">{{ row.facilityName }}</td>
-                        <td class="georgian-text whitespace-nowrap" lang="ka">კორტი #{{ row.courtNumber }}</td>
+                        <td class="georgian-text whitespace-nowrap" lang="ka">{{ row.courtName }}</td>
                         <td class="ss-num">{{ hoursOf(row.bookedMinutes) }}</td>
                         <td class="ss-num">{{ hoursOf(row.blockedMinutes) }}</td>
                         <td class="ss-num">{{ hoursOf(row.availableMinutes) }}</td>

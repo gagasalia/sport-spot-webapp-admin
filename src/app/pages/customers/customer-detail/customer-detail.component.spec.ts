@@ -56,7 +56,8 @@ const bookingRows = [
     paymentMethod: 'card',
     priceTetri: 6000,
     facilityName: 'Arena',
-    courtNumber: 2,
+    courtName: 'კორტი 2',
+    courtNameEn: 'Court 2',
   },
 ];
 

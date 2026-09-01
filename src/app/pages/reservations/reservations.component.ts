@@ -128,16 +128,16 @@ export class ReservationsComponent implements OnInit {
   readonly hasError = signal(false);
 
   // ── derived ──────────────────────────────────────────────────────────────────
-  /** Active courts only, ordered by court number — the day-grid column axis. */
+  /** Active courts only, ordered by court name — the day-grid column axis. */
   readonly activeCourts = computed<GridCourt[]>(() =>
     this.courts()
       .filter((c) => c.activeState)
       .map((c) => ({
         id: c._id ?? c.id ?? '',
-        courtNumber: c.courtNumber,
-        label: `კორტი ${c.courtNumber}`,
+        name: c.name,
+        label: c.name,
       }))
-      .sort((a, b) => a.courtNumber - b.courtNumber),
+      .sort((a, b) => a.name.localeCompare(b.name)),
   );
 
   /** On mobile the day view shows a single court; default to the first active one. */

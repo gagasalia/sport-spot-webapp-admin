@@ -1,20 +1,25 @@
 <div class="p-4">
   <form [formGroup]="courtForm" (ngSubmit)="onSubmit()" class="space-y-4">
-    <!-- Court Number -->
+    <!-- Court Name (Georgian) -->
     <label class="ss-field">
       <span class="ss-label georgian-text" lang="ka">
-        კორტის ნომერი <span class="text-red-500">*</span>
+        კორტის სახელი <span class="text-red-500">*</span>
       </span>
       <input
-        class="ss-input"
-        [class.ss-input--invalid]="courtForm.get('courtNumber')?.touched && courtForm.get('courtNumber')?.invalid"
-        type="number"
-        min="1"
-        formControlName="courtNumber"
+        class="ss-input georgian-text"
+        lang="ka"
+        [class.ss-input--invalid]="courtForm.get('name')?.touched && courtForm.get('name')?.invalid"
+        formControlName="name"
       />
-      @if (courtForm.get('courtNumber')?.touched && courtForm.get('courtNumber')?.invalid) {
-        <span class="ss-error georgian-text" lang="ka">შეიყვანეთ დადებითი ნომერი</span>
+      @if (courtForm.get('name')?.touched && courtForm.get('name')?.invalid) {
+        <span class="ss-error georgian-text" lang="ka">შეიყვანეთ კორტის სახელი</span>
       }
+    </label>
+
+    <!-- Court Name (English) -->
+    <label class="ss-field">
+      <span class="ss-label">Name (English)</span>
+      <input class="ss-input" formControlName="nameEn" />
     </label>
 
     <!-- Sport Type -->

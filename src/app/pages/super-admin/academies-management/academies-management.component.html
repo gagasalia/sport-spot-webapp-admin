@@ -29,7 +29,25 @@
           <tbody>
             @for (academy of academies(); track academy._id) {
               <tr>
-                <td class="font-medium">{{ academy.name }}</td>
+                <td class="font-medium">
+                  <div class="flex items-center gap-2">
+                    @if (academy.logo?.thumbUrl || academy.logo?.url) {
+                      <img
+                        class="w-8 h-8 rounded-full object-cover shrink-0"
+                        [src]="academy.logo?.thumbUrl || academy.logo?.url"
+                        alt=""
+                      />
+                    } @else {
+                      <span
+                        class="w-8 h-8 rounded-full shrink-0 inline-flex items-center justify-center text-xs font-semibold"
+                        style="border: 1px solid var(--hairline-2)"
+                        aria-hidden="true"
+                        >{{ academy.name.charAt(0) }}</span
+                      >
+                    }
+                    <span>{{ academy.name }}</span>
+                  </div>
+                </td>
                 <td class="text-sm">
                   @if (academy.admins.length) {
                     {{ formatAdmins(academy.admins) }}
@@ -73,7 +91,16 @@
         @for (academy of academies(); track academy._id) {
           <div class="ss-card p-4">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="font-semibold truncate">{{ academy.name }}</h3>
+              <div class="flex items-center gap-2 min-w-0">
+                @if (academy.logo?.thumbUrl || academy.logo?.url) {
+                  <img
+                    class="w-8 h-8 rounded-full object-cover shrink-0"
+                    [src]="academy.logo?.thumbUrl || academy.logo?.url"
+                    alt=""
+                  />
+                }
+                <h3 class="font-semibold truncate">{{ academy.name }}</h3>
+              </div>
               <div class="flex items-center gap-1 shrink-0">
                 <button class="ss-icon-btn" type="button" aria-label="რედაქტირება" (click)="editAcademy(academy)">
                       <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>

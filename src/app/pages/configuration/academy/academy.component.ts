@@ -79,10 +79,6 @@ export class AcademyComponent implements OnInit {
       name: ['', Validators.required],
       descriptionGeorgian: [''],
       descriptionEnglish: [''],
-      phone: [''],
-      email: [''],
-      instagram: [''],
-      facebook: [''],
       logo: this.fb.group({
         url: [''],
         type: [''],
@@ -199,8 +195,7 @@ export class AcademyComponent implements OnInit {
    * Builds the `PUT /academy/:id` payload from the form, OMITTING empty optional
    * fields rather than sending empty strings/placeholders that fail backend
    * validation:
-   *  - empty-string optional fields (email/phone/instagram/facebook/descriptions)
-   *    are dropped — e.g. `email:''` would otherwise fail `@IsEmail`;
+   *  - empty-string optional fields (descriptions) are dropped;
    *  - the logo group is dropped entirely unless a real logo exists (non-empty
    *    url) — the placeholder `{url:'',type:''}` would otherwise fail nested
    *    media validation.
@@ -214,10 +209,6 @@ export class AcademyComponent implements OnInit {
     const optionalText: (keyof UpdateAcademyDto)[] = [
       'descriptionGeorgian',
       'descriptionEnglish',
-      'phone',
-      'email',
-      'instagram',
-      'facebook',
     ];
     for (const key of optionalText) {
       const value = v[key];
@@ -230,6 +221,9 @@ export class AcademyComponent implements OnInit {
     // Only attach the logo when a real one was uploaded (non-empty url). The
     // initial/cleared placeholder `{url:'', type:''}` must never be sent, and
     // the optional rendition fields are omitted rather than sent as ''.
+    // REMOVAL is explicit: the academy had a logo and the form no longer does
+    // → send `logo: null` so the API clears it and releases the S3 objects
+    // (omitting the field entirely would silently keep the old logo).
     const logo = v.logo as IMedia | undefined;
     if (logo?.url) {
       payload.logo = {
@@ -240,6 +234,8 @@ export class AcademyComponent implements OnInit {
         ...(logo.key ? { key: logo.key } : {}),
         ...(logo.thumbKey ? { thumbKey: logo.thumbKey } : {}),
       };
+    } else if (this.academy()?.logo?.url) {
+      payload.logo = null;
     }
 
     const padelRule = this.buildPadelRule();

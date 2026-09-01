@@ -44,7 +44,8 @@ export class BookingService {
    * GET /facilities/:facilityId/availability?date= — per-court free slots for a day.
    *
    * The wire shape is `{ date, timezone, slotDurationMinutes, courts: [{ courtId,
-   * courtNumber, slots }] }` (inside the `ApiResponse` envelope). We flatten the
+   * courtName, courtNameEn?, slots }] }` (inside the `ApiResponse` envelope; the
+   * rows arrive sorted by name). We flatten the
    * `courts` array into the internal `{ [courtId]: AvailabilitySlot[] }` map so
    * the grid builders can do O(1) per-court slot lookups.
    */

@@ -87,9 +87,9 @@ export class CourtCardComponent {
     return this.court.activeState;
   }
 
-  /** Display label — courts have numbers, not names (matches the card title). */
+  /** Display label — the Georgian court name (matches the card title). */
   private get courtLabel(): string {
-    return `კორტი #${this.court.courtNumber}`;
+    return this.court.name;
   }
 
   onToggleState(checked: boolean): void {

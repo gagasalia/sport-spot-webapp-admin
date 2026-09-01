@@ -14,7 +14,7 @@ import { SsDialogService } from '../../../shared/ui/dialog.service';
 import { Booking } from '../../../shared/models/booking.model';
 import { GridCourt } from '../calendar-grid';
 
-const courts: GridCourt[] = [{ id: 'court-1', courtNumber: 1, label: 'კორტი 1' }];
+const courts: GridCourt[] = [{ id: 'court-1', name: 'კორტი 1', label: 'კორტი 1' }];
 
 const booking: Booking = {
   _id: 'b-1',

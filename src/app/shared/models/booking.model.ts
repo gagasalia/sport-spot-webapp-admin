@@ -84,7 +84,9 @@ export interface AvailabilitySlot {
  */
 export interface CourtAvailability {
   courtId: string;
-  courtNumber: number;
+  /** Georgian court name (rows arrive sorted by it server-side). */
+  courtName: string;
+  courtNameEn?: string;
   slots: AvailabilitySlot[];
 }
 

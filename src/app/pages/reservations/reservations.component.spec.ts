@@ -41,7 +41,8 @@ const facility2: Facility = { ...facility, _id: 'fac-2', name: 'Padel Arena' };
 const court: Court = {
   _id: 'court-1',
   facility: 'fac-1',
-  courtNumber: 1,
+  name: 'კორტი 1',
+  nameEn: 'Court 1',
   sportType: SportType.Padel,
   locationType: CourtLocationType.Indoor,
   surface: { material: SurfaceMaterial.Synthetic, color: SurfaceColor.Blue },

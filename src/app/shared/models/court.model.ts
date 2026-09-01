@@ -14,8 +14,11 @@ export interface CourtSurface {
  * Court entity as returned by the API.
  *
  * The backend contract is:
- * `{ _id, facility, academy, courtNumber, sportType, locationType,
+ * `{ _id, facility, academy, name, nameEn, sportType, locationType,
  *    surface: { material, color }, activeState }`.
+ *
+ * `name` is the Georgian display name (unique per facility); `nameEn` is the
+ * optional English one. They replaced the old numeric `courtNumber`.
  *
  * The admin UI historically used a flatter shape (`id`, `facilityId`, `type`,
  * `courtSurface`). The legacy aliases are kept optional for backward
@@ -26,7 +29,8 @@ export interface Court {
   _id?: string;
   facility?: string; // ObjectId ref Facility (API)
   academy?: string; // ObjectId ref Academy (API, denormalized)
-  courtNumber: number;
+  name: string; // Georgian display name (unique within the facility)
+  nameEn?: string; // English display name (optional)
   sportType: SportType;
   locationType?: CourtLocationType; // Indoor / Outdoor / Covered (API)
   surface?: CourtSurface; // API surface shape
@@ -41,7 +45,9 @@ export interface Court {
 
 /** Body for POST /facilities/:facilityId/courts */
 export interface CreateCourtDto {
-  courtNumber: number;
+  /** Georgian display name — required, max 100 chars, unique per facility (409 otherwise). */
+  name: string;
+  nameEn?: string;
   sportType: SportType;
   locationType: CourtLocationType;
   surface: CourtSurface;

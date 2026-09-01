@@ -9,18 +9,14 @@
   @if (isSuperAdmin()) {
     <label class="ss-field mb-4 max-w-sm">
       <span class="ss-label georgian-text" lang="ka">აკადემია</span>
-      <select
+      <ss-academy-select
         automation-id="vouchers-academy"
-        class="ss-input georgian-text"
-        lang="ka"
+        [academies]="academies()"
+        emptyLabel="უნივერსალური — მთელი პლატფორმა"
+        ariaLabel="აკადემია"
         [ngModel]="selectedAcademyId()"
         (ngModelChange)="onAcademyChange($event)"
-      >
-        <option value="">უნივერსალური — მთელი პლატფორმა</option>
-        @for (academy of academies(); track academy._id) {
-          <option [value]="academy._id">{{ academy.name }}</option>
-        }
-      </select>
+      />
     </label>
   }
 

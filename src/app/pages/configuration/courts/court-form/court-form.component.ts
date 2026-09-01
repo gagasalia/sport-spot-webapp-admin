@@ -64,7 +64,8 @@ export class CourtFormComponent implements OnInit {
     const surface = editingCourt?.surface ?? editingCourt?.courtSurface;
 
     this.courtForm = this.fb.group({
-      courtNumber: [editingCourt?.courtNumber || null, [Validators.required, Validators.min(1)]],
+      name: [editingCourt?.name || '', Validators.required],
+      nameEn: [editingCourt?.nameEn || ''],
       sportType: [editingCourt?.sportType || SportType.Padel, Validators.required],
       locationType: [location || CourtLocationType.Outdoor, Validators.required],
       surface: this.fb.group({
@@ -84,7 +85,8 @@ export class CourtFormComponent implements OnInit {
 
     const v = this.courtForm.value;
     const dto: CreateCourtDto = {
-      courtNumber: v.courtNumber,
+      name: v.name,
+      nameEn: v.nameEn || undefined,
       sportType: v.sportType,
       locationType: v.locationType,
       surface: { material: v.surface.material, color: v.surface.color },

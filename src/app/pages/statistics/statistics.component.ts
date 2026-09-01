@@ -8,6 +8,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { AcademySelectComponent } from '../../shared/ui/academy-select.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { take } from 'rxjs';
@@ -75,6 +76,7 @@ const LEAD_LABELS: Record<string, string> = {
   imports: [
     CommonModule,
     FormsModule,
+    AcademySelectComponent,
     KpiCardComponent,
     LineChartComponent,
     BarListComponent,
@@ -490,7 +492,7 @@ export class StatisticsComponent implements OnInit {
           `occupancy_${range}`,
           data.courts.map((c) => ({
             facility: c.facilityName,
-            court: `#${c.courtNumber}`,
+            court: c.courtName,
             sport: c.sportType,
             bookedMinutes: c.bookedMinutes,
             blockedMinutes: c.blockedMinutes,

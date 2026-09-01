@@ -181,7 +181,9 @@
                     <td class="whitespace-nowrap">{{ row.start }}–{{ row.end }}</td>
                     <td class="text-sm">
                       {{ row.facilityName || '—' }}
-                      @if (row.courtNumber != null) {
+                      @if (row.courtName) {
+                        · {{ row.courtName }}
+                      } @else if (row.courtNumber != null) {
                         · კორტი {{ row.courtNumber }}
                       }
                     </td>

@@ -1,3 +1,4 @@
+import { AcademySelectComponent } from '../../../shared/ui/academy-select.component';
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -65,7 +66,7 @@ interface PromoFormValue {
 @Component({
   selector: 'app-promocode-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, AcademySelectComponent],
   templateUrl: './promocode-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

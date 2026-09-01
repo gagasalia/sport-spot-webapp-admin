@@ -52,7 +52,8 @@ export interface UpdateAcademyDto {
   email?: string;
   instagram?: string;
   facebook?: string;
-  logo?: IMedia;
+  /** A real media object sets the logo; explicit null REMOVES it; omit = keep. */
+  logo?: IMedia | null;
   /** Sending this REPLACES the whole rule set (PUT semantics); omit = keep. */
   sportRules?: SportRule[];
 }

@@ -29,7 +29,8 @@ export const BOOKING_DURATIONS = [60, 90, 120] as const;
 /** A court column in the day grid (active courts of the selected facility). */
 export interface GridCourt {
   id: string;
-  courtNumber: number;
+  /** Georgian court name (the column label is derived from it). */
+  name: string;
   label: string;
 }
 

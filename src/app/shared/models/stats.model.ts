@@ -34,7 +34,8 @@ export interface StatsOverview {
 
 export interface OccupancyCourtRow {
   courtId: string;
-  courtNumber: number;
+  courtName: string;
+  courtNameEn?: string;
   sportType: string;
   facilityId: string;
   facilityName: string;

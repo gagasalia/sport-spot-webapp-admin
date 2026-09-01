@@ -23,10 +23,6 @@ const mockAcademy: Academy = {
   status: AcademyStatus.PUBLISHED,
   descriptionGeorgian: 'სპორტული აკადემია',
   descriptionEnglish: 'Sports Academy',
-  phone: '555-1234',
-  email: 'academy@example.com',
-  instagram: 'https://instagram.com/academy',
-  facebook: 'https://facebook.com/academy',
 };
 
 // ─── Suite ────────────────────────────────────────────────────────────────────
@@ -128,20 +124,20 @@ describe('AcademyComponent', () => {
       expect(component.academyForm.contains('descriptionEnglish')).toBeTrue();
     });
 
-    it('should initialize the form with a top-level phone control', () => {
-      expect(component.academyForm.contains('phone')).toBeTrue();
+    it('should NOT have a phone control (contact fields removed)', () => {
+      expect(component.academyForm.contains('phone')).toBeFalse();
     });
 
-    it('should initialize the form with a top-level email control', () => {
-      expect(component.academyForm.contains('email')).toBeTrue();
+    it('should NOT have an email control (contact fields removed)', () => {
+      expect(component.academyForm.contains('email')).toBeFalse();
     });
 
-    it('should initialize the form with a top-level instagram control', () => {
-      expect(component.academyForm.contains('instagram')).toBeTrue();
+    it('should NOT have an instagram control (contact fields removed)', () => {
+      expect(component.academyForm.contains('instagram')).toBeFalse();
     });
 
-    it('should initialize the form with a top-level facebook control', () => {
-      expect(component.academyForm.contains('facebook')).toBeTrue();
+    it('should NOT have a facebook control (contact fields removed)', () => {
+      expect(component.academyForm.contains('facebook')).toBeFalse();
     });
 
     it('should NOT have a contactInfo nested form group (contact fields are now top-level)', () => {
@@ -196,22 +192,6 @@ describe('AcademyComponent', () => {
     it('should start with descriptionEnglish as an empty string', () => {
       expect(component.academyForm.get('descriptionEnglish')!.value).toBe('');
     });
-
-    it('should start with phone as an empty string', () => {
-      expect(component.academyForm.get('phone')!.value).toBe('');
-    });
-
-    it('should start with email as an empty string', () => {
-      expect(component.academyForm.get('email')!.value).toBe('');
-    });
-
-    it('should start with instagram as an empty string', () => {
-      expect(component.academyForm.get('instagram')!.value).toBe('');
-    });
-
-    it('should start with facebook as an empty string', () => {
-      expect(component.academyForm.get('facebook')!.value).toBe('');
-    });
   });
 
   // ─── Form population after academy loads ─────────────────────────────────
@@ -235,26 +215,6 @@ describe('AcademyComponent', () => {
     it('should patch descriptionEnglish from the loaded academy', fakeAsync(() => {
       tick();
       expect(component.academyForm.get('descriptionEnglish')!.value).toBe('Sports Academy');
-    }));
-
-    it('should patch the top-level phone field from the loaded academy', fakeAsync(() => {
-      tick();
-      expect(component.academyForm.get('phone')!.value).toBe('555-1234');
-    }));
-
-    it('should patch the top-level email field from the loaded academy', fakeAsync(() => {
-      tick();
-      expect(component.academyForm.get('email')!.value).toBe('academy@example.com');
-    }));
-
-    it('should patch the top-level instagram field from the loaded academy', fakeAsync(() => {
-      tick();
-      expect(component.academyForm.get('instagram')!.value).toBe('https://instagram.com/academy');
-    }));
-
-    it('should patch the top-level facebook field from the loaded academy', fakeAsync(() => {
-      tick();
-      expect(component.academyForm.get('facebook')!.value).toBe('https://facebook.com/academy');
     }));
   });
 
@@ -326,25 +286,18 @@ describe('AcademyComponent', () => {
       expect(callArgs.descriptionEnglish).toBe('Updated');
     }));
 
-    it('should call updateAcademy with flat contact fields at the top level', fakeAsync(() => {
+    it('should never send contact fields (phone/email/instagram/facebook removed)', fakeAsync(() => {
       tick();
       academyServiceSpy.updateAcademy.and.returnValue(of(mockAcademy));
-      component.academyForm.patchValue({
-        phone: '555-0000',
-        email: 'new@academy.ge',
-        instagram: 'https://instagram.com/new',
-        facebook: 'https://facebook.com/new',
-      });
 
       component.onSave();
       tick();
 
       const callArgs = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
-      expect(callArgs.phone).toBe('555-0000');
-      expect(callArgs.email).toBe('new@academy.ge');
-      expect(callArgs.instagram).toBe('https://instagram.com/new');
-      expect(callArgs.facebook).toBe('https://facebook.com/new');
-      // Confirms no contactInfo nesting
+      expect('phone' in callArgs).toBeFalse();
+      expect('email' in callArgs).toBeFalse();
+      expect('instagram' in callArgs).toBeFalse();
+      expect('facebook' in callArgs).toBeFalse();
       expect((callArgs as any).contactInfo).toBeUndefined();
     }));
 
@@ -384,10 +337,10 @@ describe('AcademyComponent', () => {
 
   // ─── onSave: payload omits empty optional fields (BLOCKER 2) ──────────────
   //
-  // The PUT used to send the raw form value: `email:''` failed @IsEmail and the
-  // placeholder logo `{url:'',type:''}` failed nested validation → constant 400s.
-  // The payload must now omit empty-string optional fields and omit the logo
-  // unless a real (non-empty url) logo exists.
+  // The PUT used to send the raw form value: the placeholder logo
+  // `{url:'',type:''}` failed nested validation → constant 400s. The payload
+  // must omit empty-string optional fields and omit the logo unless a real
+  // (non-empty url) logo exists.
 
   describe('onSave — payload omits empty optional fields', () => {
     // A pristine academy: only the required name set, everything else empty.
@@ -403,21 +356,6 @@ describe('AcademyComponent', () => {
       fixture.detectChanges();
     });
 
-    it('saves an empty-email form with NO email key in the payload', fakeAsync(() => {
-      tick();
-      academyServiceSpy.updateAcademy.and.returnValue(of(emptyAcademy));
-      // Email stays blank — the offending field that previously failed @IsEmail.
-      component.academyForm.patchValue({ name: 'Sports Academy', email: '' });
-
-      component.onSave();
-      tick();
-
-      expect(academyServiceSpy.updateAcademy).toHaveBeenCalled();
-      const payload = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
-      expect('email' in payload).toBeFalse();
-      expect(payload.name).toBe('Sports Academy');
-    }));
-
     it('omits the logo key entirely when no real logo exists (placeholder url)', fakeAsync(() => {
       tick();
       academyServiceSpy.updateAcademy.and.returnValue(of(emptyAcademy));
@@ -429,7 +367,7 @@ describe('AcademyComponent', () => {
       expect('logo' in payload).toBeFalse();
     }));
 
-    it('omits all blank optional text fields (phone/instagram/facebook/descriptions)', fakeAsync(() => {
+    it('omits all blank optional text fields (descriptions)', fakeAsync(() => {
       tick();
       academyServiceSpy.updateAcademy.and.returnValue(of(emptyAcademy));
 
@@ -437,9 +375,6 @@ describe('AcademyComponent', () => {
       tick();
 
       const payload = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
-      expect('phone' in payload).toBeFalse();
-      expect('instagram' in payload).toBeFalse();
-      expect('facebook' in payload).toBeFalse();
       expect('descriptionGeorgian' in payload).toBeFalse();
       expect('descriptionEnglish' in payload).toBeFalse();
     }));
@@ -448,8 +383,6 @@ describe('AcademyComponent', () => {
       tick();
       academyServiceSpy.updateAcademy.and.returnValue(of(emptyAcademy));
       component.academyForm.patchValue({
-        email: 'real@academy.ge',
-        phone: '555-9999',
         descriptionGeorgian: 'აღწერა',
         logo: { url: 'https://cdn/logo.png', type: 'image/png', size: 1234, metadata: null },
       });
@@ -458,10 +391,30 @@ describe('AcademyComponent', () => {
       tick();
 
       const payload = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
-      expect(payload.email).toBe('real@academy.ge');
-      expect(payload.phone).toBe('555-9999');
       expect(payload.descriptionGeorgian).toBe('აღწერა');
       expect(payload.logo?.url).toBe('https://cdn/logo.png');
+    }));
+
+    it('sends logo: null when a previously stored logo was removed', fakeAsync(() => {
+      // Removal must be EXPLICIT: omitting the field would silently keep the
+      // old logo on the server (and never release its S3 objects).
+      tick();
+      academyServiceSpy.updateAcademy.and.returnValue(of(emptyAcademy));
+      component.academy.set({
+        ...emptyAcademy,
+        logo: { url: 'https://cdn/logo.png', type: 'image/png', size: 1234 },
+      });
+      component.academyForm.patchValue({
+        logo: { url: 'https://cdn/logo.png', type: 'image/png', size: 1234, metadata: null },
+      });
+
+      component.removeLogo();
+      component.onSave();
+      tick();
+
+      const payload = academyServiceSpy.updateAcademy.calls.mostRecent().args[1];
+      expect('logo' in payload).toBeTrue();
+      expect(payload.logo).toBeNull();
     }));
   });
 

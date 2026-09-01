@@ -54,7 +54,7 @@ describe('BookingService', () => {
 
     const req = httpMock.expectOne(`${facilityBase}/availability?date=2026-06-13`);
     expect(req.request.method).toBe('GET');
-    // Wire shape: { date, timezone, slotDurationMinutes, courts: [{ courtId, courtNumber, slots }] }.
+    // Wire shape: { date, timezone, slotDurationMinutes, courts: [{ courtId, courtName, courtNameEn?, slots }] }.
     req.flush(
       wrap({
         date: '2026-06-13',
@@ -63,12 +63,14 @@ describe('BookingService', () => {
         courts: [
           {
             courtId: 'court-1',
-            courtNumber: 1,
+            courtName: 'კორტი 1',
+            courtNameEn: 'Court 1',
             slots: [{ start: '09:00', end: '10:30', priceTetri: 5000 }],
           },
           {
             courtId: 'court-2',
-            courtNumber: 2,
+            courtName: 'კორტი 2',
+            courtNameEn: 'Court 2',
             slots: [{ start: '10:30', end: '12:00', priceTetri: 6000 }],
           },
         ],

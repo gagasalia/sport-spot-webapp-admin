@@ -9,6 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AcademySelectComponent } from '../../shared/ui/academy-select.component';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -34,7 +35,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [DatePipe, FormsModule, SsAvatarComponent],
+  imports: [DatePipe, FormsModule, SsAvatarComponent, AcademySelectComponent],
   templateUrl: './customers.component.html',
   styleUrl: './customers.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

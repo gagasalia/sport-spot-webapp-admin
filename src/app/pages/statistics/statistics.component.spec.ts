@@ -74,7 +74,7 @@ describe('StatisticsComponent', () => {
       of([{ _id: 'fac-1', name: 'Vake' } as never]),
     );
     courtSpy = jasmine.createSpyObj<CourtService>('CourtService', ['getCourts']);
-    courtSpy.getCourts.and.returnValue(of([{ _id: 'c-1', courtNumber: 1 } as never]));
+    courtSpy.getCourts.and.returnValue(of([{ _id: 'c-1', name: 'კორტი 1' } as never]));
     academySpy = jasmine.createSpyObj<AcademyService>('AcademyService', [
       'getAllAcademies',
     ]);

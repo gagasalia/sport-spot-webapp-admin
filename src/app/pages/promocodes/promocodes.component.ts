@@ -8,6 +8,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { AcademySelectComponent } from '../../shared/ui/academy-select.component';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -43,7 +44,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-promocodes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AcademySelectComponent],
   templateUrl: './promocodes.component.html',
   styleUrl: './promocodes.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
