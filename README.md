@@ -22,9 +22,17 @@ For the product picture, phased plan, and pinned conventions, see [`../docs`](..
 
 Config lives in `src/environments/`; the build swaps the file via `fileReplacements`:
 
-- `environment.ts` / `environment.dev.ts` — local dev, `apiUrl: http://localhost:3000`
-- `environment.prod.ts` — production build (currently points at the staging API
-  Gateway stage until a dedicated prod stage exists)
+- `environment.dev.ts` — local dev (`ng serve`), `apiUrl: http://localhost:3000`
+- `environment.staging.ts` — `ng build --configuration staging`, `apiUrl: https://staging-api.sportspace.ge`
+  (served at staging.dashboard.sportspace.ge)
+- `environment.prod.ts` — `ng build` (default), `apiUrl: https://api.sportspace.ge`
+  (served at www.dashboard.sportspace.ge)
+
+Hosting is AWS Amplify (app `sport-spot-webapp-admin`, eu-central-1), which
+builds on every push: `develop` runs `npm run build:staging` and serves
+staging.dashboard.sportspace.ge; `main` runs `npm run build` and serves
+www.dashboard.sportspace.ge (plus the admin.sportspace.ge aliases). Merge
+`develop` into `main` to ship to production.
 
 The only field is `apiUrl`. There is **no `academyId`** any more: post-auth, the
 operator's academy is resolved at runtime by `TenantService` (it calls
