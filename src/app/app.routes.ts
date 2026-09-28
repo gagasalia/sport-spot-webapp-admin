@@ -90,6 +90,28 @@ export const routes: Routes = [
           ),
       },
       {
+        // Coaches directory (docs/26 §WP-1d) — ADMIN and SUPERADMIN alike (the
+        // parent authGuard admits exactly those roles); the API scopes an
+        // operator to their own academy's coaches. `new` precedes `:id`.
+        path: 'coaches',
+        loadComponent: () =>
+          import('./pages/coaches/coaches.component').then((m) => m.CoachesComponent),
+      },
+      {
+        path: 'coaches/new',
+        loadComponent: () =>
+          import('./pages/coaches/coach-edit/coach-edit.component').then(
+            (m) => m.CoachEditComponent,
+          ),
+      },
+      {
+        path: 'coaches/:id',
+        loadComponent: () =>
+          import('./pages/coaches/coach-edit/coach-edit.component').then(
+            (m) => m.CoachEditComponent,
+          ),
+      },
+      {
         path: 'reservations',
         loadComponent: () =>
           import('./pages/reservations/reservations.component').then(

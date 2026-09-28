@@ -1,0 +1,302 @@
+<div class="pt-8 p-0 sm:p-8">
+  <header class="mb-6 flex items-center justify-between gap-4">
+    <div class="min-w-0">
+      <h1 class="text-2xl font-semibold georgian-text" lang="ka">{{ 'ტრენერები' | t }}</h1>
+      <p class="text-sm georgian-text mt-1" lang="ka" style="color: var(--tui-text-secondary)">
+        {{ 'პადელის ტრენერების პროფილები საიტზე' | t }}
+      </p>
+    </div>
+    <button
+      automation-id="coaches-add"
+      class="ss-btn ss-btn--primary shrink-0"
+      type="button"
+      (click)="addCoach()"
+    >
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
+      <span class="georgian-text" lang="ka">{{ 'ტრენერის დამატება' | t }}</span>
+    </button>
+  </header>
+
+  <!-- Filters -->
+  <div class="ss-card p-4 mb-6">
+    <div class="filter-row">
+      <label class="ss-field search-field">
+        <span class="ss-label georgian-text" lang="ka">{{ 'ძებნა' | t }}</span>
+        <input
+          automation-id="coaches-search"
+          class="ss-input"
+          type="text"
+          [placeholder]="'სახელი ან slug' | t"
+          [ngModel]="q()"
+          (ngModelChange)="onSearchChange($event)"
+        />
+      </label>
+
+      <label class="ss-field select-field">
+        <span class="ss-label georgian-text" lang="ka">{{ 'სტატუსი' | t }}</span>
+        <select
+          automation-id="coaches-status"
+          class="ss-input georgian-text"
+          lang="ka"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="onStatusFilterChange($event)"
+        >
+          <option value="">{{ 'ყველა' | t }}</option>
+          @for (s of statusOptions; track s) {
+            <option [value]="s">{{ statusLabel(s) }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="ss-field select-field">
+        <span class="ss-label georgian-text" lang="ka">{{ 'ქალაქი' | t }}</span>
+        <select
+          automation-id="coaches-city"
+          class="ss-input georgian-text"
+          lang="ka"
+          [ngModel]="city()"
+          (ngModelChange)="onCityChange($event)"
+        >
+          <option value="">{{ 'ყველა ქალაქი' | t }}</option>
+          @for (c of cityOptions; track c.id) {
+            <option [value]="c.id">{{ c.name }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  </div>
+
+  @if (hasError()) {
+    <div
+      class="rounded-lg p-4 mb-4 georgian-text"
+      lang="ka"
+      style="background: var(--tui-status-negative-pale); color: var(--tui-status-negative)"
+    >
+      {{ 'მონაცემების ჩატვირთვა ვერ მოხერხდა. სცადეთ თავიდან.' | t }}
+    </div>
+    <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="retry()">
+      <span class="georgian-text" lang="ka">{{ 'თავიდან ცდა' | t }}</span>
+    </button>
+  } @else if (isLoading()) {
+    <div class="space-y-2 animate-pulse">
+      @for (n of [1, 2, 3, 4, 5]; track n) {
+        <div class="h-12 rounded" style="background: var(--tui-background-neutral-1)"></div>
+      }
+    </div>
+  } @else {
+    <!-- Desktop table -->
+    @if (!isMobile()) {
+      <div class="ss-card overflow-x-auto">
+        <table class="ss-table">
+          <thead>
+            <tr>
+              <th class="georgian-text" lang="ka">{{ 'ტრენერი' | t }}</th>
+              <th class="georgian-text" lang="ka">{{ 'ქალაქი / უბანი' | t }}</th>
+              <th class="georgian-text" lang="ka">{{ 'აკადემია' | t }}</th>
+              <th class="georgian-text" lang="ka">{{ 'დონეები' | t }}</th>
+              <th class="georgian-text" lang="ka">{{ 'ფასი' | t }}</th>
+              <th class="georgian-text" lang="ka">{{ 'სტატუსი' | t }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of rows(); track c._id) {
+              <tr
+                class="coach-row"
+                tabindex="0"
+                data-testid="coach-row"
+                (click)="onRowActivate($event, c)"
+                (keydown.enter)="onRowActivate($event, c)"
+              >
+                <td>
+                  <div class="coach-id">
+                    <ss-avatar [name]="c.name" [url]="photoUrl(c)" [size]="36" />
+                    <div class="min-w-0">
+                      <div class="font-medium georgian-text" lang="ka">{{ c.name }}</div>
+                      @if (c.nameEn) {
+                        <div class="text-xs" style="color: var(--tui-text-secondary)">
+                          {{ c.nameEn }}
+                        </div>
+                      }
+                    </div>
+                  </div>
+                </td>
+                <td class="text-sm georgian-text" lang="ka">{{ placeLabel(c) }}</td>
+                <td class="text-sm georgian-text" lang="ka" data-testid="coach-academy">
+                  {{ academyLabel(c) }}
+                </td>
+                <td class="text-sm georgian-text levels-cell" lang="ka" data-testid="coach-levels">
+                  {{ levelsLabel(c) }}
+                </td>
+                <td class="text-sm whitespace-nowrap georgian-text" lang="ka" data-testid="coach-price">
+                  @if (price(c.priceIndividualTetri); as p) {
+                    <div>{{ 'ინდივიდუალური' | t }}: {{ p }}</div>
+                  }
+                  @if (price(c.priceGroupTetri); as p) {
+                    <div class="text-xs" style="color: var(--tui-text-secondary)">
+                      {{ 'ჯგუფური' | t }}: {{ p }}
+                    </div>
+                  }
+                  @if (!hasPrice(c)) {
+                    <span style="color: var(--tui-text-tertiary)">—</span>
+                  }
+                </td>
+                <td>
+                  <span
+                    class="georgian-text"
+                    lang="ka"
+                    [class]="statusClass(c.status)"
+                    data-testid="coach-status"
+                  >
+                    {{ statusLabel(c.status) }}
+                  </span>
+                </td>
+                <td>
+                  <div class="flex items-center gap-2 justify-end">
+                    <button
+                      class="ss-btn ss-btn--outline ss-btn--s quick-btn"
+                      type="button"
+                      data-testid="coach-toggle"
+                      [disabled]="busyIds().has(c._id)"
+                      (click)="toggleStatus(c)"
+                    >
+                      <span class="georgian-text" lang="ka">{{ toggleLabel(c) }}</span>
+                    </button>
+                    <button
+                      class="ss-icon-btn"
+                      type="button"
+                      [attr.aria-label]="'რედაქტირება' | t"
+                      [title]="'რედაქტირება' | t"
+                      (click)="editCoach(c)"
+                    >
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+                    </button>
+                    <button
+                      class="ss-icon-btn ss-icon-btn--danger"
+                      type="button"
+                      data-testid="coach-delete"
+                      [attr.aria-label]="'წაშლა' | t"
+                      [title]="'წაშლა' | t"
+                      (click)="deleteCoach(c)"
+                    >
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="px-4 py-8 text-center georgian-text" lang="ka">
+                  {{ 'ტრენერები ვერ მოიძებნა' | t }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- Mobile cards -->
+    @if (isMobile()) {
+      <div class="flex flex-col gap-4">
+        @for (c of rows(); track c._id) {
+          <div
+            class="ss-card p-4 coach-card"
+            tabindex="0"
+            data-testid="coach-row"
+            (click)="onRowActivate($event, c)"
+            (keydown.enter)="onRowActivate($event, c)"
+          >
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="coach-id">
+                <ss-avatar [name]="c.name" [url]="photoUrl(c)" [size]="44" />
+                <div class="min-w-0">
+                  <h3 class="font-semibold truncate georgian-text" lang="ka">{{ c.name }}</h3>
+                  @if (c.nameEn) {
+                    <p class="text-xs truncate" style="color: var(--tui-text-secondary)">
+                      {{ c.nameEn }}
+                    </p>
+                  }
+                </div>
+              </div>
+              <span
+                class="georgian-text shrink-0"
+                lang="ka"
+                [class]="statusClass(c.status)"
+                data-testid="coach-status"
+              >
+                {{ statusLabel(c.status) }}
+              </span>
+            </div>
+            <div
+              class="flex flex-wrap gap-2 text-xs georgian-text mb-3"
+              lang="ka"
+              style="color: var(--tui-text-secondary)"
+            >
+              <span>{{ placeLabel(c) }}</span>
+              <span>·</span>
+              <span>{{ academyLabel(c) }}</span>
+              <span>·</span>
+              <span>{{ levelsLabel(c) }}</span>
+              @if (price(c.priceIndividualTetri); as p) {
+                <span>·</span>
+                <span>{{ 'ინდივიდუალური' | t }}: {{ p }}</span>
+              }
+              @if (price(c.priceGroupTetri); as p) {
+                <span>·</span>
+                <span>{{ 'ჯგუფური' | t }}: {{ p }}</span>
+              }
+            </div>
+            <div class="flex items-center gap-2 justify-end">
+              <button
+                class="ss-btn ss-btn--outline ss-btn--s"
+                type="button"
+                [disabled]="busyIds().has(c._id)"
+                (click)="toggleStatus(c)"
+              >
+                <span class="georgian-text" lang="ka">{{ toggleLabel(c) }}</span>
+              </button>
+              <button
+                class="ss-icon-btn ss-icon-btn--danger"
+                type="button"
+                [attr.aria-label]="'წაშლა' | t"
+                (click)="deleteCoach(c)"
+              >
+                <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+              </button>
+            </div>
+          </div>
+        } @empty {
+          <div class="ss-card p-6 text-center">
+            <p class="georgian-text" lang="ka">{{ 'ტრენერები ვერ მოიძებნა' | t }}</p>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() === 1"
+          (click)="onPageChange(page() - 1)"
+        >
+          <span class="georgian-text" lang="ka">{{ 'წინა' | t }}</span>
+        </button>
+        <span class="text-sm" style="color: var(--tui-text-secondary)">
+          {{ page() }} / {{ totalPages() }}
+        </span>
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() >= totalPages()"
+          (click)="onPageChange(page() + 1)"
+        >
+          <span class="georgian-text" lang="ka">{{ 'შემდეგი' | t }}</span>
+        </button>
+      </div>
+    }
+  }
+</div>

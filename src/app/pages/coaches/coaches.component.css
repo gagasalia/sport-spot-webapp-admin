@@ -1,0 +1,44 @@
+/* ── filter row: search + status / city selects ──────────────────────────── */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+.search-field {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+.select-field {
+  flex: 0 1 200px;
+  min-width: 160px;
+}
+
+/* ── rows: the whole row opens the editor ────────────────────────────────── */
+.coach-row,
+.coach-card {
+  cursor: pointer;
+}
+.coach-row:hover td {
+  background: var(--tui-background-neutral-1);
+}
+.coach-row:focus-visible,
+.coach-card:focus-visible {
+  outline: 2px solid var(--tui-background-accent-1);
+  outline-offset: -2px;
+}
+
+/* photo thumb + name (+ English name) */
+.coach-id {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.levels-cell {
+  max-width: 220px;
+}
+
+.quick-btn {
+  white-space: nowrap;
+}

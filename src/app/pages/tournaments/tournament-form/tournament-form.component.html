@@ -21,30 +21,128 @@
       <input class="ss-input" formControlName="nameEn" placeholder="Summer Open 2026" />
     </label>
 
-    <!-- Facility (single-select chips, first facility preselected on create) -->
-    <div class="ss-field">
-      <span class="ss-label georgian-text" lang="ka">
-        {{ 'ობიექტი' | t }} <span class="text-red-500">*</span>
-      </span>
+    <!-- External tournament (superadmin only): a non-partner club's event -->
+    @if (isSuperAdmin()) {
       <div
-        class="ss-chip-rail ss-chip-rail--wrap"
-        role="radiogroup"
-        [attr.aria-label]="'ობიექტი' | t"
+        class="rounded-lg p-3 space-y-3"
+        style="border: 1px solid var(--hairline-2)"
+        data-testid="external-block"
       >
-        @for (facility of facilities(); track facilityId(facility)) {
-          <button
-            type="button"
-            class="ss-chip"
-            role="radio"
-            [class.is-active]="selectedFacilityId() === facilityId(facility)"
-            [attr.aria-checked]="selectedFacilityId() === facilityId(facility)"
-            (click)="selectFacility(facilityId(facility))"
-          >
-            {{ facilityLabel(facility) }}
-          </button>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            class="ss-switch"
+            type="checkbox"
+            formControlName="external"
+            data-testid="external-toggle"
+          />
+          <span class="flex flex-col">
+            <span class="font-medium georgian-text" lang="ka">{{ 'გარე ტურნირი' | t }}</span>
+            <span class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+              {{ 'არაპარტნიორი კლუბის ტურნირი — რეგისტრაცია ორგანიზატორის საიტზე' | t }}
+            </span>
+          </span>
+        </label>
+
+        @if (isExternal()) {
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">
+              {{ 'რეგისტრაციის ბმული' | t }} <span class="text-red-500">*</span>
+            </span>
+            <input
+              class="ss-input"
+              type="url"
+              formControlName="registrationUrl"
+              placeholder="https://..."
+              data-testid="external-url"
+              [attr.maxlength]="limits.registrationUrl"
+              [class.ss-input--invalid]="showError('registrationUrl')"
+            />
+            @if (showError('registrationUrl', 'required')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'სავალდებულო ველი' | t }}</span>
+            } @else if (showError('registrationUrl')) {
+              <span class="ss-error georgian-text" lang="ka">
+                {{ 'ბმული უნდა იწყებოდეს https://-ით' | t }}
+              </span>
+            }
+          </label>
+
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'ორგანიზატორი' | t }}</span>
+            <input
+              class="ss-input"
+              formControlName="organizerName"
+              data-testid="external-organizer"
+              [attr.maxlength]="limits.organizer"
+            />
+          </label>
+
+          <div class="grid grid-cols-2 gap-4">
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">{{ 'კლუბი დირექტორიიდან' | t }}</span>
+              <select
+                class="ss-input georgian-text"
+                lang="ka"
+                formControlName="externalVenue"
+                data-testid="external-venue"
+              >
+                <option value="">{{ 'არ არის დირექტორიაში' | t }}</option>
+                @for (venue of venues(); track venue._id) {
+                  <option [value]="venue._id">{{ venueLabel(venue) }}</option>
+                }
+              </select>
+            </label>
+            @if (!hasDirectoryVenue()) {
+              <label class="ss-field">
+                <span class="ss-label georgian-text" lang="ka">{{ 'ადგილის დასახელება' | t }}</span>
+                <input
+                  class="ss-input georgian-text"
+                  lang="ka"
+                  formControlName="externalVenueName"
+                  data-testid="external-venue-name"
+                  [attr.maxlength]="limits.venueName"
+                  [placeholder]="'მაგ. ყვარლის ტბის კურორტი' | t"
+                />
+              </label>
+            }
+          </div>
+          @if (form.hasError('externalPlace') && form.get('externalVenueName')?.touched) {
+            <span class="ss-error georgian-text" lang="ka" data-testid="external-place-error">
+              {{ 'მიუთითეთ კლუბი დირექტორიიდან ან ადგილის დასახელება' | t }}
+            </span>
+          }
         }
       </div>
-    </div>
+    }
+
+    <!-- Facility (single-select chips, first facility preselected on create) -->
+    @if (!isExternal()) {
+      <div class="ss-field" data-testid="facility-field">
+        <span class="ss-label georgian-text" lang="ka">
+          {{ 'ობიექტი' | t }} <span class="text-red-500">*</span>
+        </span>
+        <div
+          class="ss-chip-rail ss-chip-rail--wrap"
+          role="radiogroup"
+          [attr.aria-label]="'ობიექტი' | t"
+        >
+          @for (facility of facilities(); track facilityId(facility)) {
+            <button
+              type="button"
+              class="ss-chip"
+              role="radio"
+              [class.is-active]="selectedFacilityId() === facilityId(facility)"
+              [attr.aria-checked]="selectedFacilityId() === facilityId(facility)"
+              (click)="selectFacility(facilityId(facility))"
+            >
+              {{ facilityLabel(facility) }}
+            </button>
+          }
+        </div>
+        @if (form.get('facility')?.touched && form.get('facility')?.invalid) {
+          <span class="ss-error georgian-text" lang="ka">{{ 'აირჩიეთ ობიექტი' | t }}</span>
+        }
+      </div>
+    }
 
     <!-- Type + Format -->
     <div class="grid grid-cols-2 gap-4">

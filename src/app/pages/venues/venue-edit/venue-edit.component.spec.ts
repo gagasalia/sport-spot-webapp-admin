@@ -6,7 +6,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
-import { OTHER_CITY, VenueEditComponent, countWords } from './venue-edit.component';
+import { OTHER_CITY, VenueEditComponent } from './venue-edit.component';
 import { TPipe } from '../../../shared/i18n/t.pipe';
 import { VenueService } from '../../../services/http-services/venue.service';
 import { AcademyService } from '../../../services/http-services/academy.service';
@@ -438,11 +438,5 @@ describe('VenueEditComponent', () => {
       expect(component['hasError']()).toBeTrue();
       expect(component['isLoading']()).toBeFalse();
     });
-  });
-
-  it('countWords splits on any whitespace', () => {
-    expect(countWords('')).toBe(0);
-    expect(countWords(null)).toBe(0);
-    expect(countWords(' a  b\nc\t d ')).toBe(4);
   });
 });

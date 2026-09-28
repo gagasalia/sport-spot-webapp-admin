@@ -12,10 +12,27 @@ export type TournamentLevel = 'any' | 'beginner' | 'intermediate' | 'advanced';
 export type TournamentCategory = 'men' | 'women' | 'mixed';
 export type TournamentStatus = 'draft' | 'published' | 'completed' | 'cancelled';
 
+/**
+ * The off-site block of an EXTERNAL tournament (docs/26 §WP-1d): an event run
+ * by a non-partner club, listed by a superadmin on the player site's
+ * `/tournaments`, with registration on the organizer's own site. Where it is
+ * played is a directory `venue` (docs/26 §WP-1b) or a free-text `venueName`.
+ */
+export interface TournamentExternal {
+  /** Where players register (http/https). */
+  registrationUrl: string;
+  organizerName?: string;
+  /** Directory venue id. */
+  venue?: string | null;
+  venueName?: string;
+}
+
 export interface Tournament {
   _id: string;
-  academy: string;
-  facility: string;
+  /** Absent on an external tournament (it belongs to no academy). */
+  academy?: string;
+  /** Host facility; optional on an external tournament. */
+  facility?: string;
   facilityName?: string;
   city?: string;
   name: string;
@@ -39,11 +56,16 @@ export interface Tournament {
   maxParticipants: number;
   registeredCount: number;
   status: TournamentStatus;
+  /** Set = an external tournament (registration off-site, superadmin-managed). */
+  external?: TournamentExternal | null;
   createdAt?: string;
 }
 
 export interface CreateTournamentDto {
-  facility: string;
+  /** Required unless `external` is set (then it is left out). */
+  facility?: string;
+  /** SUPERADMIN only: makes it an external tournament. */
+  external?: TournamentExternal;
   name: string;
   nameEn?: string;
   description?: string;
@@ -63,7 +85,15 @@ export interface CreateTournamentDto {
   maxParticipants: number;
 }
 
-export type UpdateTournamentDto = Partial<CreateTournamentDto>;
+/** Every key optional; `external: null` turns an external tournament back into an internal one. */
+export type UpdateTournamentDto = Partial<Omit<CreateTournamentDto, 'external'>> & {
+  external?: TournamentExternal | null;
+};
+
+// Caps mirrored from the API (tournament.constants.ts).
+export const EXTERNAL_REGISTRATION_URL_MAX = 500;
+export const EXTERNAL_ORGANIZER_MAX = 120;
+export const EXTERNAL_VENUE_NAME_MAX = 160;
 
 export type RegistrationPaymentStatus = 'pay_at_venue' | 'paid' | 'refunded';
 

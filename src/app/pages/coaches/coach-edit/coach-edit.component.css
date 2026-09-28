@@ -1,0 +1,203 @@
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--tui-text-secondary);
+  text-decoration: none;
+}
+.back-link:hover {
+  color: var(--tui-text-primary);
+}
+.ce-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--tui-text-secondary);
+}
+
+/* ── form layout: one card per section ─────────────────────────────────── */
+.ce {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ce-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+}
+.ce-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--tui-text-secondary);
+}
+.ce-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.ce-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+@media (max-width: 768px) {
+  .ce-section {
+    padding: 16px;
+  }
+  .ce-grid,
+  .ce-grid--3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ce-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--tui-text-secondary);
+}
+
+/* live word count under each bio (SEO wants ≥150 words) */
+.ce-count {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--tui-text-secondary);
+}
+.ce-count.is-low span:first-child {
+  color: var(--warning);
+  font-weight: 600;
+}
+
+/* ── photo: one square portrait ───────────────────────────────────────────── */
+.ce-photo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.ce-photo img {
+  display: block;
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+}
+.ce-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ce-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+  text-align: center;
+  border: 2px dashed var(--tui-border-hover);
+  border-radius: var(--r-md);
+}
+
+/* ── chips: certifications input + picked facilities / venues ─────────────── */
+.ce-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.ce-chips:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.ce-chips--plain {
+  min-height: 0;
+  margin-bottom: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.ce-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 3px 3px 10px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  font-size: 13px;
+}
+.ce-chip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ce-chip-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.ce-chip-x:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.ce-chip-x .ss-ic {
+  width: 12px;
+  height: 12px;
+}
+.ce-chip-input {
+  flex: 1 1 160px;
+  min-width: 120px;
+  height: 30px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+.ce-chip-input::placeholder {
+  color: var(--text-faint);
+}
+
+/* ── where they teach ─────────────────────────────────────────────────────── */
+.ce-academy {
+  max-width: 420px;
+}
+.ce-readonly {
+  display: flex;
+  align-items: center;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  cursor: default;
+}
+
+.ce-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-bottom: 24px;
+}

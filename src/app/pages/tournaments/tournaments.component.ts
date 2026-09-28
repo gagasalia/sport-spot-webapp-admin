@@ -74,9 +74,20 @@ export class TournamentsComponent implements OnInit {
     return localizedName(tournament);
   }
 
-  /** Venue line: the live facility name, falling back to the row snapshot. */
+  /**
+   * Venue line: the live facility name, falling back to the row snapshot. An
+   * external tournament names its free-text place and organizer instead
+   * (a directory venue is only an id here).
+   */
   protected facilityLabel(tournament: Tournament): string {
-    return this.facilityNames.label(tournament.facility, tournament.facilityName);
+    const facility = this.facilityNames.label(tournament.facility, tournament.facilityName);
+    const external = tournament.external;
+    if (!external) {
+      return facility;
+    }
+    return (
+      [external.venueName || facility, external.organizerName].filter(Boolean).join(' · ') || '—'
+    );
   }
 
   protected readonly isLoading = signal(true);

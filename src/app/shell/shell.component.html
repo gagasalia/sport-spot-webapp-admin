@@ -130,6 +130,17 @@
           <span lang="ka" class="georgian-text nav-label">{{ 'სტატიები' | t }}</span>
         </a>
       }
+      <!-- Coaches: every operator manages their own academy's coaches. -->
+      <a
+        automation-id="coaches"
+        class="nav-item nav-sub"
+        routerLink="/coaches"
+        routerLinkActive="is-active"
+        (click)="closeMenu()"
+      >
+        <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/graduation-cap.svg')"></i>
+        <span lang="ka" class="georgian-text nav-label">{{ 'ტრენერები' | t }}</span>
+      </a>
       <a
         class="nav-item nav-sub"
         routerLink="/configuration/courts"

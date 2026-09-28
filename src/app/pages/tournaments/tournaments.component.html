@@ -36,9 +36,20 @@
           </thead>
           <tbody>
             @for (t of tournaments(); track t._id) {
-              <tr>
+              <tr data-testid="tournament-row">
                 <td>
-                  <div class="font-medium">{{ tournamentLabel(t) }}</div>
+                  <div class="font-medium flex items-center gap-2">
+                    <span>{{ tournamentLabel(t) }}</span>
+                    @if (t.external) {
+                      <span
+                        class="ss-badge ss-badge--info georgian-text"
+                        lang="ka"
+                        data-testid="external-badge"
+                      >
+                        {{ 'გარე' | t }}
+                      </span>
+                    }
+                  </div>
                   <div class="text-xs" style="color: var(--tui-text-secondary)">
                     {{ facilityLabel(t) }} @if (t.city) { · {{ t.city }} }
                   </div>
@@ -59,7 +70,12 @@
                 </td>
                 <td class="text-sm georgian-text whitespace-nowrap" lang="ka">{{ feeLabel(t) }}</td>
                 <td class="text-sm">
-                  <span class="font-medium">{{ t.registeredCount }}/{{ t.maxParticipants }}</span>
+                  @if (t.external) {
+                    <!-- registration happens off-site: our counter says nothing -->
+                    <span style="color: var(--tui-text-tertiary)">—</span>
+                  } @else {
+                    <span class="font-medium">{{ t.registeredCount }}/{{ t.maxParticipants }}</span>
+                  }
                 </td>
                 <td>
                   <span
@@ -95,15 +111,32 @@
                         <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/flag.svg')"></i>
                       </button>
                     }
-                    <button
-                      class="ss-icon-btn"
-                      type="button"
-                      [attr.aria-label]="'რეგისტრაციები' | t"
-                      [title]="'რეგისტრაციები' | t"
-                      (click)="openRegistrations(t)"
-                    >
-                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
-                    </button>
+                    @if (t.external) {
+                      <a
+                        class="ss-icon-btn"
+                        target="_blank"
+                        rel="noopener"
+                        data-testid="external-link"
+                        [href]="t.external.registrationUrl"
+                        [attr.aria-label]="'რეგისტრაციის ბმული' | t"
+                        [title]="'რეგისტრაციის ბმული' | t"
+                      >
+                        <i
+                          class="ss-ic"
+                          style="--ss-ic: url('assets/taiga-ui/icons/external-link.svg')"
+                        ></i>
+                      </a>
+                    } @else {
+                      <button
+                        class="ss-icon-btn"
+                        type="button"
+                        [attr.aria-label]="'რეგისტრაციები' | t"
+                        [title]="'რეგისტრაციები' | t"
+                        (click)="openRegistrations(t)"
+                      >
+                        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
+                      </button>
+                    }
                     @if (t.status === 'draft' || t.status === 'published') {
                       <button
                         class="ss-icon-btn"
@@ -148,10 +181,19 @@
     @if (isMobile()) {
       <div class="flex flex-col gap-4">
         @for (t of tournaments(); track t._id) {
-          <div class="ss-card p-4">
+          <div class="ss-card p-4" data-testid="tournament-row">
             <div class="flex items-start justify-between gap-2 mb-2">
               <div class="min-w-0">
                 <h3 class="font-semibold truncate">{{ tournamentLabel(t) }}</h3>
+                @if (t.external) {
+                  <span
+                    class="ss-badge ss-badge--info georgian-text"
+                    lang="ka"
+                    data-testid="external-badge"
+                  >
+                    {{ 'გარე' | t }}
+                  </span>
+                }
                 <p class="text-sm truncate" style="color: var(--tui-text-secondary)">
                   {{ facilityLabel(t) }} · {{ t.startDate }} {{ t.startTime }}
                 </p>
@@ -172,8 +214,10 @@
               <span>{{ formatLabel(t) }}</span>
               <span>·</span>
               <span>{{ feeLabel(t) }}</span>
-              <span>·</span>
-              <span>{{ t.registeredCount }}/{{ t.maxParticipants }}</span>
+              @if (!t.external) {
+                <span>·</span>
+                <span>{{ t.registeredCount }}/{{ t.maxParticipants }}</span>
+              }
             </div>
             <div class="flex items-center gap-1 justify-end">
               @if (t.status === 'draft') {
@@ -196,14 +240,29 @@
                   <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/flag.svg')"></i>
                 </button>
               }
-              <button
-                class="ss-icon-btn"
-                type="button"
-                [attr.aria-label]="'რეგისტრაციები' | t"
-                (click)="openRegistrations(t)"
-              >
-                <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
-              </button>
+              @if (t.external) {
+                <a
+                  class="ss-icon-btn"
+                  target="_blank"
+                  rel="noopener"
+                  [href]="t.external.registrationUrl"
+                  [attr.aria-label]="'რეგისტრაციის ბმული' | t"
+                >
+                  <i
+                    class="ss-ic"
+                    style="--ss-ic: url('assets/taiga-ui/icons/external-link.svg')"
+                  ></i>
+                </a>
+              } @else {
+                <button
+                  class="ss-icon-btn"
+                  type="button"
+                  [attr.aria-label]="'რეგისტრაციები' | t"
+                  (click)="openRegistrations(t)"
+                >
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
+                </button>
+              }
               @if (t.status === 'draft' || t.status === 'published') {
                 <button
                   class="ss-icon-btn"

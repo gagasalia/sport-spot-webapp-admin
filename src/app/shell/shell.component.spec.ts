@@ -147,6 +147,47 @@ describe('ShellComponent', () => {
     fixture.detectChanges();
   });
 
+  // Coaches are managed by every operator (their own academy's) — the entry is
+  // not superadmin-gated, and it follows Articles in both nav hosts.
+  it('shows the coaches entry to every operator, right after the articles entry', () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    const shell = fixture.componentInstance as unknown as {
+      isMobile: { set(v: boolean): void };
+      toggleMenu(): void;
+      closeMenu(): void;
+    };
+    shell.isMobile.set(false);
+    fixture.detectChanges();
+
+    // academy operator: no venues/articles, so it follows Facilities
+    let link: HTMLElement = fixture.nativeElement.querySelector('[automation-id="coaches"]');
+    expect(link).not.toBeNull();
+    expect(link.getAttribute('routerLink')).toBe('/coaches');
+    expect(link.textContent).toContain('ტრენერები');
+    expect((link.previousElementSibling as HTMLElement).getAttribute('routerLink')).toBe(
+      '/configuration/facilities',
+    );
+
+    // superadmin: right after Articles
+    authStub.isSuperAdmin.set(true);
+    fixture.detectChanges();
+    link = fixture.nativeElement.querySelector('[automation-id="coaches"]');
+    expect((link.previousElementSibling as HTMLElement).getAttribute('automation-id')).toBe(
+      'articles',
+    );
+
+    // Mobile: the same entry lives in the Menu sheet.
+    shell.isMobile.set(true);
+    shell.toggleMenu();
+    fixture.detectChanges();
+    const sheetLink = fixture.nativeElement.querySelector('.menu-sheet [automation-id="coaches"]');
+    expect(sheetLink).not.toBeNull();
+
+    // Release the page-scroll lock the open sheet applied.
+    shell.closeMenu();
+    fixture.detectChanges();
+  });
+
   it('declined signOut leaves the session untouched', () => {
     dialogStub.open.and.returnValue(of(false));
     const router = TestBed.inject(Router);

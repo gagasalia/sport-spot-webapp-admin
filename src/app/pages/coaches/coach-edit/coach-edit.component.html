@@ -1,0 +1,631 @@
+<div class="pt-8 p-0 sm:p-8">
+  <a class="back-link mb-4" routerLink="/coaches">
+    <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/chevron-left.svg')"></i>
+    <span class="georgian-text" lang="ka">{{ 'ტრენერები' | t }}</span>
+  </a>
+
+  <header class="mb-6">
+    <h1 class="text-2xl font-semibold georgian-text" lang="ka">
+      {{ (isEditMode ? 'ტრენერის რედაქტირება' : 'ტრენერის დამატება') | t }}
+    </h1>
+    @if (coach()?.updatedAt; as updated) {
+      <div class="ce-meta georgian-text" lang="ka" data-testid="coach-meta">
+        <span>{{ 'განახლდა' | t }}: {{ updated | date: 'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+    }
+  </header>
+
+  @if (hasError()) {
+    <div class="ss-card p-6 text-center">
+      <p class="georgian-text mb-3" lang="ka">{{ 'ტრენერი ვერ მოიძებნა' | t }}</p>
+      <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="retry()">
+        <span class="georgian-text" lang="ka">{{ 'თავიდან ცდა' | t }}</span>
+      </button>
+    </div>
+  } @else if (isLoading()) {
+    <div class="space-y-3 animate-pulse">
+      <div class="h-32 rounded-xl" style="background: var(--tui-background-neutral-1)"></div>
+      <div class="h-64 rounded-xl" style="background: var(--tui-background-neutral-1)"></div>
+      <div class="h-32 rounded-xl" style="background: var(--tui-background-neutral-1)"></div>
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="ce" novalidate>
+      <!-- ── 1. Identity ─────────────────────────────────────────────────── -->
+      <section class="ss-card ce-section">
+        <h2 class="ce-section-title georgian-text" lang="ka">{{ 'იდენტობა' | t }}</h2>
+        <div class="ce-grid">
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">
+              {{ 'სახელი და გვარი' | t }} <span class="text-red-500">*</span>
+            </span>
+            <input
+              class="ss-input georgian-text"
+              lang="ka"
+              formControlName="name"
+              data-testid="coach-name"
+              [attr.maxlength]="limits.name"
+              [class.ss-input--invalid]="showError('name')"
+            />
+            @if (showError('name', 'required')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'სახელი სავალდებულოა' | t }}</span>
+            }
+          </label>
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'სახელი (ინგლისურად)' | t }}</span>
+            <input class="ss-input" lang="en" formControlName="nameEn" [attr.maxlength]="limits.name" />
+          </label>
+
+          <label class="ss-field">
+            <span class="ss-label">
+              Slug
+              @if (isEditMode) {
+                <span class="text-red-500">*</span>
+              }
+            </span>
+            <input
+              class="ss-input font-mono"
+              formControlName="slug"
+              autocomplete="off"
+              placeholder="giorgi-beridze"
+              data-testid="coach-slug"
+              [attr.maxlength]="limits.slug"
+              [class.ss-input--invalid]="showError('slug')"
+            />
+            @if (showError('slug', 'conflict')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'ეს slug უკვე დაკავებულია' | t }}</span>
+            } @else if (showError('slug', 'required')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'სავალდებულო ველი' | t }}</span>
+            } @else if (showError('slug')) {
+              <span class="ss-error georgian-text" lang="ka">
+                {{ 'მხოლოდ ლათინური პატარა ასოები, ციფრები და ტირე' | t }}
+              </span>
+            } @else if (isEditMode) {
+              <span class="ce-hint georgian-text" lang="ka">
+                {{ 'slug-ის შეცვლა პროფილის ბმულს შეცვლის' | t }}
+              </span>
+            } @else {
+              <span class="ce-hint georgian-text" lang="ka">
+                {{ 'ცარიელი — შეიქმნება სახელიდან ავტომატურად' | t }}
+              </span>
+            }
+          </label>
+
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'სტატუსი' | t }}</span>
+            <select
+              class="ss-input georgian-text"
+              lang="ka"
+              formControlName="status"
+              data-testid="coach-status-select"
+            >
+              @for (s of statusOptions; track s) {
+                <option [value]="s">{{ statusLabel(s) }}</option>
+              }
+            </select>
+            <span class="ce-hint georgian-text" lang="ka">
+              {{ 'საიტზე მხოლოდ გამოქვეყნებული პროფილი ჩანს' | t }}
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <!-- ── 2. Photo (media pipeline: webp web + thumb renditions) ─────── -->
+      <section class="ss-card ce-section">
+        <h2 class="ce-section-title georgian-text" lang="ka">{{ 'ფოტო' | t }}</h2>
+        <div class="ce-photo-row">
+          @if (photo(); as p) {
+            <div class="ce-photo" data-testid="photo-preview">
+              <img [src]="p.thumbUrl || p.url" [alt]="'ტრენერის ფოტო' | t" />
+            </div>
+            <div class="ce-photo-actions">
+              <button
+                type="button"
+                class="ss-btn ss-btn--outline ss-btn--s"
+                [disabled]="isUploadingPhoto()"
+                (click)="photoInput.click()"
+              >
+                <span class="georgian-text" lang="ka">
+                  {{ (isUploadingPhoto() ? 'იტვირთება...' : 'ფოტოს შეცვლა') | t }}
+                </span>
+              </button>
+              <button
+                type="button"
+                class="ss-btn ss-btn--danger ss-btn--s"
+                data-testid="photo-remove"
+                (click)="removePhoto()"
+              >
+                <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                <span class="georgian-text" lang="ka">{{ 'წაშლა' | t }}</span>
+              </button>
+            </div>
+          } @else {
+            <div
+              class="ce-drop"
+              data-testid="photo-drop"
+              (dragover)="onPhotoDragOver($event)"
+              (drop)="onPhotoDrop($event)"
+            >
+              <i
+                class="ss-ic ss-ic--lg"
+                style="--ss-ic: url('assets/taiga-ui/icons/upload.svg'); color: var(--tui-text-tertiary)"
+              ></i>
+              <p class="text-sm georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+                {{ 'გადმოიტანეთ სურათი ან აირჩიეთ ფაილი' | t }}
+              </p>
+              <button
+                type="button"
+                class="ss-btn ss-btn--outline ss-btn--s"
+                [disabled]="isUploadingPhoto()"
+                (click)="photoInput.click()"
+              >
+                <span class="georgian-text" lang="ka">
+                  {{ (isUploadingPhoto() ? 'იტვირთება...' : 'სურათის არჩევა') | t }}
+                </span>
+              </button>
+            </div>
+          }
+          <input
+            #photoInput
+            type="file"
+            accept="image/*"
+            class="hidden"
+            data-testid="photo-input"
+            (change)="onPhotoSelected($event)"
+          />
+        </div>
+        <span class="ce-hint georgian-text" lang="ka">
+          {{ 'რეკომენდებული: კვადრატული ფოტო, მინ. 600×600' | t }}
+        </span>
+      </section>
+
+      <!-- ── 3. About ────────────────────────────────────────────────────── -->
+      <section class="ss-card ce-section">
+        <h2 class="ce-section-title georgian-text" lang="ka">{{ 'ტრენერის შესახებ' | t }}</h2>
+        <div class="ce-grid">
+          <div>
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">
+                {{ 'ბიოგრაფია' | t }} <span class="text-red-500">*</span>
+              </span>
+              <textarea
+                class="ss-input georgian-text"
+                lang="ka"
+                rows="10"
+                formControlName="bio"
+                data-testid="coach-bio"
+                [attr.maxlength]="limits.bio"
+                [class.ss-input--invalid]="showError('bio')"
+              ></textarea>
+            </label>
+            <div
+              class="ce-count georgian-text"
+              lang="ka"
+              [class.is-low]="bioWords() < seoMinWords"
+              data-testid="bio-words"
+            >
+              <span>{{ bioWords() }} {{ 'სიტყვა' | t }}</span>
+              <span>SEO: ≥{{ seoMinWords }} {{ 'სიტყვა' | t }}</span>
+            </div>
+            @if (showError('bio', 'required')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'ბიოგრაფია სავალდებულოა' | t }}</span>
+            } @else if (showError('bio')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'მაქსიმუმ 4000 სიმბოლო' | t }}</span>
+            }
+          </div>
+          <div>
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">{{ 'ბიოგრაფია (ინგლისურად)' | t }}</span>
+              <textarea
+                class="ss-input"
+                lang="en"
+                rows="10"
+                formControlName="bioEn"
+                data-testid="coach-bio-en"
+                [attr.maxlength]="limits.bio"
+                [class.ss-input--invalid]="showError('bioEn')"
+              ></textarea>
+            </label>
+            <div
+              class="ce-count georgian-text"
+              lang="ka"
+              [class.is-low]="bioEnWords() < seoMinWords"
+              data-testid="bio-en-words"
+            >
+              <span>{{ bioEnWords() }} {{ 'სიტყვა' | t }}</span>
+              <span>SEO: ≥{{ seoMinWords }} {{ 'სიტყვა' | t }}</span>
+            </div>
+            @if (showError('bioEn')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'მაქსიმუმ 4000 სიმბოლო' | t }}</span>
+            }
+          </div>
+        </div>
+
+        <div class="ss-field">
+          <label class="ss-label georgian-text" lang="ka" for="coach-cert-input">
+            {{ 'სერტიფიკატები' | t }} ({{ certifications().length }}/{{ limits.certifications }})
+          </label>
+          <div class="ce-chips">
+            @for (cert of certifications(); track cert; let i = $index) {
+              <span class="ce-chip" data-testid="cert-chip">
+                <span class="georgian-text" lang="ka">{{ cert }}</span>
+                <button
+                  type="button"
+                  class="ce-chip-x"
+                  [attr.aria-label]="('წაშლა' | t) + ': ' + cert"
+                  (click)="removeCertification(i)"
+                >
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/x.svg')"></i>
+                </button>
+              </span>
+            }
+            <input
+              #certInput
+              id="coach-cert-input"
+              class="ce-chip-input georgian-text"
+              lang="ka"
+              autocomplete="off"
+              data-testid="cert-input"
+              [attr.maxlength]="limits.certification"
+              [placeholder]="
+                certifications().length < limits.certifications ? ('სერტიფიკატი + Enter' | t) : ''
+              "
+              [disabled]="certifications().length >= limits.certifications"
+              (keydown)="onCertKeydown($event, certInput)"
+              (blur)="onCertBlur(certInput)"
+            />
+          </div>
+          @if (certError(); as message) {
+            <span class="ss-error georgian-text" lang="ka">{{ message | t }}</span>
+          } @else {
+            <span class="ce-hint georgian-text" lang="ka">{{ 'მაგ. FIP Level 2, WPT Academy' | t }}</span>
+          }
+        </div>
+
+        <div class="ce-grid">
+          <div class="ss-field">
+            <span class="ss-label georgian-text" lang="ka" id="coach-languages-label">
+              {{ 'სწავლების ენები' | t }}
+            </span>
+            <div
+              class="ss-chip-rail ss-chip-rail--wrap"
+              role="group"
+              aria-labelledby="coach-languages-label"
+              data-testid="coach-languages"
+            >
+              @for (lang of languageOptions; track lang) {
+                <button
+                  type="button"
+                  class="ss-chip georgian-text"
+                  lang="ka"
+                  [class.is-active]="languages().includes(lang)"
+                  [attr.aria-pressed]="languages().includes(lang)"
+                  [attr.data-testid]="'language-' + lang"
+                  (click)="toggleLanguage(lang)"
+                >
+                  {{ languageLabel(lang) }}
+                </button>
+              }
+            </div>
+          </div>
+          <div class="ss-field">
+            <span class="ss-label georgian-text" lang="ka" id="coach-levels-label">
+              {{ 'ვის ასწავლის' | t }}
+            </span>
+            <div
+              class="ss-chip-rail ss-chip-rail--wrap"
+              role="group"
+              aria-labelledby="coach-levels-label"
+              data-testid="coach-levels"
+            >
+              @for (level of levelOptions; track level) {
+                <button
+                  type="button"
+                  class="ss-chip georgian-text"
+                  lang="ka"
+                  [class.is-active]="levels().includes(level)"
+                  [attr.aria-pressed]="levels().includes(level)"
+                  [attr.data-testid]="'level-' + level"
+                  (click)="toggleLevel(level)"
+                >
+                  {{ levelLabel(level) }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 4. Prices ───────────────────────────────────────────────────── -->
+      <section class="ss-card ce-section">
+        <h2 class="ce-section-title georgian-text" lang="ka">{{ 'ფასები' | t }}</h2>
+        <div class="ce-grid">
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'ინდივიდუალური გაკვეთილი (₾)' | t }}</span>
+            <input
+              class="ss-input"
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              formControlName="priceIndividualGel"
+              data-testid="coach-price-individual"
+              [class.ss-input--invalid]="showError('priceIndividualGel')"
+            />
+            @if (showError('priceIndividualGel')) {
+              <span class="ss-error georgian-text" lang="ka">
+                {{ 'შეიყვანეთ თანხა 0–10 000 ₾, მაქს. 2 ციფრი მძიმის შემდეგ' | t }}
+              </span>
+            }
+          </label>
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">
+              {{ 'ჯგუფური გაკვეთილი, ერთ მოთამაშეზე (₾)' | t }}
+            </span>
+            <input
+              class="ss-input"
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              formControlName="priceGroupGel"
+              data-testid="coach-price-group"
+              [class.ss-input--invalid]="showError('priceGroupGel')"
+            />
+            @if (showError('priceGroupGel')) {
+              <span class="ss-error georgian-text" lang="ka">
+                {{ 'შეიყვანეთ თანხა 0–10 000 ₾, მაქს. 2 ციფრი მძიმის შემდეგ' | t }}
+              </span>
+            }
+          </label>
+        </div>
+        <span class="ce-hint georgian-text" lang="ka">{{ 'ცარიელი — ფასი საიტზე არ გამოჩნდება' | t }}</span>
+      </section>
+
+      <!-- ── 5. Contacts ─────────────────────────────────────────────────── -->
+      <section class="ss-card ce-section">
+        <h2 class="ce-section-title georgian-text" lang="ka">{{ 'კონტაქტები' | t }}</h2>
+        <div class="ce-grid ce-grid--3">
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'ტელეფონი' | t }}</span>
+            <input
+              class="ss-input"
+              type="tel"
+              formControlName="phone"
+              placeholder="+995 5XX XX XX XX"
+              [attr.maxlength]="limits.phone"
+            />
+          </label>
+          <label class="ss-field">
+            <span class="ss-label">Instagram</span>
+            <input
+              class="ss-input"
+              formControlName="instagram"
+              placeholder="https://instagram.com/..."
+              [attr.maxlength]="limits.url"
+            />
+          </label>
+          <label class="ss-field">
+            <span class="ss-label">WhatsApp</span>
+            <input
+              class="ss-input"
+              formControlName="whatsapp"
+              placeholder="+995 5XX XX XX XX"
+              [attr.maxlength]="limits.url"
+            />
+          </label>
+        </div>
+      </section>
+
+      <!-- ── 6. Location ─────────────────────────────────────────────────── -->
+      <section class="ss-card ce-section">
+        <h2 class="ce-section-title georgian-text" lang="ka">{{ 'მდებარეობა' | t }}</h2>
+        <div class="ce-grid">
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">
+              {{ 'ქალაქი' | t }} <span class="text-red-500">*</span>
+            </span>
+            <select
+              class="ss-input georgian-text"
+              lang="ka"
+              formControlName="city"
+              data-testid="coach-city"
+            >
+              @for (c of cityOptions; track c.id) {
+                <option [value]="c.id">{{ c.name }}</option>
+              }
+              <option [value]="otherCity">{{ 'სხვა ქალაქი…' | t }}</option>
+            </select>
+          </label>
+
+          @if (isOtherCity()) {
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">
+                {{ 'ქალაქის სახელი' | t }} <span class="text-red-500">*</span>
+              </span>
+              <input
+                class="ss-input georgian-text"
+                lang="ka"
+                formControlName="cityOther"
+                [attr.maxlength]="limits.city"
+                [placeholder]="'მაგ. გორი' | t"
+                [class.ss-input--invalid]="showError('cityOther')"
+              />
+              @if (showError('cityOther')) {
+                <span class="ss-error georgian-text" lang="ka">{{ 'მიუთითეთ ქალაქი' | t }}</span>
+              }
+            </label>
+          }
+
+          @if (isTbilisi()) {
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">{{ 'უბანი' | t }}</span>
+              <select
+                class="ss-input georgian-text"
+                lang="ka"
+                formControlName="district"
+                data-testid="coach-district"
+              >
+                <option value="">{{ 'არცერთი' | t }}</option>
+                @for (d of districtOptions; track d.id) {
+                  <option [value]="d.id">{{ d.name }}</option>
+                }
+              </select>
+            </label>
+          }
+        </div>
+      </section>
+
+      <!-- ── 7. Where they teach ─────────────────────────────────────────── -->
+      <section class="ss-card ce-section">
+        <h2 class="ce-section-title georgian-text" lang="ka">{{ 'სად ასწავლის' | t }}</h2>
+
+        @if (isSuperAdmin()) {
+          <div class="ss-field ce-academy" data-testid="coach-academy-field">
+            <span class="ss-label georgian-text" lang="ka" id="coach-academy-label">
+              {{ 'აკადემია' | t }}
+            </span>
+            <ss-academy-select
+              formControlName="academy"
+              emptyLabel="დამოუკიდებელი"
+              ariaLabel="აკადემია"
+              data-testid="coach-academy-select"
+              [academies]="academies()"
+            />
+            <span class="ce-hint georgian-text" lang="ka">
+              {{ 'დამოუკიდებელი — ტრენერი არცერთ აკადემიას არ ეკუთვნის' | t }}
+            </span>
+          </div>
+        } @else {
+          <div class="ss-field ce-academy">
+            <span class="ss-label georgian-text" lang="ka">{{ 'აკადემია' | t }}</span>
+            <div class="ss-input ce-readonly georgian-text" lang="ka" data-testid="coach-academy-readonly">
+              {{ ownAcademyName() }}
+            </div>
+          </div>
+        }
+
+        <div class="ce-grid">
+          <div class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">
+              {{ 'ობიექტები' | t }} ({{ facilityIds().length }}/{{ limits.places }})
+            </span>
+            @if (selectedFacilities().length) {
+              <div class="ce-chips ce-chips--plain">
+                @for (f of selectedFacilities(); track f.id) {
+                  <span class="ce-chip" data-testid="facility-chip">
+                    <span class="georgian-text" lang="ka">
+                      {{ f.label ?? ('უცნობი ობიექტი' | t) + ' (' + f.id + ')' }}
+                    </span>
+                    <button
+                      type="button"
+                      class="ce-chip-x"
+                      [attr.aria-label]="'წაშლა' | t"
+                      (click)="removeFacility(f.id)"
+                    >
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/x.svg')"></i>
+                    </button>
+                  </span>
+                }
+              </div>
+            }
+            <select
+              #facilitySelect
+              class="ss-input georgian-text"
+              lang="ka"
+              data-testid="facility-select"
+              [attr.aria-label]="'ობიექტის დამატება' | t"
+              [disabled]="facilityIds().length >= limits.places"
+              (change)="addFacility(facilitySelect)"
+            >
+              <option value="">
+                {{
+                  (facilityIds().length >= limits.places
+                    ? 'მაქსიმუმ 6 ობიექტი'
+                    : 'ობიექტის დამატება…') | t
+                }}
+              </option>
+              @for (group of facilityGroups(); track group.academyName) {
+                <optgroup [label]="group.academyName">
+                  @for (option of group.options; track option.id) {
+                    <option [value]="option.id">{{ facilityLabel(option) }}</option>
+                  }
+                </optgroup>
+              }
+            </select>
+            <span class="ce-hint georgian-text" lang="ka">
+              {{
+                (isSuperAdmin()
+                  ? 'პლატფორმის პარტნიორი ობიექტები'
+                  : 'თქვენი აკადემიის ობიექტები') | t
+              }}
+            </span>
+          </div>
+
+          @if (isSuperAdmin()) {
+            <div class="ss-field" data-testid="coach-venues-field">
+              <span class="ss-label georgian-text" lang="ka">
+                {{ 'კლუბები დირექტორიიდან' | t }} ({{ venueIds().length }}/{{ limits.places }})
+              </span>
+              @if (selectedVenues().length) {
+                <div class="ce-chips ce-chips--plain">
+                  @for (venue of selectedVenues(); track venue.id) {
+                    <span class="ce-chip" data-testid="venue-chip">
+                      <span class="georgian-text" lang="ka">
+                        {{ venue.label ?? ('უცნობი კლუბი' | t) + ' (' + venue.id + ')' }}
+                      </span>
+                      <button
+                        type="button"
+                        class="ce-chip-x"
+                        [attr.aria-label]="'წაშლა' | t"
+                        (click)="removeVenue(venue.id)"
+                      >
+                        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/x.svg')"></i>
+                      </button>
+                    </span>
+                  }
+                </div>
+              }
+              <select
+                #venueSelect
+                class="ss-input georgian-text"
+                lang="ka"
+                data-testid="venue-select"
+                [attr.aria-label]="'კლუბის დამატება' | t"
+                [disabled]="venueIds().length >= limits.places"
+                (change)="addVenue(venueSelect)"
+              >
+                <option value="">
+                  {{
+                    (venueIds().length >= limits.places ? 'მაქსიმუმ 6 კლუბი' : 'კლუბის დამატება…')
+                      | t
+                  }}
+                </option>
+                @for (venue of venueChoices(); track venue._id) {
+                  <option [value]="venue._id">{{ venueLabel(venue) }}</option>
+                }
+              </select>
+              <span class="ce-hint georgian-text" lang="ka">
+                {{ 'არაპარტნიორი კლუბები, სადაც ტრენერი ასწავლის' | t }}
+              </span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Actions -->
+      <div class="ce-actions">
+        <a class="ss-btn ss-btn--outline" routerLink="/coaches">
+          <span class="georgian-text" lang="ka">{{ 'გაუქმება' | t }}</span>
+        </a>
+        <button
+          class="ss-btn ss-btn--primary"
+          type="submit"
+          [disabled]="isSaving() || isUploadingPhoto()"
+          data-testid="coach-save"
+        >
+          <span class="georgian-text" lang="ka">{{ 'შენახვა' | t }}</span>
+        </button>
+      </div>
+    </form>
+  }
+</div>

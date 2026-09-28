@@ -56,6 +56,8 @@ import {
 import { DISTRICT_OPTIONS } from '../../../shared/enums/district.enum';
 import { LANDMARK_OPTIONS } from '../../../shared/enums/landmark.enum';
 import { gelToTetri, tetriToGel } from '../../../shared/utils/money.util';
+import { countWords } from '../../../shared/utils/word-count.util';
+import { gelAmountValidator } from '../../../shared/validators/gel-amount.validator';
 import { tr } from '../../../shared/i18n/lang';
 import { localizedName } from '../../../shared/i18n/localized';
 import { TPipe } from '../../../shared/i18n/t.pipe';
@@ -76,15 +78,6 @@ export const integerValidator: ValidatorFn = (control) =>
   control.value == null || control.value === '' || Number.isInteger(Number(control.value))
     ? null
     : { integer: true };
-
-/** A GEL amount with at most two decimals (it becomes integer tetri). */
-export const gelAmountValidator: ValidatorFn = (control) => {
-  if (control.value == null || control.value === '') return null;
-  const cents = Number(control.value) * 100;
-  return Number.isFinite(cents) && Math.abs(cents - Math.round(cents)) < 1e-6
-    ? null
-    : { decimals: true };
-};
 
 /** City names share the API's district-length cap. */
 const CITY_MAX = 80;
@@ -124,11 +117,6 @@ const venueFormValidator: ValidatorFn = (form) => {
   }
   return Object.keys(errors).length ? errors : null;
 };
-
-/** Words in a text, the way a reader counts them (whitespace-separated). */
-export function countWords(text: string | null | undefined): number {
-  return (text ?? '').trim().split(/\s+/).filter(Boolean).length;
-}
 
 type DayForm = FormGroup<{
   closed: FormControl<boolean>;
