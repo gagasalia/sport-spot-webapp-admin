@@ -15,7 +15,12 @@ export const ARTICLE_ACTION_LABELS: Record<ArticleStatus, string> = liveLabels({
 });
 
 /** The list's per-row quick moves, in button order. */
-export const ARTICLE_QUICK_ACTIONS: readonly ArticleStatus[] = ['published', 'ready', 'archived'];
+export const ARTICLE_QUICK_ACTIONS: readonly ArticleStatus[] = [
+  'published',
+  'scheduled',
+  'ready',
+  'archived',
+];
 
 /** Shorter labels for the list rows («მზადაა» alone is the status badge's word). */
 export const ARTICLE_QUICK_ACTION_LABELS: Record<ArticleStatus, string> = liveLabels({

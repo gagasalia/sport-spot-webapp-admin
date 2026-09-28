@@ -9,7 +9,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Subject, debounceTime, filter, switchMap, take } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -63,6 +63,7 @@ export class VenuesComponent implements OnInit {
   private readonly academyService = inject(AcademyService);
   private readonly facilityService = inject(FacilityService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly dialogs = inject(SsDialogService);
   private readonly alerts = inject(SsToastService);
   private readonly destroyRef = inject(DestroyRef);
@@ -113,7 +114,18 @@ export class VenuesComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((options) => this.partners.set(new Map(options.map((o) => [o.id, o]))));
 
-    this.load();
+    // `/venues?kind=club|resort` — the nav's «კლუბები» / «კურორტები» entries
+    // open the same directory pre-filtered; the first emission is the initial
+    // load, later ones only reload when the URL's kind actually changes.
+    let first = true;
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const raw = params.get('kind');
+      const kind: VenueKind | '' = raw === 'club' || raw === 'resort' ? raw : '';
+      if (!first && kind === this.kindFilter()) return;
+      first = false;
+      this.kindFilter.set(kind);
+      this.reloadFromFirstPage();
+    });
   }
 
   // ── filters ────────────────────────────────────────────────────────────────
@@ -136,6 +148,12 @@ export class VenuesComponent implements OnInit {
   protected onKindFilterChange(kind: VenueKind | ''): void {
     this.kindFilter.set(kind);
     this.reloadFromFirstPage();
+    // keep the URL in step with the filter so the nav highlight follows
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { kind: kind || null },
+      queryParamsHandling: 'merge',
+    });
   }
 
   protected onPageChange(page: number): void {

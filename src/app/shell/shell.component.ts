@@ -1,3 +1,4 @@
+import { environment } from '../../environments/environment';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -59,12 +60,14 @@ export class ShellComponent {
   protected isMobile = signal(false);
 
   /**
-   * Desktop aside accordions. Configuration starts open regardless of route so
-   * its sub-items are always one click away; super-admin opens only when the
-   * route is already inside it.
+   * Desktop aside accordion. Configuration starts open regardless of route so
+   * its sub-items are always one click away. The super-admin group is always
+   * open (owner decision 2026-09-29) — it now also hosts the platform content
+   * modules (venues directory, articles, coaches).
    */
   protected configOpen = signal(true);
-  protected superOpen = signal(this.router.url.startsWith('/super-admin'));
+  /** Coaches module switch (see environment.coachesEnabled). */
+  protected readonly coachesEnabled = environment.coachesEnabled;
 
   /** Mobile "Menu" sheet (everything not on the tab bar). */
   protected menuOpen = signal(false);
@@ -131,13 +134,11 @@ export class ShellComponent {
     this.configOpen.update((o) => !o);
   }
 
+  /** The super-admin group never collapses; on a collapsed rail the header re-expands it. */
   protected toggleSuper(): void {
     if (!this.isMobile() && !this.expanded()) {
       this.expanded.set(true);
-      this.superOpen.set(true);
-      return;
     }
-    this.superOpen.update((o) => !o);
   }
 
   protected toggleDarkMode(): void {

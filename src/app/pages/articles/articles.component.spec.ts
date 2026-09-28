@@ -204,8 +204,19 @@ describe('ArticlesComponent', () => {
   });
 
   it('offers only the quick moves the status machine allows', () => {
-    expect(buttonsIn(rows()[0])).toEqual(['quick-published', 'quick-ready']); // draft
+    expect(buttonsIn(rows()[0])).toEqual(['quick-published', 'quick-scheduled', 'quick-ready']); // draft
     expect(buttonsIn(rows()[1])).toEqual(['quick-published', 'quick-ready']); // scheduled
+
+    // «დაგეგმვა» from the list: the schedule dialog's instant goes on the PATCH
+    dialogSpy.open.and.returnValue(of('2026-10-01T06:00:00.000Z'));
+    articleSpy.setStatus.and.returnValue(of({ ...draft, status: 'scheduled' }));
+    (rows()[0].querySelector('[data-testid="quick-scheduled"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+    expect(articleSpy.setStatus).toHaveBeenCalledWith(
+      draft._id,
+      'scheduled',
+      '2026-10-01T06:00:00.000Z',
+    );
     expect(buttonsIn(rows()[2])).toEqual(['quick-archived']); // published
     expect(buttonsIn(rows()[3])).toEqual(['quick-ready']); // archived
   });

@@ -1,3 +1,4 @@
+import { environment } from '../../environments/environment';
 import { NO_ERRORS_SCHEMA, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
@@ -90,8 +91,8 @@ describe('ShellComponent', () => {
     expect(document.documentElement.style.overflow).toBe('');
   });
 
-  // The venues directory is a superadmin tool; its nav entry sits right after
-  // «ობიექტები» and must not leak to academy operators.
+  // The venues directory is a superadmin tool; it lives in the (always open)
+  // Super Admin group right after «იუზერები» and must not leak to operators.
   it('shows the venues directory entry to superadmins only', () => {
     const fixture = TestBed.createComponent(ShellComponent);
     (fixture.componentInstance as unknown as { isMobile: { set(v: boolean): void } }).isMobile.set(
@@ -105,10 +106,14 @@ describe('ShellComponent', () => {
     const link: HTMLElement = fixture.nativeElement.querySelector('[automation-id="venues"]');
     expect(link).not.toBeNull();
     expect(link.getAttribute('routerLink')).toBe('/venues');
-    expect(link.textContent).toContain('კლუბების დირექტორია');
-    // placed next to Facilities
+    expect(link.textContent).toContain('კლუბები');
+    // …and its twin for resorts with padel courts, same list pre-filtered
+    const resorts: HTMLElement = fixture.nativeElement.querySelector('[automation-id="resorts"]');
+    expect(resorts.getAttribute('routerLink')).toBe('/venues');
+    expect(resorts.textContent).toContain('კურორტები');
+    // placed in the Super Admin group, after Users — without any toggle click
     const previous = link.previousElementSibling as HTMLElement;
-    expect(previous.getAttribute('routerLink')).toBe('/configuration/facilities');
+    expect(previous.getAttribute('routerLink')).toBe('/super-admin/user-management');
   });
 
   // The blog editor is a superadmin tool too; its entry follows the venues
@@ -131,7 +136,7 @@ describe('ShellComponent', () => {
     expect(link.getAttribute('routerLink')).toBe('/articles');
     expect(link.textContent).toContain('სტატიები');
     const previous = link.previousElementSibling as HTMLElement;
-    expect(previous.getAttribute('automation-id')).toBe('venues');
+    expect(previous.getAttribute('automation-id')).toBe('resorts');
 
     // Mobile: the same entry lives in the Menu sheet.
     shell.isMobile.set(true);
@@ -147,9 +152,10 @@ describe('ShellComponent', () => {
     fixture.detectChanges();
   });
 
-  // Coaches are managed by every operator (their own academy's) — the entry is
-  // not superadmin-gated, and it follows Articles in both nav hosts.
-  it('shows the coaches entry to every operator, right after the articles entry', () => {
+  // The coaches module is switched off (environment.coachesEnabled = false)
+  // until real coaches exist: no nav entry for anyone, in either nav host.
+  it('hides the coaches entry while the module is switched off', () => {
+    expect(environment.coachesEnabled).toBeFalse();
     const fixture = TestBed.createComponent(ShellComponent);
     const shell = fixture.componentInstance as unknown as {
       isMobile: { set(v: boolean): void };
@@ -158,34 +164,40 @@ describe('ShellComponent', () => {
     };
     shell.isMobile.set(false);
     fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[automation-id="coaches"]')).toBeNull();
 
-    // academy operator: no venues/articles, so it follows Facilities
-    let link: HTMLElement = fixture.nativeElement.querySelector('[automation-id="coaches"]');
-    expect(link).not.toBeNull();
-    expect(link.getAttribute('routerLink')).toBe('/coaches');
-    expect(link.textContent).toContain('ტრენერები');
-    expect((link.previousElementSibling as HTMLElement).getAttribute('routerLink')).toBe(
-      '/configuration/facilities',
-    );
-
-    // superadmin: right after Articles
     authStub.isSuperAdmin.set(true);
     fixture.detectChanges();
-    link = fixture.nativeElement.querySelector('[automation-id="coaches"]');
-    expect((link.previousElementSibling as HTMLElement).getAttribute('automation-id')).toBe(
-      'articles',
-    );
+    expect(fixture.nativeElement.querySelector('[automation-id="coaches"]')).toBeNull();
 
-    // Mobile: the same entry lives in the Menu sheet.
     shell.isMobile.set(true);
     shell.toggleMenu();
     fixture.detectChanges();
-    const sheetLink = fixture.nativeElement.querySelector('.menu-sheet [automation-id="coaches"]');
-    expect(sheetLink).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.menu-sheet [automation-id="coaches"]')).toBeNull();
 
     // Release the page-scroll lock the open sheet applied.
     shell.closeMenu();
     fixture.detectChanges();
+  });
+
+  // The Super Admin group never collapses: clicking its header on the expanded
+  // rail keeps every sub-item visible.
+  it('keeps the super-admin group open when its header is clicked', () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    (fixture.componentInstance as unknown as { isMobile: { set(v: boolean): void } }).isMobile.set(
+      false,
+    );
+    authStub.isSuperAdmin.set(true);
+    fixture.detectChanges();
+    const header: HTMLButtonElement = fixture.nativeElement.querySelector(
+      '[automation-id="super-admin"]',
+    );
+    header.click();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[automation-id="venues"]')).not.toBeNull();
+    expect(
+      fixture.nativeElement.querySelector('[routerLink="/super-admin/user-management"]'),
+    ).not.toBeNull();
   });
 
   it('declined signOut leaves the session untouched', () => {

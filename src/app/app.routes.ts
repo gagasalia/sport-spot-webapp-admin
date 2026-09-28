@@ -1,4 +1,6 @@
 import { Routes } from '@angular/router';
+
+import { environment } from '../environments/environment';
 import { authGuard } from './shared/guards/auth.guard';
 import { superAdminGuard } from './shared/guards/super-admin.guard';
 
@@ -89,28 +91,34 @@ export const routes: Routes = [
             (m) => m.ArticleEditComponent,
           ),
       },
-      {
-        // Coaches directory (docs/26 §WP-1d) — ADMIN and SUPERADMIN alike (the
-        // parent authGuard admits exactly those roles); the API scopes an
-        // operator to their own academy's coaches. `new` precedes `:id`.
-        path: 'coaches',
-        loadComponent: () =>
-          import('./pages/coaches/coaches.component').then((m) => m.CoachesComponent),
-      },
-      {
-        path: 'coaches/new',
-        loadComponent: () =>
-          import('./pages/coaches/coach-edit/coach-edit.component').then(
-            (m) => m.CoachEditComponent,
-          ),
-      },
-      {
-        path: 'coaches/:id',
-        loadComponent: () =>
-          import('./pages/coaches/coach-edit/coach-edit.component').then(
-            (m) => m.CoachEditComponent,
-          ),
-      },
+      // Coaches directory (docs/26 §WP-1d) — ADMIN and SUPERADMIN alike (the
+      // parent authGuard admits exactly those roles); the API scopes an
+      // operator to their own academy's coaches. `new` precedes `:id`.
+      // Registered only while environment.coachesEnabled (off until real
+      // coaches exist — owner decision 2026-09-29).
+      ...(environment.coachesEnabled
+        ? ([
+            {
+              path: 'coaches',
+              loadComponent: () =>
+                import('./pages/coaches/coaches.component').then((m) => m.CoachesComponent),
+            },
+            {
+              path: 'coaches/new',
+              loadComponent: () =>
+                import('./pages/coaches/coach-edit/coach-edit.component').then(
+                  (m) => m.CoachEditComponent,
+                ),
+            },
+            {
+              path: 'coaches/:id',
+              loadComponent: () =>
+                import('./pages/coaches/coach-edit/coach-edit.component').then(
+                  (m) => m.CoachEditComponent,
+                ),
+            },
+          ] as Routes)
+        : []),
       {
         path: 'reservations',
         loadComponent: () =>

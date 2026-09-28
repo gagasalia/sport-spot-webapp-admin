@@ -108,39 +108,6 @@
         <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/map-pin.svg')"></i>
         <span lang="ka" class="georgian-text nav-label">{{ 'ობიექტები' | t }}</span>
       </a>
-      @if (isSuperAdmin()) {
-        <a
-          automation-id="venues"
-          class="nav-item nav-sub"
-          routerLink="/venues"
-          routerLinkActive="is-active"
-          (click)="closeMenu()"
-        >
-          <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/map.svg')"></i>
-          <span lang="ka" class="georgian-text nav-label">{{ 'კლუბების დირექტორია' | t }}</span>
-        </a>
-        <a
-          automation-id="articles"
-          class="nav-item nav-sub"
-          routerLink="/articles"
-          routerLinkActive="is-active"
-          (click)="closeMenu()"
-        >
-          <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/newspaper.svg')"></i>
-          <span lang="ka" class="georgian-text nav-label">{{ 'სტატიები' | t }}</span>
-        </a>
-      }
-      <!-- Coaches: every operator manages their own academy's coaches. -->
-      <a
-        automation-id="coaches"
-        class="nav-item nav-sub"
-        routerLink="/coaches"
-        routerLinkActive="is-active"
-        (click)="closeMenu()"
-      >
-        <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/graduation-cap.svg')"></i>
-        <span lang="ka" class="georgian-text nav-label">{{ 'ტრენერები' | t }}</span>
-      </a>
       <a
         class="nav-item nav-sub"
         routerLink="/configuration/courts"
@@ -250,16 +217,12 @@
 
   @if (isSuperAdmin()) {
     <div class="nav-group">
+      <!-- Always open (owner decision 2026-09-29): the button only re-expands a collapsed rail. -->
       <button automation-id="super-admin" class="nav-item" type="button" (click)="toggleSuper()">
         <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/shield.svg')"></i>
         <span class="nav-label">Super Admin</span>
-        <i
-          class="ss-ic nav-caret"
-          [class.is-open]="superOpen()"
-          style="--ss-ic: url('assets/taiga-ui/icons/chevron-down.svg')"
-        ></i>
       </button>
-      @if (superOpen() && (isMobile() || expanded())) {
+      @if (isMobile() || expanded()) {
         <a
           class="nav-item nav-sub"
           routerLink="/super-admin/academies-management"
@@ -278,6 +241,53 @@
           <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
           <span lang="ka" class="georgian-text nav-label">{{ 'იუზერები' | t }}</span>
         </a>
+        <!-- Platform content modules (docs/26): venues directory, blog, coaches. -->
+        <a
+          automation-id="venues"
+          class="nav-item nav-sub"
+          routerLink="/venues"
+          [queryParams]="{ kind: 'club' }"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          (click)="closeMenu()"
+        >
+          <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/map.svg')"></i>
+          <span lang="ka" class="georgian-text nav-label">{{ 'კლუბები' | t }}</span>
+        </a>
+        <a
+          automation-id="resorts"
+          class="nav-item nav-sub"
+          routerLink="/venues"
+          [queryParams]="{ kind: 'resort' }"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          (click)="closeMenu()"
+        >
+          <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/map-pin.svg')"></i>
+          <span lang="ka" class="georgian-text nav-label">{{ 'კურორტები' | t }}</span>
+        </a>
+        <a
+          automation-id="articles"
+          class="nav-item nav-sub"
+          routerLink="/articles"
+          routerLinkActive="is-active"
+          (click)="closeMenu()"
+        >
+          <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/newspaper.svg')"></i>
+          <span lang="ka" class="georgian-text nav-label">{{ 'სტატიები' | t }}</span>
+        </a>
+        @if (coachesEnabled) {
+          <a
+            automation-id="coaches"
+            class="nav-item nav-sub"
+            routerLink="/coaches"
+            routerLinkActive="is-active"
+            (click)="closeMenu()"
+          >
+            <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/graduation-cap.svg')"></i>
+            <span lang="ka" class="georgian-text nav-label">{{ 'ტრენერები' | t }}</span>
+          </a>
+        }
       }
     </div>
   }

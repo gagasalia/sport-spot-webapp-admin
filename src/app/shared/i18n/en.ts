@@ -1384,6 +1384,9 @@ export const EN: Record<string, string> = {
 
   // ── venues directory (superadmin, docs/26 §WP-1b) ─────────────────────
   // nav + list
+  'კლუბები': 'Clubs',
+  'კურორტები': 'Resorts',
+  'წუთი': 'Minute',
   'კლუბების დირექტორია': 'Venues directory',
   'ყველა პადელის კლუბი საქართველოში — პარტნიორი თუ არა':
     'Every padel venue in Georgia — partner or not',

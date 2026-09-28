@@ -12,7 +12,7 @@ import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Subject, debounceTime, filter, switchMap, take } from 'rxjs';
+import { Observable, Subject, debounceTime, defaultIfEmpty, filter, map, switchMap, take } from 'rxjs';
 import { ArticleService } from '../../services/http-services/article.service';
 import {
   ARTICLE_CATEGORIES,
@@ -36,6 +36,10 @@ import {
   articleStatusConfirm,
   articleStatusSuccess,
 } from './article-status';
+import {
+  ArticleScheduleData,
+  ArticleScheduleDialogComponent,
+} from './article-schedule-dialog/article-schedule-dialog.component';
 
 const PAGE_SIZE = 20;
 
@@ -192,19 +196,20 @@ export class ArticlesComponent implements OnInit {
     return ARTICLE_QUICK_ACTION_LABELS[target];
   }
 
-  /** Confirm → PATCH status → swap in the returned row + toast. */
+  /**
+   * Confirm (publish / archive / ready) or pick the go-live time (schedule)
+   * → PATCH status → swap in the returned row + toast.
+   */
   protected runQuickAction(article: Article, target: ArticleStatus): void {
     if (!canTransition(article.status, target) || this.busyIds().has(article._id)) return;
-    const confirm = articleStatusConfirm(target, article.title);
-    if (!confirm) return;
-    this.dialogs
-      .open<boolean>(SsConfirmComponent, { label: confirm.label, size: 's', data: confirm.data })
+    this.gate(article, target)
       .pipe(
-        take(1),
-        filter(Boolean),
-        switchMap(() => {
+        filter((gate): gate is { publishAt?: string } => gate !== null),
+        switchMap((gate) => {
           this.setBusy(article._id, true);
-          return this.articleService.setStatus(article._id, target);
+          return gate.publishAt
+            ? this.articleService.setStatus(article._id, target, gate.publishAt)
+            : this.articleService.setStatus(article._id, target);
         }),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -225,6 +230,40 @@ export class ArticlesComponent implements OnInit {
             .subscribe();
         },
       });
+  }
+
+  /**
+   * The pre-flight of a quick move: the schedule dialog (→ its ISO instant) or
+   * the confirmation; `null` = the operator backed out. Mirrors the editor.
+   */
+  private gate(article: Article, target: ArticleStatus): Observable<{ publishAt?: string } | null> {
+    if (target === 'scheduled') {
+      return this.dialogs
+        .open<string>(ArticleScheduleDialogComponent, {
+          label: tr('გამოქვეყნების დაგეგმვა'),
+          size: 's',
+          data: { publishAt: article.publishAt ?? null } as ArticleScheduleData,
+        })
+        .pipe(
+          take(1),
+          map((publishAt) => ({ publishAt })),
+          defaultIfEmpty(null),
+        );
+    }
+    const confirm = articleStatusConfirm(target, article.title);
+    if (!confirm) {
+      return new Observable<{ publishAt?: string } | null>((sub) => {
+        sub.next(null);
+        sub.complete();
+      });
+    }
+    return this.dialogs
+      .open<boolean>(SsConfirmComponent, { label: confirm.label, size: 's', data: confirm.data })
+      .pipe(
+        take(1),
+        map((yes) => (yes ? {} : null)),
+        defaultIfEmpty(null),
+      );
   }
 
   private setBusy(id: string, busy: boolean): void {

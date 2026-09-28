@@ -110,10 +110,34 @@ const futureValidator: ValidatorFn = (group) => {
             [attr.min]="minDate"
           />
         </label>
-        <label class="ss-field flex-1">
+        <div class="ss-field flex-1">
           <span class="ss-label georgian-text" lang="ka">{{ 'დრო' | t }}</span>
-          <input class="ss-input" type="time" formControlName="time" data-testid="schedule-time" />
-        </label>
+          <div class="flex items-center gap-2">
+            <select
+              class="ss-input ss-select flex-1"
+              data-testid="schedule-hour"
+              [attr.aria-label]="'საათი' | t"
+              [value]="hour()"
+              (change)="setHour($any($event.target).value)"
+            >
+              @for (h of hours; track h) {
+                <option [value]="h">{{ h }}</option>
+              }
+            </select>
+            <span aria-hidden="true">:</span>
+            <select
+              class="ss-input ss-select flex-1"
+              data-testid="schedule-minute"
+              [attr.aria-label]="'წუთი' | t"
+              [value]="minute()"
+              (change)="setMinute($any($event.target).value)"
+            >
+              @for (m of minuteOptions(); track m) {
+                <option [value]="m">{{ m }}</option>
+              }
+            </select>
+          </div>
+        </div>
       </div>
 
       @if (chosen(); as when) {
@@ -175,6 +199,25 @@ export class ArticleScheduleDialogComponent {
 
   /** The picked wall-clock time (local zone) — echoed back before confirming. */
   protected readonly chosen = computed(() => localDateTime(this.value().date, this.value().time));
+
+  /** Hour / minute pickers (typing into a free time field was clumsy). */
+  protected readonly hours = Array.from({ length: 24 }, (_, i) => pad(i));
+  protected readonly hour = computed(() => (this.value().time || '00:00').slice(0, 2));
+  protected readonly minute = computed(() => (this.value().time || '00:00').slice(3, 5));
+  /** 5-minute steps, plus the stored minute when it is off-grid (e.g. 07:05). */
+  protected readonly minuteOptions = computed(() => {
+    const steps = Array.from({ length: 12 }, (_, i) => pad(i * 5));
+    const current = this.minute();
+    return steps.includes(current) ? steps : [...steps, current].sort();
+  });
+
+  protected setHour(hour: string): void {
+    this.form.controls.time.setValue(`${pad(+hour)}:${this.minute()}`);
+  }
+
+  protected setMinute(minute: string): void {
+    this.form.controls.time.setValue(`${this.hour()}:${pad(+minute)}`);
+  }
 
   protected submit(): void {
     this.submitted.set(true);

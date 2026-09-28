@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
 import { of, throwError } from 'rxjs';
 
 import { VenuesComponent } from './venues.component';
@@ -96,6 +96,7 @@ describe('VenuesComponent', () => {
         { provide: AcademyService, useValue: academySpy },
         { provide: FacilityService, useValue: facilitySpy },
         { provide: Router, useValue: routerSpy },
+        { provide: ActivatedRoute, useValue: { queryParamMap: of(convertToParamMap({})) } },
         { provide: SsDialogService, useValue: dialogSpy },
         { provide: SsToastService, useValue: alertSpy },
       ],
