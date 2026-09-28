@@ -58,6 +58,8 @@ export interface CreateFacilityDto {
   country: string;
   city: string;
   district?: string;
+  /** Landmark id (LANDMARK_OPTIONS); '' clears it on an edit. */
+  landmark?: string;
   media: IMedia[];
   contactInfo: IContactInfo;
 }
@@ -75,6 +77,10 @@ export interface Facility {
   country: string;
   city: string;
   district?: string;
+  /** Landmark id (LANDMARK_OPTIONS) — feeds the landmark landing pages. */
+  landmark?: string;
+  /** Public URL slug (player app `/facilities/:slug`); set by the API. */
+  slug?: string;
   // Legacy fields (localStorage-based form)
   addressPin?: AddressPin;
   addressText?: string;

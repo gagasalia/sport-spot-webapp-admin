@@ -1,4 +1,5 @@
 import { NO_ERRORS_SCHEMA, signal } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { provideAnimations } from '@angular/platform-browser/animations';
@@ -33,8 +34,11 @@ describe('ShellComponent', () => {
       ],
       schemas: [NO_ERRORS_SCHEMA],
     })
-      // set:{imports} REPLACES the array — TPipe must ride along or `| t` is NG0302
-      .overrideComponent(ShellComponent, { set: { imports: [TPipe], schemas: [NO_ERRORS_SCHEMA] } })
+      // set:{imports} REPLACES the array — TPipe must ride along or `| t` is NG0302;
+      // NgTemplateOutlet stamps the nav list (desktop rail + mobile sheet share it).
+      .overrideComponent(ShellComponent, {
+        set: { imports: [NgTemplateOutlet, TPipe], schemas: [NO_ERRORS_SCHEMA] },
+      })
       .compileComponents();
   });
 
@@ -84,6 +88,27 @@ describe('ShellComponent', () => {
     expect(shell.menuOpen()).toBeFalse();
     expect(document.body.style.overflow).toBe('');
     expect(document.documentElement.style.overflow).toBe('');
+  });
+
+  // The venues directory is a superadmin tool; its nav entry sits right after
+  // «ობიექტები» and must not leak to academy operators.
+  it('shows the venues directory entry to superadmins only', () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    (fixture.componentInstance as unknown as { isMobile: { set(v: boolean): void } }).isMobile.set(
+      false,
+    );
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[automation-id="venues"]')).toBeNull();
+
+    authStub.isSuperAdmin.set(true);
+    fixture.detectChanges();
+    const link: HTMLElement = fixture.nativeElement.querySelector('[automation-id="venues"]');
+    expect(link).not.toBeNull();
+    expect(link.getAttribute('routerLink')).toBe('/venues');
+    expect(link.textContent).toContain('კლუბების დირექტორია');
+    // placed next to Facilities
+    const previous = link.previousElementSibling as HTMLElement;
+    expect(previous.getAttribute('routerLink')).toBe('/configuration/facilities');
   });
 
   it('declined signOut leaves the session untouched', () => {

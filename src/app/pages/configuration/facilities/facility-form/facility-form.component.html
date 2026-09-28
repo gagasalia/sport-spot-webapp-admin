@@ -55,6 +55,22 @@
         </select>
       </label>
 
+      <!-- Landmark (docs/26: «პადელი კუს ტბაზე» landing pages) -->
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">{{ 'ღირსშესანიშნაობა' | t }}</span>
+        <select
+          class="ss-input georgian-text"
+          lang="ka"
+          formControlName="landmark"
+          data-testid="facility-landmark"
+        >
+          <option value="">{{ 'არცერთი' | t }}</option>
+          @for (landmark of landmarks; track landmark.id) {
+            <option [value]="landmark.id">{{ landmark.name }}</option>
+          }
+        </select>
+      </label>
+
       <!-- Name (English) -->
       <label class="ss-field">
         <span class="ss-label">Name (English)</span>

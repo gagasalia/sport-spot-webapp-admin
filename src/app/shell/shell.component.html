@@ -108,6 +108,18 @@
         <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/map-pin.svg')"></i>
         <span lang="ka" class="georgian-text nav-label">{{ 'ობიექტები' | t }}</span>
       </a>
+      @if (isSuperAdmin()) {
+        <a
+          automation-id="venues"
+          class="nav-item nav-sub"
+          routerLink="/venues"
+          routerLinkActive="is-active"
+          (click)="closeMenu()"
+        >
+          <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/map.svg')"></i>
+          <span lang="ka" class="georgian-text nav-label">{{ 'კლუბების დირექტორია' | t }}</span>
+        </a>
+      }
       <a
         class="nav-item nav-sub"
         routerLink="/configuration/courts"

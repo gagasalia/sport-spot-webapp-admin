@@ -42,6 +42,30 @@ export const routes: Routes = [
           import('./pages/configuration/academy/academy.component').then((m) => m.AcademyComponent),
       },
       {
+        // Venues directory (docs/26 §WP-1b) — superadmin-only, like /super-admin/*.
+        // `new` precedes `:id` so it is never read as a venue id.
+        path: 'venues',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./pages/venues/venues.component').then((m) => m.VenuesComponent),
+      },
+      {
+        path: 'venues/new',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./pages/venues/venue-edit/venue-edit.component').then(
+            (m) => m.VenueEditComponent,
+          ),
+      },
+      {
+        path: 'venues/:id',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./pages/venues/venue-edit/venue-edit.component').then(
+            (m) => m.VenueEditComponent,
+          ),
+      },
+      {
         path: 'reservations',
         loadComponent: () =>
           import('./pages/reservations/reservations.component').then(

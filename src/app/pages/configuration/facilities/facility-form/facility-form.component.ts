@@ -19,12 +19,13 @@ import { Facility, IMedia, CreateFacilityDto } from '../../../../shared/models/f
 import { Amenity, AMENITY_LABELS, AMENITY_ICONS } from '../../../../shared/enums/amenity.enum';
 import { CITY_OPTIONS } from '../../../../shared/enums/city.enum';
 import { DISTRICT_OPTIONS } from '../../../../shared/enums/district.enum';
+import { LANDMARK_OPTIONS } from '../../../../shared/enums/landmark.enum';
 import { TenantService } from '../../../../shared/services/tenant.service';
 import { tr } from '../../../../shared/i18n/lang';
 import { TPipe } from '../../../../shared/i18n/t.pipe';
 
 import { SsToastService } from '../../../../shared/ui/toast.service';
-import { SS_DIALOG_CONTEXT, SsDialogContext, SsDialogService } from '../../../../shared/ui/dialog.service';
+import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../../../shared/ui/dialog.service';
 interface CountryItem {
   readonly id: string;
   readonly name: string;
@@ -52,6 +53,7 @@ export class FacilityFormComponent implements OnInit {
   readonly countries: readonly CountryItem[] = [{ id: 'Georgia', name: 'საქართველო' }];
   readonly cities = CITY_OPTIONS;
   readonly districts = DISTRICT_OPTIONS;
+  readonly landmarks = LANDMARK_OPTIONS;
 
   readonly amenities = Object.values(Amenity);
   readonly amenityLabels = AMENITY_LABELS;
@@ -89,6 +91,7 @@ export class FacilityFormComponent implements OnInit {
       country: [{ value: 'Georgia', disabled: true }],
       city: [f?.city || 'Tbilisi'],
       district: [f?.district || ''],
+      landmark: [f?.landmark || ''],
       amenities: this.createAmenitiesFormArray(f?.amenities as Amenity[] | undefined),
       contactInfo: this.fb.group({
         email: [f?.contactInfo?.email || ''],
@@ -237,6 +240,7 @@ export class FacilityFormComponent implements OnInit {
     }
 
     const editingFacility = this.context.data?.facility;
+    const facilityId = editingFacility?._id || editingFacility?.id;
     const v = this.facilityForm.getRawValue();
 
     const dto: CreateFacilityDto = {
@@ -249,6 +253,10 @@ export class FacilityFormComponent implements OnInit {
       country: v.country,
       city: v.city,
       district: v.district || undefined,
+      // '' = none. The update drops only undefined keys, so an edit must send
+      // the API's documented "clear" value ('') to unset a landmark; a create
+      // simply leaves it out.
+      landmark: v.landmark || (facilityId ? '' : undefined),
       media: this.mediaItems(),
       contactInfo: {
         email: v.contactInfo.email || undefined,
@@ -265,7 +273,6 @@ export class FacilityFormComponent implements OnInit {
       },
     };
 
-    const facilityId = editingFacility?._id || editingFacility?.id;
     const saveOperation = facilityId
       ? this.facilityService.updateFacility(facilityId, dto)
       : this.facilityService.createFacility(dto);

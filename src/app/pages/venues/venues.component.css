@@ -1,0 +1,52 @@
+/* ── filter row: search + city / status / kind selects ─────────────────────── */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+.search-field {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+.select-field {
+  flex: 0 1 190px;
+  min-width: 160px;
+}
+
+/* ── rows: the whole row opens the editor ────────────────────────────────── */
+.venue-row,
+.venue-card {
+  cursor: pointer;
+}
+.venue-row:hover td {
+  background: var(--tui-background-neutral-1);
+}
+.venue-row:focus-visible,
+.venue-card:focus-visible {
+  outline: 2px solid var(--tui-background-accent-1);
+  outline-offset: -2px;
+}
+
+/* compact inline status switcher (the list's quick draft → published etc.) */
+.status-select {
+  width: auto;
+  min-width: 150px;
+  height: 34px;
+  font-size: 13px;
+}
+
+.partner-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--tui-text-action);
+  text-decoration: none;
+}
+.partner-link:hover {
+  text-decoration: underline;
+}
+.partner-link .ss-ic {
+  width: 13px;
+  height: 13px;
+}

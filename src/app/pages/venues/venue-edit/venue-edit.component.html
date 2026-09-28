@@ -1,0 +1,573 @@
+<div class="pt-8 p-0 sm:p-8">
+  <a class="back-link mb-4" routerLink="/venues">
+    <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/chevron-left.svg')"></i>
+    <span class="georgian-text" lang="ka">{{ 'კლუბების დირექტორია' | t }}</span>
+  </a>
+
+  <header class="mb-6">
+    <h1 class="text-2xl font-semibold georgian-text" lang="ka">
+      {{ (isEditMode ? 'კლუბის რედაქტირება' : 'კლუბის დამატება') | t }}
+    </h1>
+    @if (venue(); as v) {
+      <div class="vf-meta georgian-text" lang="ka" data-testid="venue-meta">
+        <span [class]="sourceClass(v)">{{ 'წყარო' | t }}: {{ sourceLabel(v) }}</span>
+        @if (v.sourceUrl) {
+          <a class="vf-link" [href]="v.sourceUrl" target="_blank" rel="noopener">
+            {{ 'წყაროს ბმული' | t }}
+            <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/external-link.svg')"></i>
+          </a>
+        }
+        @if (v.citySlug) {
+          <span>{{ 'ქალაქის slug' | t }}: <code>{{ v.citySlug }}</code></span>
+        }
+        @if (v.updatedAt) {
+          <span>{{ 'განახლდა' | t }}: {{ v.updatedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+        }
+      </div>
+    }
+  </header>
+
+  @if (hasError()) {
+    <div class="ss-card p-6 text-center">
+      <p class="georgian-text mb-3" lang="ka">{{ 'კლუბი ვერ მოიძებნა' | t }}</p>
+      <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="retry()">
+        <span class="georgian-text" lang="ka">{{ 'თავიდან ცდა' | t }}</span>
+      </button>
+    </div>
+  } @else if (isLoading()) {
+    <div class="space-y-3 animate-pulse">
+      <div class="h-32 rounded-xl" style="background: var(--tui-background-neutral-1)"></div>
+      <div class="h-64 rounded-xl" style="background: var(--tui-background-neutral-1)"></div>
+      <div class="h-32 rounded-xl" style="background: var(--tui-background-neutral-1)"></div>
+    </div>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="vf" novalidate>
+      <!-- ── 1. Identity ─────────────────────────────────────────────────── -->
+      <section class="ss-card vf-section">
+        <h2 class="vf-section-title georgian-text" lang="ka">{{ 'იდენტობა' | t }}</h2>
+        <div class="vf-grid">
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">
+              {{ 'სახელი' | t }} <span class="text-red-500">*</span>
+            </span>
+            <input
+              class="ss-input georgian-text"
+              lang="ka"
+              formControlName="name"
+              [attr.maxlength]="limits.name"
+              [class.ss-input--invalid]="showError('name')"
+            />
+            @if (showError('name', 'required')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'სახელი სავალდებულოა' | t }}</span>
+            }
+          </label>
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'სახელი (ინგლისურად)' | t }}</span>
+            <input class="ss-input" formControlName="nameEn" [attr.maxlength]="limits.name" />
+          </label>
+
+          <label class="ss-field">
+            <span class="ss-label">
+              Slug
+              @if (isEditMode) {
+                <span class="text-red-500">*</span>
+              }
+            </span>
+            <input
+              class="ss-input font-mono"
+              formControlName="slug"
+              [attr.maxlength]="limits.slug"
+              autocomplete="off"
+              placeholder="padel-club-vake"
+              [class.ss-input--invalid]="showError('slug')"
+            />
+            @if (showError('slug', 'conflict')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'ეს slug უკვე დაკავებულია' | t }}</span>
+            } @else if (showError('slug', 'required')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'სავალდებულო ველი' | t }}</span>
+            } @else if (showError('slug')) {
+              <span class="ss-error georgian-text" lang="ka">
+                {{ 'მხოლოდ ლათინური პატარა ასოები, ციფრები და ტირე' | t }}
+              </span>
+            } @else if (!isEditMode) {
+              <span class="vf-hint georgian-text" lang="ka">
+                {{ 'ცარიელი — შეიქმნება სახელიდან ავტომატურად' | t }}
+              </span>
+            }
+          </label>
+
+          <div class="vf-grid vf-grid--tight">
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">{{ 'ტიპი' | t }}</span>
+              <select class="ss-input georgian-text" lang="ka" formControlName="kind">
+                @for (k of kindOptions; track k) {
+                  <option [value]="k">{{ kindLabel(k) }}</option>
+                }
+              </select>
+            </label>
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">{{ 'სტატუსი' | t }}</span>
+              <select class="ss-input georgian-text" lang="ka" formControlName="status">
+                @for (s of statusOptions; track s) {
+                  <option [value]="s">{{ statusLabel(s) }}</option>
+                }
+              </select>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 2. Location ─────────────────────────────────────────────────── -->
+      <section class="ss-card vf-section">
+        <h2 class="vf-section-title georgian-text" lang="ka">{{ 'მდებარეობა' | t }}</h2>
+        <div class="vf-grid">
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">
+              {{ 'ქალაქი' | t }} <span class="text-red-500">*</span>
+            </span>
+            <select
+              class="ss-input georgian-text"
+              lang="ka"
+              formControlName="city"
+              data-testid="venue-city"
+            >
+              @for (c of cityOptions; track c.id) {
+                <option [value]="c.id">{{ c.name }}</option>
+              }
+              <option [value]="otherCity">{{ 'სხვა ქალაქი…' | t }}</option>
+            </select>
+          </label>
+
+          @if (isOtherCity()) {
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">
+                {{ 'ქალაქის სახელი' | t }} <span class="text-red-500">*</span>
+              </span>
+              <input
+                class="ss-input georgian-text"
+                lang="ka"
+                formControlName="cityOther"
+                [attr.maxlength]="limits.city"
+                [placeholder]="'მაგ. გორი' | t"
+                [class.ss-input--invalid]="showError('cityOther')"
+              />
+              @if (showError('cityOther')) {
+                <span class="ss-error georgian-text" lang="ka">{{ 'მიუთითეთ ქალაქი' | t }}</span>
+              }
+            </label>
+          }
+
+          @if (isTbilisi()) {
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">{{ 'უბანი' | t }}</span>
+              <select class="ss-input georgian-text" lang="ka" formControlName="district">
+                <option value="">{{ 'არცერთი' | t }}</option>
+                @for (d of districtOptions; track d.id) {
+                  <option [value]="d.id">{{ d.name }}</option>
+                }
+              </select>
+            </label>
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">{{ 'ღირსშესანიშნაობა' | t }}</span>
+              <select class="ss-input georgian-text" lang="ka" formControlName="landmark">
+                <option value="">{{ 'არცერთი' | t }}</option>
+                @for (l of landmarkOptions; track l.id) {
+                  <option [value]="l.id">{{ l.name }}</option>
+                }
+              </select>
+            </label>
+          }
+
+          <label class="ss-field vf-span-2">
+            <span class="ss-label georgian-text" lang="ka">{{ 'მისამართი' | t }}</span>
+            <input
+              class="ss-input georgian-text"
+              lang="ka"
+              formControlName="address"
+              [attr.maxlength]="limits.text"
+            />
+          </label>
+
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'განედი (Latitude)' | t }}</span>
+            <input
+              class="ss-input"
+              type="number"
+              step="any"
+              inputmode="decimal"
+              formControlName="lat"
+              [class.ss-input--invalid]="showError('lat')"
+            />
+            @if (showError('lat')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'განედი: -90-დან 90-მდე' | t }}</span>
+            }
+          </label>
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'გრძედი (Longitude)' | t }}</span>
+            <input
+              class="ss-input"
+              type="number"
+              step="any"
+              inputmode="decimal"
+              formControlName="lng"
+              [class.ss-input--invalid]="showError('lng')"
+            />
+            @if (showError('lng')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'გრძედი: -180-დან 180-მდე' | t }}</span>
+            }
+          </label>
+
+          <label class="ss-field vf-span-2">
+            <span class="ss-label georgian-text" lang="ka">{{ 'Google Maps ბმული' | t }}</span>
+            <input
+              class="ss-input"
+              formControlName="mapsUrl"
+              [attr.maxlength]="limits.url"
+              placeholder="https://maps.app.goo.gl/..."
+              [class.ss-input--invalid]="showError('mapsUrl')"
+            />
+            @if (showError('mapsUrl')) {
+              <span class="ss-error georgian-text" lang="ka">
+                {{ 'ბმული უნდა იწყებოდეს https://-ით' | t }}
+              </span>
+            }
+          </label>
+        </div>
+      </section>
+
+      <!-- ── 3. Contacts ─────────────────────────────────────────────────── -->
+      <section class="ss-card vf-section">
+        <h2 class="vf-section-title georgian-text" lang="ka">{{ 'კონტაქტები' | t }}</h2>
+        <div class="vf-grid">
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'ტელეფონი' | t }}</span>
+            <input
+              class="ss-input"
+              type="tel"
+              formControlName="phone"
+              placeholder="+995 5XX XX XX XX"
+              [attr.maxlength]="limits.text"
+            />
+          </label>
+          <label class="ss-field">
+            <span class="ss-label">Website</span>
+            <input
+              class="ss-input"
+              formControlName="website"
+              [attr.maxlength]="limits.url"
+              placeholder="https://..."
+              [class.ss-input--invalid]="showError('website')"
+            />
+            @if (showError('website')) {
+              <span class="ss-error georgian-text" lang="ka">
+                {{ 'ბმული უნდა იწყებოდეს https://-ით' | t }}
+              </span>
+            }
+          </label>
+          <label class="ss-field">
+            <span class="ss-label">Instagram</span>
+            <input
+              class="ss-input"
+              formControlName="instagram"
+              placeholder="https://instagram.com/..."
+              [attr.maxlength]="limits.url"
+            />
+          </label>
+          <label class="ss-field">
+            <span class="ss-label">Facebook</span>
+            <input
+              class="ss-input"
+              formControlName="facebook"
+              placeholder="https://facebook.com/..."
+              [attr.maxlength]="limits.url"
+            />
+          </label>
+          <label class="ss-field">
+            <span class="ss-label">TikTok</span>
+            <input
+              class="ss-input"
+              formControlName="tiktok"
+              placeholder="https://tiktok.com/@..."
+              [attr.maxlength]="limits.url"
+            />
+          </label>
+          <label class="ss-field">
+            <span class="ss-label">WhatsApp</span>
+            <input
+              class="ss-input"
+              formControlName="whatsapp"
+              placeholder="+995 5XX XX XX XX"
+              [attr.maxlength]="limits.url"
+            />
+          </label>
+        </div>
+      </section>
+
+      <!-- ── 4. Courts & prices ──────────────────────────────────────────── -->
+      <section class="ss-card vf-section">
+        <h2 class="vf-section-title georgian-text" lang="ka">{{ 'კორტები და ფასები' | t }}</h2>
+        <div class="vf-grid vf-grid--3">
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">
+              {{ 'კორტების რაოდენობა' | t }} <span class="text-red-500">*</span>
+            </span>
+            <input
+              class="ss-input"
+              type="number"
+              min="0"
+              step="1"
+              formControlName="courtsCount"
+              [class.ss-input--invalid]="showError('courtsCount')"
+            />
+            @if (showError('courtsCount')) {
+              <span class="ss-error georgian-text" lang="ka">
+                {{ 'შეიყვანეთ მთელი რიცხვი 0-დან 100-მდე' | t }}
+              </span>
+            }
+          </label>
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">
+              {{ 'დახურული კორტები' | t }} <span class="text-red-500">*</span>
+            </span>
+            <input
+              class="ss-input"
+              type="number"
+              min="0"
+              step="1"
+              formControlName="indoorCourtsCount"
+              [class.ss-input--invalid]="
+                showError('indoorCourtsCount') ||
+                (form.controls.indoorCourtsCount.touched && form.hasError('indoorExceedsTotal'))
+              "
+            />
+            @if (showError('indoorCourtsCount')) {
+              <span class="ss-error georgian-text" lang="ka">
+                {{ 'შეიყვანეთ მთელი რიცხვი 0-დან 100-მდე' | t }}
+              </span>
+            } @else if (form.hasError('indoorExceedsTotal')) {
+              <span class="ss-error georgian-text" lang="ka" data-testid="indoor-error">
+                {{ 'დახურული კორტები ვერ აღემატება კორტების რაოდენობას' | t }}
+              </span>
+            }
+          </label>
+          <label class="vf-check">
+            <input class="ss-switch" type="checkbox" formControlName="hasRoof" />
+            <span class="georgian-text" lang="ka">{{ 'აქვს სახურავი' | t }}</span>
+          </label>
+
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'მინ. ფასი (₾/სთ)' | t }}</span>
+            <input
+              class="ss-input"
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              formControlName="priceMinGel"
+              [class.ss-input--invalid]="showError('priceMinGel')"
+            />
+            @if (showError('priceMinGel')) {
+              <span class="ss-error georgian-text" lang="ka">
+                {{ 'შეიყვანეთ თანხა 0–10 000 ₾, მაქს. 2 ციფრი მძიმის შემდეგ' | t }}
+              </span>
+            }
+          </label>
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'მაქს. ფასი (₾/სთ)' | t }}</span>
+            <input
+              class="ss-input"
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              formControlName="priceMaxGel"
+              [class.ss-input--invalid]="
+                showError('priceMaxGel') ||
+                (form.controls.priceMaxGel.touched && form.hasError('priceBandInverted'))
+              "
+            />
+            @if (showError('priceMaxGel')) {
+              <span class="ss-error georgian-text" lang="ka">
+                {{ 'შეიყვანეთ თანხა 0–10 000 ₾, მაქს. 2 ციფრი მძიმის შემდეგ' | t }}
+              </span>
+            } @else if (form.hasError('priceBandInverted')) {
+              <span class="ss-error georgian-text" lang="ka" data-testid="price-band-error">
+                {{ 'მაქს. ფასი ვერ იქნება მინ. ფასზე ნაკლები' | t }}
+              </span>
+            }
+          </label>
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'ჩოგნის ქირა (₾)' | t }}</span>
+            <input
+              class="ss-input"
+              type="number"
+              min="0"
+              step="0.01"
+              inputmode="decimal"
+              formControlName="racketRentalGel"
+              [class.ss-input--invalid]="showError('racketRentalGel')"
+            />
+            @if (showError('racketRentalGel')) {
+              <span class="ss-error georgian-text" lang="ka">
+                {{ 'შეიყვანეთ თანხა 0–10 000 ₾, მაქს. 2 ციფრი მძიმის შემდეგ' | t }}
+              </span>
+            }
+          </label>
+        </div>
+      </section>
+
+      <!-- ── 5. Opening hours ────────────────────────────────────────────── -->
+      <section class="ss-card vf-section">
+        <div class="vf-section-head">
+          <h2 class="vf-section-title georgian-text" lang="ka">{{ 'სამუშაო საათები' | t }}</h2>
+          <label class="vf-check">
+            <input
+              class="ss-switch"
+              type="checkbox"
+              formControlName="hoursKnown"
+              data-testid="hours-known"
+            />
+            <span class="georgian-text" lang="ka">{{ 'საათები ცნობილია' | t }}</span>
+          </label>
+        </div>
+
+        @if (hoursKnown()) {
+          <div class="vf-hours" formGroupName="openingHours">
+            @for (day of days; track day) {
+              <div class="vf-hours-row" [formGroupName]="day" data-testid="hours-row">
+                <span class="vf-day georgian-text" lang="ka">{{ dayLabel(day) }}</span>
+                <label class="vf-check">
+                  <input class="ss-switch" type="checkbox" formControlName="closed" />
+                  <span class="georgian-text text-sm" lang="ka">{{ 'დასვენების დღე' | t }}</span>
+                </label>
+                @if (dayForm(day).controls.closed.value) {
+                  <span class="vf-dayoff georgian-text" lang="ka">{{ 'არ მუშაობს' | t }}</span>
+                } @else {
+                  <div class="vf-times">
+                    <label class="vf-time">
+                      <span class="georgian-text" lang="ka">{{ 'იხსნება' | t }}</span>
+                      <input class="ss-input" type="time" formControlName="open" />
+                    </label>
+                    <label class="vf-time">
+                      <span class="georgian-text" lang="ka">{{ 'იკეტება' | t }}</span>
+                      <input class="ss-input" type="time" formControlName="close" />
+                    </label>
+                  </div>
+                }
+                @if (dayForm(day).hasError('time')) {
+                  <span class="ss-error georgian-text vf-hours-error" lang="ka">
+                    {{ 'მიუთითეთ გახსნისა და დახურვის დრო' | t }}
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="vf-hint georgian-text" lang="ka">
+            {{ 'საათები უცნობია — საიტზე არ გამოჩნდება' | t }}
+          </p>
+        }
+      </section>
+
+      <!-- ── 6. Texts ────────────────────────────────────────────────────── -->
+      <section class="ss-card vf-section">
+        <h2 class="vf-section-title georgian-text" lang="ka">{{ 'ტექსტები' | t }}</h2>
+        <div class="vf-grid">
+          <div>
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">{{ 'აღწერა' | t }}</span>
+              <textarea
+                class="ss-input georgian-text"
+                lang="ka"
+                rows="10"
+                formControlName="description"
+                [attr.maxlength]="descriptionMax"
+                [class.ss-input--invalid]="showError('description')"
+              ></textarea>
+            </label>
+            <div
+              class="vf-count georgian-text"
+              lang="ka"
+              [class.is-low]="descriptionWords() < seoMinWords"
+              data-testid="description-words"
+            >
+              <span>{{ descriptionWords() }} {{ 'სიტყვა' | t }}</span>
+              <span>SEO: ≥{{ seoMinWords }} {{ 'სიტყვა' | t }}</span>
+            </div>
+            @if (showError('description')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'მაქსიმუმ 4000 სიმბოლო' | t }}</span>
+            }
+          </div>
+          <div>
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">{{ 'აღწერა (ინგლისურად)' | t }}</span>
+              <textarea
+                class="ss-input"
+                rows="10"
+                formControlName="descriptionEn"
+                [attr.maxlength]="descriptionMax"
+                [class.ss-input--invalid]="showError('descriptionEn')"
+              ></textarea>
+            </label>
+            <div
+              class="vf-count georgian-text"
+              lang="ka"
+              [class.is-low]="descriptionEnWords() < seoMinWords"
+              data-testid="description-en-words"
+            >
+              <span>{{ descriptionEnWords() }} {{ 'სიტყვა' | t }}</span>
+              <span>SEO: ≥{{ seoMinWords }} {{ 'სიტყვა' | t }}</span>
+            </div>
+            @if (showError('descriptionEn')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'მაქსიმუმ 4000 სიმბოლო' | t }}</span>
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 7. Partner facility ─────────────────────────────────────────── -->
+      <section class="ss-card vf-section">
+        <h2 class="vf-section-title georgian-text" lang="ka">{{ 'პარტნიორი ობიექტი' | t }}</h2>
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">{{ 'ობიექტი' | t }}</span>
+          <select
+            class="ss-input georgian-text"
+            lang="ka"
+            formControlName="partnerFacility"
+            data-testid="venue-partner-select"
+          >
+            <option value="">{{ 'არ არის პარტნიორი' | t }}</option>
+            @if (unknownPartner(); as id) {
+              <option [value]="id">{{ 'უცნობი ობიექტი' | t }} ({{ id }})</option>
+            }
+            @for (group of partnerGroups(); track group.academyName) {
+              <optgroup [label]="group.academyName">
+                @for (option of group.options; track option.id) {
+                  <option [value]="option.id">{{ facilityLabel(option) }}</option>
+                }
+              </optgroup>
+            }
+          </select>
+          <span class="vf-hint georgian-text" lang="ka">
+            {{ 'აირჩიეთ, როცა კლუბი პლატფორმას შემოუერთდება' | t }}
+          </span>
+        </label>
+      </section>
+
+      <!-- Actions -->
+      <div class="vf-actions">
+        <a class="ss-btn ss-btn--outline" routerLink="/venues">
+          <span class="georgian-text" lang="ka">{{ 'გაუქმება' | t }}</span>
+        </a>
+        <button
+          class="ss-btn ss-btn--primary"
+          type="submit"
+          [disabled]="isSaving()"
+          data-testid="venue-save"
+        >
+          <span class="georgian-text" lang="ka">{{ 'შენახვა' | t }}</span>
+        </button>
+      </div>
+    </form>
+  }
+</div>

@@ -1,0 +1,182 @@
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--tui-text-secondary);
+  text-decoration: none;
+}
+.back-link:hover {
+  color: var(--tui-text-primary);
+}
+
+/* read-only record facts under the title (source, citySlug, last update) */
+.vf-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--tui-text-secondary);
+}
+.vf-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--tui-text-action);
+  text-decoration: none;
+}
+.vf-link:hover {
+  text-decoration: underline;
+}
+.vf-link .ss-ic {
+  width: 13px;
+  height: 13px;
+}
+
+/* ── form layout: one card per section ─────────────────────────────────── */
+.vf {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.vf-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px;
+}
+.vf-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.vf-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--tui-text-secondary);
+}
+.vf-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.vf-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.vf-grid--tight {
+  gap: 12px;
+}
+.vf-span-2 {
+  grid-column: span 2;
+}
+@media (max-width: 768px) {
+  .vf-section {
+    padding: 16px;
+  }
+  .vf-grid,
+  .vf-grid--3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .vf-span-2 {
+    grid-column: auto;
+  }
+}
+
+.vf-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--tui-text-secondary);
+}
+.vf-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.vf-grid .vf-check {
+  align-self: end;
+}
+
+/* ── opening hours: one row per weekday ────────────────────────────────── */
+.vf-hours {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.vf-hours-row {
+  display: grid;
+  grid-template-columns: 120px 170px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 16px;
+  padding: 6px 0;
+  border-top: 1px solid var(--tui-border-normal);
+}
+.vf-hours-row:first-child {
+  border-top: 0;
+}
+.vf-day {
+  font-weight: 600;
+}
+.vf-dayoff {
+  font-size: 13px;
+  color: var(--tui-text-tertiary);
+}
+.vf-times {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.vf-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--tui-text-secondary);
+}
+.vf-time .ss-input {
+  width: 130px;
+  height: 38px;
+}
+.vf-hours-error {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+@media (max-width: 768px) {
+  .vf-hours-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .vf-times,
+  .vf-dayoff {
+    grid-column: 1 / -1;
+  }
+}
+
+/* live word count under each description (SEO wants ≥100 words) */
+.vf-count {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--tui-text-secondary);
+}
+.vf-count.is-low span:first-child {
+  color: var(--warning, #f7b955);
+  font-weight: 600;
+}
+
+.vf-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-bottom: 24px;
+}
