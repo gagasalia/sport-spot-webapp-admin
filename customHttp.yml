@@ -1,0 +1,9 @@
+# Amplify Hosting custom headers (read from the repo root at build time; applies
+# to every branch of the app). The operator dashboard must never be indexed:
+# robots.txt and the index.html meta say the same, this header covers every
+# response including assets and deep links.
+customHeaders:
+  - pattern: '**'
+    headers:
+      - key: 'X-Robots-Tag'
+        value: 'noindex, nofollow'
