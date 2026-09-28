@@ -42,6 +42,11 @@
             </span>
           </span>
         </label>
+        @if (isEditMode) {
+          <p class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)" data-testid="external-locked">
+            {{ 'ტურნირის ტიპი შექმნის შემდეგ არ იცვლება' | t }}
+          </p>
+        }
 
         @if (isExternal()) {
           <label class="ss-field">

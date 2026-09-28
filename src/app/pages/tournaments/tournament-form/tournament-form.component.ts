@@ -156,8 +156,9 @@ interface TournamentFormValue {
  * Superadmins also get the «გარე ტურნირი» switch (docs/26 §WP-1d): an
  * EXTERNAL tournament of a non-partner club, registered for on the
  * organizer's own site. It carries an `external` block (registration URL,
- * organizer, a directory venue or a free-text place) and no facility; turning
- * the switch off on a tournament that was external sends `external: null`.
+ * organizer, a directory venue or a free-text place) and no facility. The
+ * kind is fixed at creation (the API rejects internal ↔ external switches, so
+ * registrations and fees are never stranded): the switch is locked on edit.
  */
 @Component({
   selector: 'app-tournament-form',
@@ -281,6 +282,10 @@ export class TournamentFormComponent implements OnInit {
 
     this.selectedFacilityId.set(t?.facility ?? '');
     this.syncExternal();
+    if (this.isEditMode) {
+      // Fixed at creation: the API answers 400 to an internal ↔ external switch.
+      this.form.get('external')!.disable({ emitEvent: false });
+    }
     this.form
       .get('external')!
       .valueChanges.pipe(takeUntilDestroyed(this.destroyRef))
@@ -412,12 +417,7 @@ export class TournamentFormComponent implements OnInit {
     if (editing) {
       const dto: UpdateTournamentDto = external
         ? { ...base, external: this.externalPayload(v, true) }
-        : {
-            facility: v.facility,
-            ...base,
-            // Switching an external tournament back to internal clears the block.
-            ...(editing.external ? { external: null } : {}),
-          };
+        : { facility: v.facility, ...base };
       request = this.tournamentService.updateTournament(editing._id, dto);
     } else {
       const dto: CreateTournamentDto = external

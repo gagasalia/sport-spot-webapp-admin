@@ -314,21 +314,24 @@ describe('TournamentFormComponent', () => {
       });
     });
 
-    it('switching it off sends external: null with the chosen facility', () => {
-      switchExternal(false);
-      (component as unknown as { selectFacility(id: string): void }).selectFacility('aca-9-f-1');
+    it('locks the switch: the kind is fixed at creation and the PUT stays external', () => {
+      expect(form().get('external')!.disabled).toBeTrue();
+      expect((q('external-toggle') as HTMLInputElement).disabled).toBeTrue();
+      expect(q('external-locked')).not.toBeNull();
       submit();
 
       const body = updateBody();
-      expect(body.external).toBeNull();
-      expect(body.facility).toBe('aca-9-f-1');
+      expect('facility' in body).toBeFalse();
+      expect(body.external).toEqual(jasmine.objectContaining({ registrationUrl: 'https://padelbatumi.ge/open' }));
     });
   });
 
   describe('as a superadmin editing an internal tournament', () => {
     beforeEach(async () => setup({ superAdmin: true, tournament: internal }));
 
-    it('leaves the external key out of the PUT', () => {
+    it('leaves the external key out of the PUT and locks the switch', () => {
+      expect(form().get('external')!.disabled).toBeTrue();
+      expect((q('external-toggle') as HTMLInputElement).disabled).toBeTrue();
       submit();
       const body = updateBody();
       expect(body.facility).toBe('f-1');

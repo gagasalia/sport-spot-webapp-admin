@@ -85,7 +85,7 @@ export interface CreateTournamentDto {
   maxParticipants: number;
 }
 
-/** Every key optional; `external: null` turns an external tournament back into an internal one. */
+/** Every key optional; the kind (internal/external) is fixed at creation — `external` only replaces the block of an external one. */
 export type UpdateTournamentDto = Partial<Omit<CreateTournamentDto, 'external'>> & {
   external?: TournamentExternal | null;
 };

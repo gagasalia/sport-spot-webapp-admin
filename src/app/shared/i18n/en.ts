@@ -1635,6 +1635,7 @@ export const EN: Record<string, string> = {
   // ── external tournaments (superadmin, docs/26 §WP-1d) ─────────────────
   'გარე': 'External',
   'გარე ტურნირი': 'External tournament',
+  'ტურნირის ტიპი შექმნის შემდეგ არ იცვლება': 'The tournament type cannot change after creation',
   'არაპარტნიორი კლუბის ტურნირი — რეგისტრაცია ორგანიზატორის საიტზე':
     'A non-partner club’s tournament — registration on the organizer’s site',
   'რეგისტრაციის ბმული': 'Registration link',
