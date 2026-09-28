@@ -1,5 +1,5 @@
 /** Scope of an upload — determines the server-side S3 key prefix. */
-export type MediaScope = 'academy-logo' | 'facility-media';
+export type MediaScope = 'academy-logo' | 'facility-media' | 'article-cover';
 
 /** Body for POST /media/presign. */
 export interface PresignRequest {

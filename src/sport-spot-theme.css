@@ -568,6 +568,12 @@ input[type='date'].ss-input::-webkit-calendar-picker-indicator {
   background: var(--accent-soft);
   color: var(--tui-text-action);
 }
+/* retired records (e.g. an archived article): outlined, quieter than neutral */
+.ss-badge--muted {
+  background: transparent;
+  color: var(--text-faint);
+  box-shadow: inset 0 0 0 1px var(--hairline-2);
+}
 
 /* ── native select (chevron via inline SVG; inherits the ss-input look) ───── */
 select.ss-input {

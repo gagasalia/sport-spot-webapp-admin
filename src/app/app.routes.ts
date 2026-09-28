@@ -66,6 +66,30 @@ export const routes: Routes = [
           ),
       },
       {
+        // Articles / blog (docs/26 §WP-3) — superadmin-only, like the venues
+        // directory. `new` precedes `:id` so it is never read as an article id.
+        path: 'articles',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./pages/articles/articles.component').then((m) => m.ArticlesComponent),
+      },
+      {
+        path: 'articles/new',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./pages/articles/article-edit/article-edit.component').then(
+            (m) => m.ArticleEditComponent,
+          ),
+      },
+      {
+        path: 'articles/:id',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./pages/articles/article-edit/article-edit.component').then(
+            (m) => m.ArticleEditComponent,
+          ),
+      },
+      {
         path: 'reservations',
         loadComponent: () =>
           import('./pages/reservations/reservations.component').then(

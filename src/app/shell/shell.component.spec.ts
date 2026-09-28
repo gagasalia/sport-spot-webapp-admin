@@ -111,6 +111,42 @@ describe('ShellComponent', () => {
     expect(previous.getAttribute('routerLink')).toBe('/configuration/facilities');
   });
 
+  // The blog editor is a superadmin tool too; its entry follows the venues
+  // directory in both hosts of the nav list (desktop rail + mobile Menu sheet).
+  it('shows the articles entry to superadmins only, right after the venues directory', () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    const shell = fixture.componentInstance as unknown as {
+      isMobile: { set(v: boolean): void };
+      toggleMenu(): void;
+      closeMenu(): void;
+    };
+    shell.isMobile.set(false);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[automation-id="articles"]')).toBeNull();
+
+    authStub.isSuperAdmin.set(true);
+    fixture.detectChanges();
+    const link: HTMLElement = fixture.nativeElement.querySelector('[automation-id="articles"]');
+    expect(link).not.toBeNull();
+    expect(link.getAttribute('routerLink')).toBe('/articles');
+    expect(link.textContent).toContain('სტატიები');
+    const previous = link.previousElementSibling as HTMLElement;
+    expect(previous.getAttribute('automation-id')).toBe('venues');
+
+    // Mobile: the same entry lives in the Menu sheet.
+    shell.isMobile.set(true);
+    shell.toggleMenu();
+    fixture.detectChanges();
+    const sheetLink = fixture.nativeElement.querySelector(
+      '.menu-sheet [automation-id="articles"]',
+    );
+    expect(sheetLink).not.toBeNull();
+
+    // Release the page-scroll lock the open sheet applied.
+    shell.closeMenu();
+    fixture.detectChanges();
+  });
+
   it('declined signOut leaves the session untouched', () => {
     dialogStub.open.and.returnValue(of(false));
     const router = TestBed.inject(Router);

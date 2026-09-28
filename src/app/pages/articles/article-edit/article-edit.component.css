@@ -1,0 +1,286 @@
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: var(--tui-text-secondary);
+  text-decoration: none;
+}
+.back-link:hover {
+  color: var(--tui-text-primary);
+}
+.ae-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--tui-text-secondary);
+}
+
+/* ── status bar: sticks under the shell header while the article scrolls ── */
+.ae-statusbar {
+  position: sticky;
+  top: 66px;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+}
+.ae-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  font-size: 13px;
+  color: var(--tui-text-secondary);
+}
+.ae-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.ae-archive {
+  color: var(--danger);
+}
+
+/* ── layout: texts on the left, shared settings on the right ─────────────── */
+.ae-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
+  gap: 16px;
+}
+.ae-main,
+.ae-side,
+.ae-lang,
+.ae-seo,
+.ae-faq,
+.ae-section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 16px;
+}
+.ae-section {
+  gap: 14px;
+  padding: 18px 20px;
+}
+.ae-section-head,
+.ae-faq-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ae-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--tui-text-secondary);
+}
+.ae-seo,
+.ae-faq {
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hairline);
+}
+.ae-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* ── KA / EN tabs ────────────────────────────────────────────────────────── */
+.ae-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--hairline);
+}
+.ae-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: -1px;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ae-tab:hover,
+.ae-tab.is-active {
+  color: var(--text);
+}
+.ae-tab.is-active {
+  border-bottom-color: var(--accent);
+}
+.ae-tab:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.ae-tab-error {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+/* ── counters + hints ────────────────────────────────────────────────────── */
+.ae-count-inline {
+  float: right;
+  font-weight: 500;
+  color: var(--text-faint);
+}
+.ae-dirty,
+.ae-count-inline.is-full,
+.ae-hint--warn,
+.ae-count.is-low span:first-child {
+  color: var(--warning);
+}
+.ae-dirty,
+.ae-count.is-low span:first-child {
+  font-weight: 600;
+}
+.ae-count {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--tui-text-secondary);
+}
+.ae-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--tui-text-secondary);
+}
+
+/* ── chips: tags input + picked facilities ───────────────────────────────── */
+.ae-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 8px;
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.ae-chips:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.ae-chips--plain {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+}
+.ae-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 3px 3px 10px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  font-size: 13px;
+}
+.ae-chip > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ae-chip-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.ae-chip-x:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.ae-chip-x .ss-ic {
+  width: 12px;
+  height: 12px;
+}
+.ae-chip-input::placeholder {
+  color: var(--text-faint);
+}
+.ae-chip-input {
+  flex: 1 1 120px;
+  min-width: 100px;
+  height: 30px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+/* ── cover ───────────────────────────────────────────────────────────────── */
+.ae-cover {
+  position: relative;
+}
+.ae-cover img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1200 / 630;
+  object-fit: cover;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+}
+.ae-cover-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+.ae-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  text-align: center;
+  border: 2px dashed var(--tui-border-hover);
+  border-radius: var(--r-md);
+}
+
+@media (max-width: 1100px) {
+  .ae-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 768px) {
+  .ae-statusbar {
+    position: static;
+  }
+  .ae-section {
+    padding: 16px;
+  }
+  .ae-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

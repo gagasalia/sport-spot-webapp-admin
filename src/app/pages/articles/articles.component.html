@@ -1,0 +1,289 @@
+<div class="pt-8 p-0 sm:p-8">
+  <header class="mb-6 flex items-center justify-between gap-4">
+    <div class="min-w-0">
+      <h1 class="text-2xl font-semibold georgian-text" lang="ka">{{ 'სტატიები' | t }}</h1>
+      <p class="text-sm georgian-text mt-1" lang="ka" style="color: var(--tui-text-secondary)">
+        {{ 'ბლოგი — რჩევები, ადგილები და სიახლეები' | t }}
+      </p>
+    </div>
+    <button
+      automation-id="articles-add"
+      class="ss-btn ss-btn--primary shrink-0"
+      type="button"
+      (click)="addArticle()"
+    >
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
+      <span class="georgian-text" lang="ka">{{ 'ახალი სტატია' | t }}</span>
+    </button>
+  </header>
+
+  <!-- Filters -->
+  <div class="ss-card p-4 mb-6">
+    <div class="filter-row">
+      <label class="ss-field search-field">
+        <span class="ss-label georgian-text" lang="ka">{{ 'ძებნა' | t }}</span>
+        <input
+          automation-id="articles-search"
+          class="ss-input"
+          type="text"
+          [placeholder]="'სათაური, slug ან თეგი' | t"
+          [ngModel]="q()"
+          (ngModelChange)="onSearchChange($event)"
+        />
+      </label>
+
+      <label class="ss-field select-field">
+        <span class="ss-label georgian-text" lang="ka">{{ 'სტატუსი' | t }}</span>
+        <select
+          automation-id="articles-status"
+          class="ss-input georgian-text"
+          lang="ka"
+          [ngModel]="statusFilter()"
+          (ngModelChange)="onStatusFilterChange($event)"
+        >
+          <option value="">{{ 'ყველა' | t }}</option>
+          @for (s of statusOptions; track s) {
+            <option [value]="s">{{ statusLabel(s) }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="ss-field select-field">
+        <span class="ss-label georgian-text" lang="ka">{{ 'კატეგორია' | t }}</span>
+        <select
+          automation-id="articles-category"
+          class="ss-input georgian-text"
+          lang="ka"
+          [ngModel]="categoryFilter()"
+          (ngModelChange)="onCategoryFilterChange($event)"
+        >
+          <option value="">{{ 'ყველა' | t }}</option>
+          @for (c of categoryOptions; track c) {
+            <option [value]="c">{{ categoryLabel(c) }}</option>
+          }
+        </select>
+      </label>
+    </div>
+  </div>
+
+  @if (hasError()) {
+    <div
+      class="rounded-lg p-4 mb-4 georgian-text"
+      lang="ka"
+      style="background: var(--tui-status-negative-pale); color: var(--tui-status-negative)"
+    >
+      {{ 'მონაცემების ჩატვირთვა ვერ მოხერხდა. სცადეთ თავიდან.' | t }}
+    </div>
+    <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="retry()">
+      <span class="georgian-text" lang="ka">{{ 'თავიდან ცდა' | t }}</span>
+    </button>
+  } @else if (isLoading()) {
+    <div class="space-y-2 animate-pulse">
+      @for (n of [1, 2, 3, 4, 5]; track n) {
+        <div class="h-12 rounded" style="background: var(--tui-background-neutral-1)"></div>
+      }
+    </div>
+  } @else {
+    <!-- Desktop table -->
+    @if (!isMobile()) {
+      <div class="ss-card overflow-x-auto">
+        <table class="ss-table">
+          <thead>
+            <tr>
+              <th class="georgian-text" lang="ka">{{ 'სათაური' | t }}</th>
+              <th class="georgian-text" lang="ka">{{ 'კატეგორია' | t }}</th>
+              <th class="georgian-text" lang="ka">{{ 'სტატუსი' | t }}</th>
+              <th class="georgian-text" lang="ka">{{ 'კითხვის დრო' | t }}</th>
+              <th class="georgian-text" lang="ka">{{ 'განახლდა' | t }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of rows(); track a._id) {
+              <tr
+                class="article-row"
+                tabindex="0"
+                data-testid="article-row"
+                (click)="onRowActivate($event, a)"
+                (keydown.enter)="onRowActivate($event, a)"
+              >
+                <td class="title-cell">
+                  <div class="font-medium georgian-text" lang="ka">{{ a.title }}</div>
+                  @if (a.titleEn) {
+                    <div class="text-xs" style="color: var(--tui-text-secondary)">{{ a.titleEn }}</div>
+                  }
+                </td>
+                <td>
+                  <span class="ss-badge ss-badge--accent georgian-text" lang="ka">
+                    {{ categoryLabel(a.category) }}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    class="georgian-text"
+                    lang="ka"
+                    [class]="statusClass(a.status)"
+                    data-testid="article-status"
+                  >
+                    {{ statusLabel(a.status) }}
+                  </span>
+                  @if (statusDate(a); as when) {
+                    <div class="status-date" data-testid="article-status-date">
+                      {{ when | date: 'dd/MM/yyyy HH:mm' }}
+                    </div>
+                  }
+                </td>
+                <td class="text-sm whitespace-nowrap georgian-text" lang="ka">
+                  @if (a.readingMinutes) {
+                    {{ a.readingMinutes }} {{ 'წთ' | t }}
+                  } @else {
+                    —
+                  }
+                </td>
+                <td class="text-sm whitespace-nowrap">
+                  {{ a.updatedAt ? (a.updatedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}
+                </td>
+                <td>
+                  <div class="flex items-center gap-2 justify-end">
+                    @for (target of quickActions(a); track target) {
+                      <button
+                        class="ss-btn ss-btn--outline ss-btn--s quick-btn"
+                        type="button"
+                        [attr.data-testid]="'quick-' + target"
+                        [disabled]="busyIds().has(a._id)"
+                        (click)="runQuickAction(a, target)"
+                      >
+                        <span class="georgian-text" lang="ka">{{ quickActionLabel(target) }}</span>
+                      </button>
+                    }
+                    <button
+                      class="ss-icon-btn"
+                      type="button"
+                      [attr.aria-label]="'რედაქტირება' | t"
+                      [title]="'რედაქტირება' | t"
+                      (click)="editArticle(a)"
+                    >
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+                    </button>
+                    <button
+                      class="ss-icon-btn ss-icon-btn--danger"
+                      type="button"
+                      data-testid="article-delete"
+                      [attr.aria-label]="'წაშლა' | t"
+                      [title]="'წაშლა' | t"
+                      (click)="deleteArticle(a)"
+                    >
+                      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="px-4 py-8 text-center georgian-text" lang="ka">
+                  {{ 'სტატიები ვერ მოიძებნა' | t }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <!-- Mobile cards -->
+    @if (isMobile()) {
+      <div class="flex flex-col gap-4">
+        @for (a of rows(); track a._id) {
+          <div
+            class="ss-card p-4 article-card"
+            tabindex="0"
+            data-testid="article-row"
+            (click)="onRowActivate($event, a)"
+            (keydown.enter)="onRowActivate($event, a)"
+          >
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="min-w-0">
+                <h3 class="font-semibold georgian-text" lang="ka">{{ a.title }}</h3>
+                @if (a.titleEn) {
+                  <p class="text-xs truncate" style="color: var(--tui-text-secondary)">
+                    {{ a.titleEn }}
+                  </p>
+                }
+              </div>
+              <span
+                class="georgian-text shrink-0"
+                lang="ka"
+                [class]="statusClass(a.status)"
+                data-testid="article-status"
+              >
+                {{ statusLabel(a.status) }}
+              </span>
+            </div>
+            <div
+              class="flex flex-wrap items-center gap-2 text-xs georgian-text mb-3"
+              lang="ka"
+              style="color: var(--tui-text-secondary)"
+            >
+              <span class="ss-badge ss-badge--accent">{{ categoryLabel(a.category) }}</span>
+              @if (statusDate(a); as when) {
+                <span>{{ when | date: 'dd/MM/yyyy HH:mm' }}</span>
+              }
+              @if (a.readingMinutes) {
+                <span>· {{ a.readingMinutes }} {{ 'წთ' | t }}</span>
+              }
+            </div>
+            <div class="flex flex-wrap items-center gap-2 justify-end">
+              @for (target of quickActions(a); track target) {
+                <button
+                  class="ss-btn ss-btn--outline ss-btn--s"
+                  type="button"
+                  [disabled]="busyIds().has(a._id)"
+                  (click)="runQuickAction(a, target)"
+                >
+                  <span class="georgian-text" lang="ka">{{ quickActionLabel(target) }}</span>
+                </button>
+              }
+              <button
+                class="ss-icon-btn ss-icon-btn--danger"
+                type="button"
+                [attr.aria-label]="'წაშლა' | t"
+                (click)="deleteArticle(a)"
+              >
+                <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+              </button>
+            </div>
+          </div>
+        } @empty {
+          <div class="ss-card p-6 text-center">
+            <p class="georgian-text" lang="ka">{{ 'სტატიები ვერ მოიძებნა' | t }}</p>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() === 1"
+          (click)="onPageChange(page() - 1)"
+        >
+          <span class="georgian-text" lang="ka">{{ 'წინა' | t }}</span>
+        </button>
+        <span class="text-sm" style="color: var(--tui-text-secondary)">
+          {{ page() }} / {{ totalPages() }}
+        </span>
+        <button
+          class="ss-btn ss-btn--outline ss-btn--s"
+          type="button"
+          [disabled]="page() >= totalPages()"
+          (click)="onPageChange(page() + 1)"
+        >
+          <span class="georgian-text" lang="ka">{{ 'შემდეგი' | t }}</span>
+        </button>
+      </div>
+    }
+  }
+</div>

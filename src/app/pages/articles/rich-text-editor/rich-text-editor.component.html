@@ -1,0 +1,243 @@
+<div class="rte" [class.rte--invalid]="invalid()" [class.rte--disabled]="disabled()">
+  <!-- Toolbar buttons keep the caret in the surface (mousedown → preventDefault). -->
+  <div class="rte-toolbar" role="toolbar" [attr.aria-label]="'ტექსტის ფორმატირება' | t">
+    <button
+      type="button"
+      class="rte-btn"
+      data-testid="rte-p"
+      [class.is-active]="state().block === 'p' && !state().ul && !state().ol && !state().quote"
+      [attr.aria-label]="'ჩვეულებრივი ტექსტი' | t"
+      [title]="'ჩვეულებრივი ტექსტი' | t"
+      [disabled]="disabled()"
+      (mousedown)="$event.preventDefault()"
+      (click)="setBlock('p')"
+    >
+      ¶
+    </button>
+    <button
+      type="button"
+      class="rte-btn"
+      data-testid="rte-h2"
+      [class.is-active]="state().block === 'h2'"
+      [attr.aria-pressed]="state().block === 'h2'"
+      [attr.aria-label]="'სათაური H2' | t"
+      [title]="'სათაური H2' | t"
+      [disabled]="disabled()"
+      (mousedown)="$event.preventDefault()"
+      (click)="setBlock('h2')"
+    >
+      H2
+    </button>
+    <button
+      type="button"
+      class="rte-btn"
+      data-testid="rte-h3"
+      [class.is-active]="state().block === 'h3'"
+      [attr.aria-pressed]="state().block === 'h3'"
+      [attr.aria-label]="'ქვესათაური H3' | t"
+      [title]="'ქვესათაური H3' | t"
+      [disabled]="disabled()"
+      (mousedown)="$event.preventDefault()"
+      (click)="setBlock('h3')"
+    >
+      H3
+    </button>
+    <span class="rte-sep" aria-hidden="true"></span>
+    <button
+      type="button"
+      class="rte-btn"
+      data-testid="rte-bold"
+      [class.is-active]="state().bold"
+      [attr.aria-pressed]="state().bold"
+      [attr.aria-label]="'მუქი' | t"
+      [title]="('მუქი' | t) + ' (Ctrl+B)'"
+      [disabled]="disabled()"
+      (mousedown)="$event.preventDefault()"
+      (click)="toggleBold()"
+    >
+      <strong>B</strong>
+    </button>
+    <button
+      type="button"
+      class="rte-btn"
+      data-testid="rte-italic"
+      [class.is-active]="state().italic"
+      [attr.aria-pressed]="state().italic"
+      [attr.aria-label]="'დახრილი' | t"
+      [title]="('დახრილი' | t) + ' (Ctrl+I)'"
+      [disabled]="disabled()"
+      (mousedown)="$event.preventDefault()"
+      (click)="toggleItalic()"
+    >
+      <em class="rte-italic">I</em>
+    </button>
+    <span class="rte-sep" aria-hidden="true"></span>
+    <button
+      type="button"
+      class="rte-btn"
+      data-testid="rte-ul"
+      [class.is-active]="state().ul"
+      [attr.aria-pressed]="state().ul"
+      [attr.aria-label]="'ბულეტებიანი სია' | t"
+      [title]="'ბულეტებიანი სია' | t"
+      [disabled]="disabled()"
+      (mousedown)="$event.preventDefault()"
+      (click)="toggleList('ul')"
+    >
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/list.svg')"></i>
+    </button>
+    <button
+      type="button"
+      class="rte-btn"
+      data-testid="rte-ol"
+      [class.is-active]="state().ol"
+      [attr.aria-pressed]="state().ol"
+      [attr.aria-label]="'დანომრილი სია' | t"
+      [title]="'დანომრილი სია' | t"
+      [disabled]="disabled()"
+      (mousedown)="$event.preventDefault()"
+      (click)="toggleList('ol')"
+    >
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/list-ordered.svg')"></i>
+    </button>
+    <button
+      type="button"
+      class="rte-btn"
+      data-testid="rte-quote"
+      [class.is-active]="state().quote"
+      [attr.aria-pressed]="state().quote"
+      [attr.aria-label]="'ციტატა' | t"
+      [title]="'ციტატა' | t"
+      [disabled]="disabled()"
+      (mousedown)="$event.preventDefault()"
+      (click)="toggleQuote()"
+    >
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/text-quote.svg')"></i>
+    </button>
+    <span class="rte-sep" aria-hidden="true"></span>
+    <button
+      type="button"
+      class="rte-btn"
+      data-testid="rte-link"
+      [class.is-active]="state().link || urlMode() === 'link'"
+      [attr.aria-label]="'ბმული' | t"
+      [title]="('ბმული' | t) + ' (Ctrl+K)'"
+      [disabled]="disabled()"
+      (mousedown)="$event.preventDefault()"
+      (click)="openUrlBar('link')"
+    >
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/link.svg')"></i>
+    </button>
+    <button
+      type="button"
+      class="rte-btn"
+      data-testid="rte-image"
+      [class.is-active]="urlMode() === 'image'"
+      [attr.aria-label]="'სურათი ბმულით' | t"
+      [title]="'სურათი ბმულით' | t"
+      [disabled]="disabled()"
+      (mousedown)="$event.preventDefault()"
+      (click)="openUrlBar('image')"
+    >
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/image.svg')"></i>
+    </button>
+    <button
+      type="button"
+      class="rte-btn"
+      data-testid="rte-clear"
+      [attr.aria-label]="'ფორმატირების მოხსნა' | t"
+      [title]="'ფორმატირების მოხსნა' | t"
+      [disabled]="disabled()"
+      (mousedown)="$event.preventDefault()"
+      (click)="clearFormatting()"
+    >
+      <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/remove-formatting.svg')"></i>
+    </button>
+  </div>
+
+  @if (urlMode(); as mode) {
+    <div class="rte-urlbar" data-testid="rte-urlbar">
+      <input
+        #urlInput
+        class="ss-input"
+        type="text"
+        inputmode="url"
+        autocomplete="off"
+        data-testid="rte-url"
+        [attr.aria-label]="(mode === 'link' ? 'ბმულის მისამართი' : 'სურათის მისამართი') | t"
+        [placeholder]="mode === 'link' ? 'https://… / /padelis-kortebi/vake' : 'https://…/image.webp'"
+        [value]="urlValue()"
+        [class.ss-input--invalid]="urlError()"
+        (input)="urlValue.set(urlInput.value); urlError.set(false)"
+        (keydown)="onUrlKeydown($event)"
+      />
+      @if (mode === 'image') {
+        <input
+          #altInput
+          class="ss-input georgian-text"
+          type="text"
+          autocomplete="off"
+          data-testid="rte-alt"
+          [lang]="lang()"
+          [attr.aria-label]="'სურათის აღწერა (alt)' | t"
+          [placeholder]="'სურათის აღწერა (alt)' | t"
+          [value]="altValue()"
+          (input)="altValue.set(altInput.value)"
+          (keydown)="onUrlKeydown($event)"
+        />
+      }
+      <button
+        type="button"
+        class="ss-btn ss-btn--primary ss-btn--s"
+        data-testid="rte-url-apply"
+        (click)="applyUrl()"
+      >
+        <span class="georgian-text" lang="ka">{{ 'ჩასმა' | t }}</span>
+      </button>
+      @if (mode === 'link' && editingLink()) {
+        <button
+          type="button"
+          class="ss-btn ss-btn--outline ss-btn--s"
+          data-testid="rte-unlink"
+          (click)="removeLink()"
+        >
+          <span class="georgian-text" lang="ka">{{ 'ბმულის მოხსნა' | t }}</span>
+        </button>
+      }
+      <button type="button" class="ss-btn ss-btn--flat ss-btn--s" (click)="closeUrlBar()">
+        <span class="georgian-text" lang="ka">{{ 'გაუქმება' | t }}</span>
+      </button>
+      @if (urlError()) {
+        <span class="ss-error georgian-text" lang="ka" data-testid="rte-url-error">
+          {{
+            (mode === 'link'
+              ? 'ბმული: https://…, /გვერდი ან mailto:'
+              : 'სურათის ბმული უნდა იწყებოდეს https://-ით') | t
+          }}
+        </span>
+      }
+    </div>
+  }
+
+  <div
+    #surface
+    class="rte-surface"
+    role="textbox"
+    aria-multiline="true"
+    tabindex="0"
+    data-testid="rte-surface"
+    [class.georgian-text]="lang() === 'ka'"
+    [class.is-empty]="isEmpty()"
+    [attr.contenteditable]="disabled() ? 'false' : 'true'"
+    [attr.lang]="lang()"
+    [attr.aria-label]="label()"
+    [attr.aria-invalid]="invalid()"
+    [attr.data-placeholder]="placeholder()"
+    (focus)="onFocus()"
+    (input)="onInput()"
+    (blur)="onBlur()"
+    (paste)="onPaste($event)"
+    (drop)="onDrop($event)"
+    (keydown)="onKeydown($event)"
+  ></div>
+</div>

@@ -1,0 +1,45 @@
+/* ── filter row: search + status / category selects ─────────────────────── */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+.search-field {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+.select-field {
+  flex: 0 1 200px;
+  min-width: 160px;
+}
+
+/* ── rows: the whole row opens the editor ────────────────────────────────── */
+.article-row,
+.article-card {
+  cursor: pointer;
+}
+.article-row:hover td {
+  background: var(--tui-background-neutral-1);
+}
+.article-row:focus-visible,
+.article-card:focus-visible {
+  outline: 2px solid var(--tui-background-accent-1);
+  outline-offset: -2px;
+}
+.title-cell {
+  min-width: 240px;
+  max-width: 420px;
+}
+
+/* go-live / live-since instant under the status badge */
+.status-date {
+  margin-top: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--tui-text-secondary);
+}
+
+.quick-btn {
+  white-space: nowrap;
+}

@@ -119,6 +119,16 @@
           <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/map.svg')"></i>
           <span lang="ka" class="georgian-text nav-label">{{ 'კლუბების დირექტორია' | t }}</span>
         </a>
+        <a
+          automation-id="articles"
+          class="nav-item nav-sub"
+          routerLink="/articles"
+          routerLinkActive="is-active"
+          (click)="closeMenu()"
+        >
+          <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/newspaper.svg')"></i>
+          <span lang="ka" class="georgian-text nav-label">{{ 'სტატიები' | t }}</span>
+        </a>
       }
       <a
         class="nav-item nav-sub"

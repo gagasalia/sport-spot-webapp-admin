@@ -1,0 +1,536 @@
+<div class="pt-8 p-0 sm:p-8">
+  <a class="back-link mb-4" routerLink="/articles">
+    <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/chevron-left.svg')"></i>
+    <span class="georgian-text" lang="ka">{{ 'სტატიები' | t }}</span>
+  </a>
+
+  <header class="mb-4">
+    <h1 class="text-2xl font-semibold georgian-text" lang="ka">
+      {{ (isEditMode ? 'სტატიის რედაქტირება' : 'ახალი სტატია') | t }}
+    </h1>
+    <div class="ae-meta georgian-text" lang="ka" data-testid="article-meta">
+      <span>{{ 'ავტორი' | t }}: {{ (article()?.author || defaultAuthor) | t }}</span>
+      @if (article()?.updatedAt; as updated) {
+        <span>{{ 'განახლდა' | t }}: {{ updated | date: 'dd/MM/yyyy HH:mm' }}</span>
+      }
+    </div>
+  </header>
+
+  @if (hasError()) {
+    <div class="ss-card p-6 text-center">
+      <p class="georgian-text mb-3" lang="ka">{{ 'სტატია ვერ მოიძებნა' | t }}</p>
+      <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="retry()">
+        <span class="georgian-text" lang="ka">{{ 'თავიდან ცდა' | t }}</span>
+      </button>
+    </div>
+  } @else if (isLoading()) {
+    <div class="space-y-3 animate-pulse">
+      <div class="h-12 rounded-xl" style="background: var(--tui-background-neutral-1)"></div>
+      <div class="h-64 rounded-xl" style="background: var(--tui-background-neutral-1)"></div>
+      <div class="h-32 rounded-xl" style="background: var(--tui-background-neutral-1)"></div>
+    </div>
+  } @else {
+    <!-- ── Status bar: current status + the moves the status machine allows ── -->
+    <div class="ss-card ae-statusbar" data-testid="status-bar">
+      <div class="ae-status georgian-text" lang="ka">
+        <span [class]="statusClass(status())" data-testid="editor-status">
+          {{ statusLabel(status()) }}
+        </span>
+        @if (status() === 'scheduled' && article()?.publishAt; as publishAt) {
+          <span data-testid="scheduled-at">
+            {{ 'გამოქვეყნდება' | t }}: <strong>{{ publishAt | date: 'dd/MM/yyyy HH:mm' }}</strong>
+          </span>
+        }
+        @if (status() === 'published' && article()?.publishedAt; as publishedAt) {
+          <span data-testid="published-at">
+            {{ 'გამოქვეყნდა' | t }}: {{ publishedAt | date: 'dd/MM/yyyy HH:mm' }}
+          </span>
+        }
+        @if (dirty()) {
+          <span class="ae-dirty" data-testid="dirty-flag">● {{ 'შეუნახავი ცვლილებები' | t }}</span>
+        }
+      </div>
+      <div class="ae-actions">
+        @if (previewUrl(); as url) {
+          <a
+            class="ss-btn ss-btn--flat ss-btn--s"
+            data-testid="preview-link"
+            target="_blank"
+            rel="noopener"
+            [href]="url"
+          >
+            <span class="georgian-text" lang="ka">{{ 'საიტზე ნახვა' | t }}</span>
+            <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/external-link.svg')"></i>
+          </a>
+        }
+        @for (target of statusActions(); track target) {
+          <button
+            type="button"
+            class="ss-btn ss-btn--outline ss-btn--s"
+            [class.ae-archive]="target === 'archived'"
+            [attr.data-testid]="'action-' + target"
+            [disabled]="isSaving()"
+            (click)="changeStatus(target)"
+          >
+            <span class="georgian-text" lang="ka">{{ actionLabel(target) }}</span>
+          </button>
+        }
+        <button
+          type="button"
+          class="ss-btn ss-btn--primary ss-btn--s"
+          data-testid="article-save"
+          [disabled]="!canSave()"
+          (click)="save()"
+        >
+          <span class="georgian-text" lang="ka">{{ 'შენახვა' | t }}</span>
+        </button>
+      </div>
+    </div>
+
+    <form [formGroup]="form" class="ae-layout" novalidate>
+      <!-- ── Main column: the per-language texts + FAQ ─────────────────────── -->
+      <div class="ae-main">
+        <section class="ss-card ae-section">
+          <div class="ae-tabs" role="tablist" [attr.aria-label]="'ენა' | t">
+            @for (lang of langs; track lang) {
+              <button
+                type="button"
+                role="tab"
+                class="ae-tab"
+                [class.is-active]="activeLang() === lang"
+                [attr.aria-selected]="activeLang() === lang"
+                [attr.data-testid]="'tab-' + lang"
+                (click)="activeLang.set(lang)"
+              >
+                <span class="georgian-text" lang="ka">
+                  {{ (lang === 'ka' ? 'ქართული' : 'ინგლისური') | t }}
+                </span>
+                <span
+                  class="georgian-text"
+                  lang="ka"
+                  [class]="
+                    hasContent()[lang] ? 'ss-badge ss-badge--positive' : 'ss-badge ss-badge--neutral'
+                  "
+                  [attr.data-testid]="'tab-' + lang + '-badge'"
+                >
+                  {{ (hasContent()[lang] ? 'შევსებულია' : 'ცარიელია') | t }}
+                </span>
+                @if (tabHasError(lang)) {
+                  <span class="ae-tab-error" aria-hidden="true"></span>
+                }
+              </button>
+            }
+          </div>
+
+          <!-- One panel per language; the @if re-creates its controls on a switch. -->
+          @if (activeLang() === 'ka') {
+            <ng-container
+              [ngTemplateOutlet]="langPanel"
+              [ngTemplateOutletContext]="{ $implicit: langFields.ka, lang: 'ka' }"
+            />
+          } @else {
+            <ng-container
+              [ngTemplateOutlet]="langPanel"
+              [ngTemplateOutletContext]="{ $implicit: langFields.en, lang: 'en' }"
+            />
+          }
+        </section>
+
+        <!-- FAQ (FAQPage JSON-LD on the player app) -->
+        <section class="ss-card ae-section" formArrayName="faq">
+          <div class="ae-section-head">
+            <h2 class="ae-section-title georgian-text" lang="ka">
+              {{ 'ხშირად დასმული კითხვები' | t }} ({{ faq.length }}/{{ limits.faq }})
+            </h2>
+            <button
+              type="button"
+              class="ss-btn ss-btn--outline ss-btn--s"
+              data-testid="faq-add"
+              [disabled]="faq.length >= limits.faq"
+              (click)="addFaq()"
+            >
+              <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
+              <span class="georgian-text" lang="ka">{{ 'კითხვის დამატება' | t }}</span>
+            </button>
+          </div>
+          @for (item of faq.controls; track item; let i = $index) {
+            <div class="ae-faq" [formGroupName]="i" data-testid="faq-item">
+              <div class="ae-faq-head">
+                <span class="text-xs font-semibold" style="color: var(--text-muted)">#{{ i + 1 }}</span>
+                <button
+                  type="button"
+                  class="ss-icon-btn ss-icon-btn--danger ss-icon-btn--s"
+                  [attr.aria-label]="'წაშლა' | t"
+                  [title]="'წაშლა' | t"
+                  (click)="removeFaq(i)"
+                >
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                </button>
+              </div>
+              <div class="ae-grid">
+                <label class="ss-field">
+                  <span class="ss-label georgian-text" lang="ka">
+                    {{ 'კითხვა' | t }} (KA) <span class="text-red-500">*</span>
+                  </span>
+                  <input
+                    class="ss-input georgian-text"
+                    lang="ka"
+                    formControlName="q"
+                    [class.ss-input--invalid]="showError(item.controls.q)"
+                  />
+                </label>
+                <label class="ss-field">
+                  <span class="ss-label georgian-text" lang="ka">{{ 'კითხვა' | t }} (EN)</span>
+                  <input class="ss-input" lang="en" formControlName="qEn" />
+                </label>
+                <label class="ss-field">
+                  <span class="ss-label georgian-text" lang="ka">
+                    {{ 'პასუხი' | t }} (KA) <span class="text-red-500">*</span>
+                  </span>
+                  <textarea
+                    class="ss-input georgian-text"
+                    lang="ka"
+                    rows="3"
+                    formControlName="a"
+                    [class.ss-input--invalid]="showError(item.controls.a)"
+                  ></textarea>
+                </label>
+                <label class="ss-field">
+                  <span class="ss-label georgian-text" lang="ka">{{ 'პასუხი' | t }} (EN)</span>
+                  <textarea class="ss-input" lang="en" rows="3" formControlName="aEn"></textarea>
+                </label>
+              </div>
+              @if (showError(item.controls.q) || showError(item.controls.a)) {
+                <span class="ss-error georgian-text" lang="ka">
+                  {{ 'კითხვა და პასუხი ქართულად სავალდებულოა' | t }}
+                </span>
+              }
+            </div>
+          } @empty {
+            <p class="ae-hint georgian-text" lang="ka">
+              {{ 'კითხვები არ არის — დაამატეთ, თუ სტატიას FAQ ბლოკი სჭირდება' | t }}
+            </p>
+          }
+        </section>
+      </div>
+
+      <!-- ── Side column: shared settings ──────────────────────────────────── -->
+      <aside class="ae-side">
+        <section class="ss-card ae-section">
+          <h2 class="ae-section-title georgian-text" lang="ka">{{ 'პარამეტრები' | t }}</h2>
+
+          <label class="ss-field">
+            <span class="ss-label">Slug</span>
+            <input
+              #slugInput
+              class="ss-input font-mono"
+              formControlName="slug"
+              autocomplete="off"
+              placeholder="padelis-tsesebi"
+              data-testid="article-slug"
+              [attr.maxlength]="limits.slug"
+              [class.ss-input--invalid]="showError(form.controls.slug)"
+              (input)="onSlugInput(slugInput.value)"
+            />
+            @if (showError(form.controls.slug, 'conflict')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'ეს slug უკვე დაკავებულია' | t }}</span>
+            } @else if (showError(form.controls.slug)) {
+              <span class="ss-error georgian-text" lang="ka">
+                {{ 'მხოლოდ ლათინური პატარა ასოები, ციფრები და ტირე' | t }}
+              </span>
+            } @else if (status() === 'published') {
+              <span class="ae-hint ae-hint--warn georgian-text" lang="ka">
+                {{ 'გამოქვეყნებული სტატიის slug-ის შეცვლა ძველ ბმულს გატეხავს' | t }}
+              </span>
+            } @else {
+              <span class="ae-hint georgian-text" lang="ka">
+                {{ 'ივსება სათაურიდან ავტომატურად, სანამ ხელით არ შეცვლით' | t }}
+              </span>
+            }
+          </label>
+
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'კატეგორია' | t }}</span>
+            <select
+              class="ss-input georgian-text"
+              lang="ka"
+              formControlName="category"
+              data-testid="article-category"
+            >
+              @for (c of categoryOptions; track c) {
+                <option [value]="c">{{ categoryLabel(c) }}</option>
+              }
+            </select>
+          </label>
+
+          <div class="ss-field">
+            <label class="ss-label georgian-text" lang="ka" for="article-tag-input">
+              {{ 'თეგები' | t }} ({{ tags().length }}/{{ limits.tags }})
+            </label>
+            <div class="ae-chips">
+              @for (tag of tags(); track tag; let i = $index) {
+                <span class="ae-chip" data-testid="tag-chip">
+                  <span class="georgian-text" lang="ka">{{ tag }}</span>
+                  <button
+                    type="button"
+                    class="ae-chip-x"
+                    [attr.aria-label]="('წაშლა' | t) + ': ' + tag"
+                    (click)="removeTag(i)"
+                  >
+                    <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/x.svg')"></i>
+                  </button>
+                </span>
+              }
+              <input
+                #tagInput
+                id="article-tag-input"
+                class="ae-chip-input georgian-text"
+                lang="ka"
+                autocomplete="off"
+                data-testid="tag-input"
+                [attr.maxlength]="limits.tagLength"
+                [placeholder]="tags().length < limits.tags ? ('თეგი + Enter' | t) : ''"
+                [disabled]="tags().length >= limits.tags"
+                (keydown)="onTagKeydown($event, tagInput)"
+                (blur)="onTagBlur(tagInput)"
+              />
+            </div>
+            @if (tagError(); as message) {
+              <span class="ss-error georgian-text" lang="ka">{{ message | t }}</span>
+            }
+          </div>
+        </section>
+
+        <!-- Cover image (media pipeline: webp web + thumb renditions) -->
+        <section class="ss-card ae-section">
+          <h2 class="ae-section-title georgian-text" lang="ka">{{ 'ქავერის სურათი' | t }}</h2>
+          @if (cover(); as c) {
+            <div class="ae-cover" data-testid="cover-preview">
+              <img [src]="c.thumbUrl || c.url" [alt]="'ქავერის სურათი' | t" />
+              <button
+                type="button"
+                class="ss-btn ss-btn--danger ss-btn--s ae-cover-remove"
+                data-testid="cover-remove"
+                (click)="removeCover()"
+              >
+                <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                <span class="georgian-text" lang="ka">{{ 'წაშლა' | t }}</span>
+              </button>
+            </div>
+          } @else {
+            <div class="ae-drop" (dragover)="onCoverDragOver($event)" (drop)="onCoverDrop($event)">
+              <i
+                class="ss-ic ss-ic--lg"
+                style="--ss-ic: url('assets/taiga-ui/icons/upload.svg'); color: var(--tui-text-tertiary)"
+              ></i>
+              <p class="text-sm georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+                {{ 'გადმოიტანეთ სურათი ან აირჩიეთ ფაილი' | t }}
+              </p>
+              <input
+                #coverInput
+                type="file"
+                accept="image/*"
+                class="hidden"
+                data-testid="cover-input"
+                (change)="onCoverSelected($event)"
+              />
+              <button
+                type="button"
+                class="ss-btn ss-btn--outline ss-btn--s"
+                [disabled]="isUploadingCover()"
+                (click)="coverInput.click()"
+              >
+                <span class="georgian-text" lang="ka">
+                  {{ (isUploadingCover() ? 'იტვირთება...' : 'სურათის არჩევა') | t }}
+                </span>
+              </button>
+            </div>
+          }
+          <span class="ae-hint georgian-text" lang="ka">
+            {{ 'რეკომენდებული ზომა: 1200×630' | t }}
+          </span>
+        </section>
+
+        <!-- Related facilities (CTA cards + internal links) -->
+        <section class="ss-card ae-section">
+          <h2 class="ae-section-title georgian-text" lang="ka">
+            {{ 'დაკავშირებული ობიექტები' | t }} ({{ relatedIds().length }}/{{ limits.related }})
+          </h2>
+          @if (selectedFacilities().length) {
+            <div class="ae-chips ae-chips--plain">
+              @for (f of selectedFacilities(); track f.id) {
+                <span class="ae-chip" data-testid="related-chip">
+                  <span class="georgian-text" lang="ka">
+                    {{ f.label ?? ('უცნობი ობიექტი' | t) + ' (' + f.id + ')' }}
+                  </span>
+                  <button
+                    type="button"
+                    class="ae-chip-x"
+                    [attr.aria-label]="'წაშლა' | t"
+                    (click)="removeRelated(f.id)"
+                  >
+                    <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/x.svg')"></i>
+                  </button>
+                </span>
+              }
+            </div>
+          }
+          <select
+            #facilitySelect
+            class="ss-input georgian-text"
+            lang="ka"
+            data-testid="related-select"
+            [attr.aria-label]="'ობიექტის დამატება' | t"
+            [disabled]="relatedIds().length >= limits.related"
+            (change)="addRelated(facilitySelect)"
+          >
+            <option value="">
+              {{
+                (relatedIds().length >= limits.related
+                  ? 'მაქსიმუმ 6 ობიექტი'
+                  : 'ობიექტის დამატება…') | t
+              }}
+            </option>
+            @for (group of facilityGroups(); track group.academyName) {
+              <optgroup [label]="group.academyName">
+                @for (option of group.options; track option.id) {
+                  <option [value]="option.id">{{ facilityLabel(option) }}</option>
+                }
+              </optgroup>
+            }
+          </select>
+        </section>
+      </aside>
+
+      <!-- The per-language fields, stamped for the active tab. -->
+      <ng-template #langPanel let-f let-lang="lang">
+        <div class="ae-lang" [attr.data-testid]="'panel-' + lang">
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">
+              {{ 'სათაური' | t }}
+              @if (lang === 'ka') {
+                <span class="text-red-500">*</span>
+              }
+              <span class="ae-count-inline">{{ lengthOf(f.title) }}/{{ limits.title }}</span>
+            </span>
+            <input
+              class="ss-input"
+              data-testid="field-title"
+              [class.georgian-text]="lang === 'ka'"
+              [attr.lang]="lang"
+              [formControlName]="f.title"
+              [attr.maxlength]="limits.title"
+              [class.ss-input--invalid]="showError(ctrl(f.title))"
+            />
+            @if (showError(ctrl(f.title), 'required')) {
+              <span class="ss-error georgian-text" lang="ka">{{ 'სათაური სავალდებულოა' | t }}</span>
+            }
+          </label>
+
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">
+              {{ 'მოკლე აღწერა' | t }}
+              <span class="ae-count-inline">{{ lengthOf(f.excerpt) }}/{{ limits.excerpt }}</span>
+            </span>
+            <textarea
+              class="ss-input"
+              rows="3"
+              data-testid="field-excerpt"
+              [class.georgian-text]="lang === 'ka'"
+              [attr.lang]="lang"
+              [formControlName]="f.excerpt"
+              [attr.maxlength]="limits.excerpt"
+            ></textarea>
+          </label>
+
+          <div class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">
+              {{ 'ტექსტი' | t }}
+              @if (lang === 'ka') {
+                <span class="text-red-500">*</span>
+              }
+            </span>
+            <app-rich-text-editor
+              [formControlName]="f.body"
+              [lang]="lang"
+              [label]="'სტატიის ტექსტი' | t"
+              [placeholder]="'დაიწყეთ წერა…' | t"
+              [invalid]="showError(ctrl(f.body))"
+            />
+            @if (lang === 'ka') {
+              <div
+                class="ae-count georgian-text"
+                lang="ka"
+                [class.is-low]="kaWords() < seoMinWords"
+                data-testid="ka-words"
+              >
+                <span>
+                  {{ kaWords() }} {{ 'სიტყვა' | t }} · {{ kaReadingMinutes() }}
+                  {{ 'წთ კითხვა' | t }}
+                </span>
+                <span>SEO: ≥{{ seoMinWords }} {{ 'სიტყვა' | t }}</span>
+              </div>
+              @if (showError(ctrl(f.body), 'required')) {
+                <span class="ss-error georgian-text" lang="ka">
+                  {{ 'სტატიის ტექსტი სავალდებულოა' | t }}
+                </span>
+              }
+            } @else {
+              <div class="ae-count georgian-text" lang="ka" data-testid="en-words">
+                <span>{{ enWords() }} {{ 'სიტყვა' | t }}</span>
+                <span>{{ 'ცარიელი ველები ქართულ ვერსიას აჩვენებს' | t }}</span>
+              </div>
+            }
+          </div>
+
+          <div class="ae-seo">
+            <h3 class="ae-section-title">SEO</h3>
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">
+                {{ 'SEO სათაური' | t }}
+                <span
+                  class="ae-count-inline"
+                  data-testid="seo-title-count"
+                  [class.is-full]="lengthOf(f.seoTitle) >= limits.seoTitle"
+                >
+                  {{ lengthOf(f.seoTitle) }}/{{ limits.seoTitle }}
+                </span>
+              </span>
+              <input
+                class="ss-input"
+                data-testid="field-seo-title"
+                [class.georgian-text]="lang === 'ka'"
+                [attr.lang]="lang"
+                [formControlName]="f.seoTitle"
+                [attr.maxlength]="limits.seoTitle"
+                [placeholder]="'ცარიელი — გამოიყენება სათაური' | t"
+              />
+            </label>
+            <label class="ss-field">
+              <span class="ss-label georgian-text" lang="ka">
+                {{ 'SEO აღწერა' | t }}
+                <span
+                  class="ae-count-inline"
+                  data-testid="seo-description-count"
+                  [class.is-full]="lengthOf(f.seoDescription) >= limits.seoDescription"
+                >
+                  {{ lengthOf(f.seoDescription) }}/{{ limits.seoDescription }}
+                </span>
+              </span>
+              <textarea
+                class="ss-input"
+                rows="3"
+                data-testid="field-seo-description"
+                [class.georgian-text]="lang === 'ka'"
+                [attr.lang]="lang"
+                [formControlName]="f.seoDescription"
+                [attr.maxlength]="limits.seoDescription"
+                [placeholder]="'ცარიელი — გამოიყენება მოკლე აღწერა' | t"
+              ></textarea>
+            </label>
+          </div>
+        </div>
+      </ng-template>
+    </form>
+  }
+</div>
