@@ -69,10 +69,10 @@ describe('ArticleScheduleDialogComponent', () => {
     fixture.detectChanges();
   };
 
-  it('defaults to tomorrow at 10:00 local time', async () => {
+  it('defaults to tomorrow at 18:00 local time', async () => {
     await setup();
-    expect(component.form.getRawValue()).toEqual(localParts(1, 10));
-    expect(el().querySelector('[data-testid="schedule-preview"]')!.textContent).toContain('10:00');
+    expect(component.form.getRawValue()).toEqual(localParts(1, 18));
+    expect(el().querySelector('[data-testid="schedule-preview"]')!.textContent).toContain('18:00');
   });
 
   it('starts from the current publishAt when it is still ahead', async () => {

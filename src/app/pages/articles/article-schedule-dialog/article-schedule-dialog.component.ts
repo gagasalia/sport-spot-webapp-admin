@@ -14,8 +14,8 @@ export interface ArticleScheduleData {
 /** A scheduled time must be at least this far ahead (the API rejects the past). */
 export const SCHEDULE_MIN_LEAD_MS = 60_000;
 
-/** Default time of day offered for a fresh schedule (tomorrow, 10:00 local). */
-const DEFAULT_HOUR = 10;
+/** Default time of day offered for a fresh schedule (tomorrow, 18:00 local — owner choice 2026-09-29; publish time has no ranking effect, the rebuild makes it crawlable within minutes). */
+const DEFAULT_HOUR = 18;
 
 const pad = (n: number): string => String(n).padStart(2, '0');
 
