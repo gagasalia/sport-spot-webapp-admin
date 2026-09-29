@@ -47,6 +47,20 @@ const detail: CustomerDetail = {
   },
 };
 
+/** docs/29: signed up with Google, no phone yet (transitional state). */
+const googleDetail: CustomerDetail = {
+  ...detail,
+  profile: {
+    _id: 'u2',
+    firstName: 'Nino',
+    lastName: 'Beridze',
+    email: 'nino@gmail.com',
+    googleLinked: true,
+    phoneVerified: false,
+    createdAt: '2026-09-29T00:00:00.000Z',
+  },
+};
+
 const bookingRows = [
   {
     _id: 'b1',
@@ -70,7 +84,7 @@ describe('CustomerDetailComponent', () => {
   let dialogsSpy: jasmine.SpyObj<SsDialogService>;
   let routerSpy: jasmine.SpyObj<Router>;
 
-  async function setup(superAdmin: boolean) {
+  async function setup(superAdmin: boolean, served: CustomerDetail = detail) {
     customersSpy = jasmine.createSpyObj<CustomersService>('CustomersService', [
       'detail',
       'bookings',
@@ -80,7 +94,7 @@ describe('CustomerDetailComponent', () => {
       'unflag',
       'fixContact',
     ]);
-    customersSpy.detail.and.returnValue(of(detail));
+    customersSpy.detail.and.returnValue(of(served));
     customersSpy.bookings.and.returnValue(
       of({ data: bookingRows, page: { page: 1, size: 10, total: 1 } }),
     );
@@ -224,12 +238,80 @@ describe('CustomerDetailComponent', () => {
       expect(options.data.allowEmail).toBeTrue();
     });
 
-    it('deep-links to the full account surface by email', () => {
+    it('deep-links to the full account surface by member ID, else phone', () => {
       component['openFullAccount']();
       expect(routerSpy.navigate).toHaveBeenCalledWith(
         ['/super-admin/user-management'],
-        { queryParams: { email: 'anna@example.com' } },
+        { queryParams: { phone: '+995599000111' } },
       );
+
+      component['detail'].set({ ...detail, profile: { ...detail.profile, memberId: 42 } });
+      component['openFullAccount']();
+      expect(routerSpy.navigate).toHaveBeenCalledWith(
+        ['/super-admin/user-management'],
+        { queryParams: { memberId: '42' } },
+      );
+    });
+
+    it('deep-links a Google-only player (no member ID, no phone) by email', () => {
+      component['detail'].set(googleDetail);
+      component['openFullAccount']();
+      expect(routerSpy.navigate).toHaveBeenCalledWith(
+        ['/super-admin/user-management'],
+        { queryParams: { email: 'nino@gmail.com' } },
+      );
+    });
+  });
+
+  describe('a phone-less Google player (docs/29)', () => {
+    const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
+
+    it('shows the email with a Google badge and the no-phone note', async () => {
+      await setup(true, googleDetail);
+      fixture.detectChanges();
+
+      const contact = el().querySelector('[automation-id="customer-contact"]') as HTMLElement;
+      expect(contact.textContent).toContain('nino@gmail.com');
+      expect(
+        contact.querySelector('[automation-id="google-badge"]')?.textContent?.trim(),
+      ).toBe('Google');
+      expect(
+        el().querySelector('[automation-id="customer-no-phone"]')?.textContent?.trim(),
+      ).toBe('ტელეფონი არ არის მითითებული');
+      // The contact fix stays available — it is how a superadmin adds a phone.
+      expect(el().querySelector('[automation-id="customer-edit"]')).not.toBeNull();
+      expect(el().textContent).not.toContain('undefined');
+    });
+
+    it('a phone player shows the phone, no note and no Google badge', async () => {
+      await setup(false);
+      fixture.detectChanges();
+
+      const contact = el().querySelector('[automation-id="customer-contact"]') as HTMLElement;
+      expect(contact.textContent).toContain('+995599000111');
+      expect(el().querySelector('[automation-id="google-badge"]')).toBeNull();
+      expect(el().querySelector('[automation-id="customer-no-phone"]')).toBeNull();
+      expect(el().textContent).not.toContain('undefined');
+    });
+
+    it('name helpers never fall through to undefined', async () => {
+      await setup(false, googleDetail);
+      expect(component['fullName']()).toBe('Nino Beridze');
+      expect(component['initials']()).toBe('NB');
+
+      component['detail'].set({
+        ...googleDetail,
+        profile: { ...googleDetail.profile, firstName: undefined, lastName: undefined },
+      });
+      expect(component['fullName']()).toBe('nino@gmail.com');
+      expect(component['initials']()).toBe('N');
+
+      component['detail'].set({
+        ...detail,
+        profile: { ...detail.profile, firstName: undefined, lastName: undefined, email: undefined },
+      });
+      expect(component['fullName']()).toBe('+995599000111');
+      expect(component['initials']()).toBe('?');
     });
   });
 

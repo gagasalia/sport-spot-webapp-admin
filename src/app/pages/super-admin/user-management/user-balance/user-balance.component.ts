@@ -99,7 +99,8 @@ export class UserBalanceComponent implements OnInit {
 
   protected get userLabel(): string {
     const parts = [this.user.firstName, this.user.lastName].filter(Boolean);
-    const name = parts.length > 0 ? parts.join(' ') : this.user.email;
+    const name =
+      parts.length > 0 ? parts.join(' ') : (this.user.email ?? this.user.phone ?? '—');
     const id = formatMemberId(this.user.memberId);
     return id ? `${name} · ID ${id}` : name;
   }

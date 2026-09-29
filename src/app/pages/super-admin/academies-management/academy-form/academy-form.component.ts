@@ -34,7 +34,10 @@ export class AcademyFormComponent implements OnInit {
 
   readonly stringifyUser = (user: User): string => {
     const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
-    return name ? `${name} (${user.email})` : user.email;
+    // Email is optional now (phone-only players, username-only admins).
+    const handle = user.email ?? user.username ?? '';
+    if (!name) return handle;
+    return handle ? `${name} (${handle})` : name;
   };
 
   /** Admin checkbox helpers (multi-admin selection without a multiselect widget). */

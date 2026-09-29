@@ -27,6 +27,35 @@ const row: CustomerRow = {
   lastActivityAt: '2026-07-30T10:00:00.000Z',
 };
 
+/** docs/29: signed up with Google, no phone yet (transitional state). */
+const googleRow: CustomerRow = {
+  userId: 'u2',
+  memberId: 42,
+  firstName: 'Nino',
+  lastName: 'Beridze',
+  email: 'nino@gmail.com',
+  googleLinked: true,
+  banned: false,
+  flagged: false,
+  bookings: 1,
+  cancelled: 0,
+  noShows: 0,
+  spentTetri: 5000,
+  lastBookingAt: '2026-09-29T10:00:00.000Z',
+  lastActivityAt: '2026-09-29T10:00:00.000Z',
+};
+
+/** A hard-deleted account: history survives, every identity field is gone. */
+const deletedRow: CustomerRow = {
+  ...row,
+  userId: 'u3',
+  firstName: undefined,
+  lastName: undefined,
+  email: undefined,
+  phone: undefined,
+  googleLinked: undefined,
+};
+
 describe('CustomersComponent', () => {
   let component: CustomersComponent;
   let fixture: ComponentFixture<CustomersComponent>;
@@ -120,9 +149,73 @@ describe('CustomersComponent', () => {
       expect(routerSpy.navigate).toHaveBeenCalledWith(['/customers', 'u1']);
 
       routerSpy.navigate.calls.reset();
-      // A missing phone marks a deleted account (phone is the identifier now).
-      component['open']({ ...row, phone: undefined });
+      // No identity field at all marks a hard-deleted account.
+      component['open'](deletedRow);
       expect(routerSpy.navigate).not.toHaveBeenCalled();
+    });
+
+    it('opens a Google-only player (no phone, docs/29)', () => {
+      component['open'](googleRow);
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/customers', 'u2']);
+    });
+
+    it('the search hint mentions email', () => {
+      const input = (fixture.nativeElement as HTMLElement).querySelector(
+        '[automation-id="customers-search"]',
+      ) as HTMLInputElement;
+      expect(input.placeholder).toBe('სახელი, ტელეფონი, ელ. ფოსტა ან ID');
+    });
+  });
+
+  describe('a phone-less Google row (docs/29)', () => {
+    beforeEach(async () => setup(false));
+
+    function render(mobile: boolean): HTMLElement {
+      component['isMobile'].set(mobile);
+      component['rows'].set([row, googleRow, deletedRow]);
+      fixture.detectChanges();
+      TestBed.inject(ApplicationRef).tick();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    it('desktop: the phone cell falls back to the email with a Google badge', () => {
+      const el = render(false);
+      const rows = Array.from(el.querySelectorAll('tbody tr.customer-row'));
+      expect(rows.length).toBe(3);
+      const contact = (tr: Element) =>
+        tr.querySelector('[automation-id="customer-contact"]') as HTMLElement;
+
+      // phone player: the phone, no badge in the contact cell
+      expect(contact(rows[0]).textContent).toContain('+995599000111');
+      expect(contact(rows[0]).querySelector('[automation-id="google-badge"]')).toBeNull();
+
+      // Google-only player: email + badge in the phone slot, row still opens
+      expect(contact(rows[1]).textContent).toContain('nino@gmail.com');
+      expect(
+        contact(rows[1]).querySelector('[automation-id="google-badge"]')?.textContent?.trim(),
+      ).toBe('Google');
+      expect(rows[1].classList).toContain('is-open');
+      // …and its email is not repeated under the name
+      expect(rows[1].textContent!.split('nino@gmail.com').length - 1).toBe(1);
+
+      // deleted account: a dash, not clickable
+      expect(contact(rows[2]).textContent!.trim()).toBe('—');
+      expect(rows[2].classList).not.toContain('is-open');
+
+      expect(el.textContent).not.toContain('undefined');
+    });
+
+    it('mobile: the subtitle carries the email and the Google badge', () => {
+      const el = render(true);
+      const cards = Array.from(el.querySelectorAll('.ss-card.p-4'));
+      const googleCard = cards.find((c) => c.textContent!.includes('Nino Beridze'))!;
+      expect(googleCard.textContent).toContain('ID 000042 · nino@gmail.com');
+      expect(googleCard.querySelector('[automation-id="google-badge"]')).not.toBeNull();
+
+      const phoneCard = cards.find((c) => c.textContent!.includes('Anna Kapanadze'))!;
+      expect(phoneCard.querySelector('[automation-id="google-badge"]')).toBeNull();
+
+      expect(el.textContent).not.toContain('undefined');
     });
   });
 
@@ -151,6 +244,7 @@ describe('CustomersComponent', () => {
       expect(component['fullName']({ ...row, firstName: undefined, lastName: undefined })).toBe(
         'anna@example.com',
       );
+      // A nameless phone player is still a live account — never "deleted".
       expect(
         component['fullName']({
           ...row,
@@ -158,7 +252,10 @@ describe('CustomersComponent', () => {
           lastName: undefined,
           email: undefined,
         }),
-      ).toBe('წაშლილი ანგარიში');
+      ).toBe('+995599000111');
+      expect(component['fullName'](deletedRow)).toBe('წაშლილი ანგარიში');
+      expect(component['mobileSubtitle'](googleRow)).toBe('ID 000042 · nino@gmail.com');
+      expect(component['mobileSubtitle'](deletedRow)).toBe('—');
       expect(component['gel'](66000)).toContain('660');
       expect(component['gel'](66000)).toContain('₾');
     });

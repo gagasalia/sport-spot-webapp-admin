@@ -999,7 +999,7 @@ export const EN: Record<string, string> = {
   'უნივერსალური — მთელი პლატფორმა': 'Universal — whole platform',
   'მომხმარებლები': 'Customers',
   'ძებნა': 'Search',
-  'სახელი, ტელეფონი ან ID': 'Name, phone or ID',
+  'სახელი, ტელეფონი, ელ. ფოსტა ან ID': 'Name, phone, email or ID',
   'მონიშნული': 'Flagged',
   'დაბლოკილი': 'Blocked',
   'მონაცემების ჩატვირთვა ვერ მოხერხდა': 'Failed to load data',
@@ -1649,4 +1649,10 @@ export const EN: Record<string, string> = {
   'მიუთითეთ კლუბი დირექტორიიდან ან ადგილის დასახელება':
     'Pick a club from the directory or enter a place name',
   'აირჩიეთ ობიექტი': 'Choose a facility',
+
+  // ── Google sign-in players (docs/29) ──────────────────────────────────
+  'ტელეფონი არ არის მითითებული': 'No phone number on file',
+  'ელ. ფოსტა Google ანგარიშიდან მოდის': 'The email comes from the Google account',
+  'Google-ით დარეგისტრირებულ მოთამაშეს ტელეფონი ჯერ არ აქვს — ველი შეიძლება ცარიელი დარჩეს':
+    'Signed up with Google and has no phone yet — the field may stay empty',
 };

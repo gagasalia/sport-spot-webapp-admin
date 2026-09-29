@@ -293,13 +293,24 @@ export class CustomerDetailComponent implements OnInit {
       });
   }
 
-  /** Superadmin: deep-link into the full account surface (email/password/balance). */
+  /**
+   * Superadmin: deep-link into the full account surface (password/balance),
+   * filtered by the most precise identifier the account still has — the member
+   * ID, else the phone, else (Google-only player, docs/29) the email.
+   */
   protected openFullAccount(): void {
-    const email = this.detail()?.profile.email;
-    if (!email) return;
-    void this.router.navigate(['/super-admin/user-management'], {
-      queryParams: { email },
-    });
+    const p = this.detail()?.profile;
+    if (!p) return;
+    const queryParams =
+      p.memberId != null
+        ? { memberId: String(p.memberId) }
+        : p.phone
+          ? { phone: p.phone }
+          : p.email
+            ? { email: p.email }
+            : null;
+    if (!queryParams) return;
+    void this.router.navigate(['/super-admin/user-management'], { queryParams });
   }
 
   private patchModeration(
@@ -319,7 +330,8 @@ export class CustomerDetailComponent implements OnInit {
     const p = this.detail()?.profile;
     if (!p) return '';
     const parts = [p.firstName, p.lastName].filter(Boolean);
-    return parts.length > 0 ? parts.join(' ') : p.email;
+    // Nameless fallback: the (Google) email, else the phone — never `undefined`.
+    return parts.length > 0 ? parts.join(' ') : p.email || p.phone || '—';
   }
 
   /** Public member ID, zero-padded ("000042"); '' until the API backfill runs. */
@@ -332,7 +344,7 @@ export class CustomerDetailComponent implements OnInit {
     if (!p) return '';
     const first = p.firstName?.charAt(0) ?? '';
     const last = p.lastName?.charAt(0) ?? '';
-    return (first + last).toUpperCase() || p.email.charAt(0).toUpperCase();
+    return (first + last).toUpperCase() || (p.email?.charAt(0) ?? '?').toUpperCase();
   }
 
   protected gel(tetri: number | null | undefined): string {

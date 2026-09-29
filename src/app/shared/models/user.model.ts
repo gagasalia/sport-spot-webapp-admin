@@ -8,13 +8,27 @@ export interface User {
   _id?: string;
   /** Public numeric member ID (0-based, incremental) — the filterable "ID". */
   memberId?: number;
-  email: string;
+  /**
+   * Absent on phone-only players; a Google player's email comes from the
+   * Google account (docs/29).
+   */
+  email?: string;
   userType: UserType[];
   firstName?: string;
   lastName?: string;
   pid?: string;
-  /** Player login identifier — absent on admin accounts. */
+  /**
+   * Player login identifier — absent on admin accounts, and on a Google-only
+   * player until they add one (docs/29).
+   */
   phone?: string;
+  /** True when the player can sign in with Google (docs/29). */
+  googleLinked?: boolean;
+  /**
+   * Raw Google subject — only present while /um/find serves the raw user
+   * document. Read solely as a "linked" signal (isGoogleLinked); never shown.
+   */
+  googleId?: string;
   /** Admin login identifier (lowercased) — absent on player accounts. */
   username?: string;
   /** Profile picture (set by players in the player app). */

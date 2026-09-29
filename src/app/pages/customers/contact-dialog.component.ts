@@ -22,7 +22,9 @@ export interface ContactDialogData {
 /**
  * "Manual account fix" dialog: operator-side correction of a player's contact
  * details. Emits ONLY the fields that actually changed (the API treats absent
- * fields as untouched); cancel emits null.
+ * fields as untouched); cancel emits null. A Google-only player (docs/29) has
+ * no phone: the field starts empty with a note, and an empty phone is never
+ * sent (nothing here can clear an identity).
  */
 @Component({
   selector: 'app-contact-dialog',
@@ -55,8 +57,31 @@ export interface ContactDialogData {
             {{ 'ჩაწერეთ 9-ნიშნა ნომერი (ან +995…), უცხოური ნომრისთვის — ქვეყნის კოდი (+…)' | t }}
           </span>
         }
+        @if (!data.profile.phone) {
+          <!-- Google-only player (docs/29): no phone on the account yet. -->
+          <span
+            class="text-xs georgian-text"
+            lang="ka"
+            style="color: var(--text-faint)"
+            automation-id="contact-no-phone"
+          >
+            {{ 'ტელეფონი არ არის მითითებული' | t }}
+          </span>
+        }
       </label>
-      @if (data.allowEmail) {
+      @if (googleLinked) {
+        <!-- The Google account owns this email: shown, never editable here. -->
+        <div class="ss-field">
+          <span class="ss-label">{{ 'ელ. ფოსტა' | t }}</span>
+          <div class="flex items-center gap-2 text-sm" automation-id="contact-google-email">
+            <span style="overflow-wrap: anywhere">{{ data.profile.email || '—' }}</span>
+            <span class="ss-badge ss-badge--neutral">Google</span>
+          </div>
+          <span class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+            {{ 'ელ. ფოსტა Google ანგარიშიდან მოდის' | t }}
+          </span>
+        </div>
+      } @else if (data.allowEmail) {
         <label class="ss-field">
           <span class="ss-label">{{ 'ელ. ფოსტა' | t }}</span>
           <input class="ss-input" type="email" formControlName="email" />
@@ -90,10 +115,16 @@ export class ContactDialogComponent {
   >;
   private readonly fb = inject(FormBuilder);
 
-  protected readonly data: ContactDialogData = this.context.data ?? {
-    profile: {} as CustomerProfile,
-    allowEmail: false,
+  protected readonly data: ContactDialogData = {
+    profile: this.context.data?.profile ?? ({} as CustomerProfile),
+    allowEmail: this.context.data?.allowEmail ?? false,
   };
+
+  /**
+   * Google-linked account (docs/29): its email belongs to the Google account —
+   * shown read-only and never part of the emitted DTO.
+   */
+  protected readonly googleLinked = !!this.data.profile.googleLinked;
 
   protected readonly form = this.fb.group({
     firstName: [this.data.profile.firstName ?? ''],
@@ -121,6 +152,7 @@ export class ContactDialogComponent {
     }
     if (
       this.data.allowEmail &&
+      !this.googleLinked &&
       (v.email ?? '').trim() &&
       v.email!.trim() !== p.email
     ) {

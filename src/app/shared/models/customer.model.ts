@@ -22,9 +22,18 @@ export interface CustomerRow {
   memberId?: number;
   firstName?: string;
   lastName?: string;
-  /** Absent when the account was hard-deleted after booking. */
+  /**
+   * Google sign-in email (docs/29) — only Google players carry one; phone-only
+   * players and hard-deleted accounts have none.
+   */
   email?: string;
+  /**
+   * Absent on a Google-only player (transitional: the webapp asks for a phone
+   * right after the first Google sign-in) and on a hard-deleted account.
+   */
   phone?: string;
+  /** True when the account can sign in with Google (docs/29). */
+  googleLinked?: boolean;
   avatarUrl?: string;
   banned: boolean;
   flagged: boolean;
@@ -67,12 +76,17 @@ export interface CustomerProfile {
   _id: string;
   /** Public numeric member ID — absent on legacy docs until the API backfill. */
   memberId?: number;
-  email: string;
+  /** Google sign-in email (docs/29) — absent on phone-only players. */
+  email?: string;
   firstName?: string;
   lastName?: string;
+  /** Absent on a Google-only player that has not added a phone yet. */
   phone?: string;
+  /** True when the account can sign in with Google (docs/29). */
+  googleLinked?: boolean;
   avatarUrl?: string;
-  emailVerified: boolean;
+  /** Legacy (pre phone-only) flag — no longer served; optional for old payloads. */
+  emailVerified?: boolean;
   phoneVerified: boolean;
   dateOfBirth?: string;
   /** Registration instant ("member since"). */

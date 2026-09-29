@@ -3,7 +3,12 @@
     <!-- Email -->
     <label class="ss-field">
       <span class="ss-label georgian-text" lang="ka">
-        {{ 'ელ. ფოსტა' | t }} <span class="text-red-500">*</span>
+        {{ 'ელ. ფოსტა' | t }}
+        @if (isGoogleLinked) {
+          <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
+        } @else {
+          <span class="text-red-500">*</span>
+        }
       </span>
       <input
         class="ss-input"
@@ -13,6 +18,11 @@
       />
       @if (userForm.get('email')?.touched && userForm.get('email')?.hasError('email')) {
         <span class="ss-error georgian-text" lang="ka">{{ 'არასწორი ელ. ფოსტის ფორმატი' | t }}</span>
+      }
+      @if (isGoogleLinked) {
+        <span class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+          {{ 'ელ. ფოსტა Google ანგარიშიდან მოდის' | t }}
+        </span>
       }
     </label>
 
@@ -76,7 +86,10 @@
     } @else {
       <label class="ss-field">
         <span class="ss-label georgian-text" lang="ka">
-          {{ 'ტელეფონი' | t }} <span class="text-red-500">*</span>
+          {{ 'ტელეფონი' | t }}
+          @if (!isPhoneOptional) {
+            <span class="text-red-500">*</span>
+          }
         </span>
         <input
           class="ss-input"
@@ -94,6 +107,17 @@
         @if (userForm.get('phone')?.touched && userForm.get('phone')?.hasError('pattern')) {
           <span class="ss-error georgian-text" lang="ka">
             {{ 'ნომერი უნდა იწყებოდეს 5-ით და იყოს 9 ციფრი' | t }}
+          </span>
+        }
+        @if (isPhoneOptional) {
+          <!-- Google-only player (docs/29): valid without a phone. -->
+          <span
+            class="text-xs georgian-text"
+            lang="ka"
+            style="color: var(--tui-text-secondary)"
+            automation-id="phone-optional-hint"
+          >
+            {{ 'Google-ით დარეგისტრირებულ მოთამაშეს ტელეფონი ჯერ არ აქვს — ველი შეიძლება ცარიელი დარჩეს' | t }}
           </span>
         }
       </label>

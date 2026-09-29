@@ -12,7 +12,7 @@
           automation-id="customers-search"
           class="ss-input"
           type="text"
-          [placeholder]="'სახელი, ტელეფონი ან ID' | t"
+          [placeholder]="'სახელი, ტელეფონი, ელ. ფოსტა ან ID' | t"
           [ngModel]="q()"
           (ngModelChange)="onSearchChange($event)"
         />
@@ -99,7 +99,7 @@
             @for (row of rows(); track row.userId) {
               <tr
                 class="customer-row"
-                [class.is-open]="!!row.phone"
+                [class.is-open]="hasAccount(row)"
                 (click)="open(row)"
               >
                 <td>
@@ -107,14 +107,32 @@
                 </td>
                 <td>
                   <div class="font-medium">{{ fullName(row) }}</div>
-                  @if (row.email) {
-                    <div class="text-sm" style="color: var(--tui-text-secondary)">
-                      {{ row.email }}
+                  <!-- A player with a phone keeps the (Google) email under the name;
+                       a Google-only player's email moves into the phone column. -->
+                  @if (row.email && row.phone) {
+                    <div class="text-sm contact-line" style="color: var(--tui-text-secondary)">
+                      <span>{{ row.email }}</span>
+                      @if (row.googleLinked) {
+                        <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
+                      }
                     </div>
                   }
                 </td>
                 <td class="text-sm whitespace-nowrap">{{ memberIdOf(row) || '—' }}</td>
-                <td class="text-sm whitespace-nowrap">{{ row.phone || '—' }}</td>
+                <td class="text-sm whitespace-nowrap" automation-id="customer-contact">
+                  @if (row.phone) {
+                    {{ row.phone }}
+                  } @else if (row.email) {
+                    <span class="contact-line">
+                      <span>{{ row.email }}</span>
+                      @if (row.googleLinked) {
+                        <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
+                      }
+                    </span>
+                  } @else {
+                    —
+                  }
+                </td>
                 <td class="num-col">{{ row.bookings }}</td>
                 <td class="num-col">{{ row.cancelled }}</td>
                 <td class="num-col">{{ row.noShows }}</td>
@@ -167,9 +185,14 @@
               <ss-avatar [name]="fullName(row)" [url]="row.avatarUrl" [size]="44" />
               <div class="flex-1 min-w-0">
                 <h3 class="font-semibold truncate">{{ fullName(row) }}</h3>
-                <p class="text-sm truncate" style="color: var(--tui-text-secondary)">
-                  {{ mobileSubtitle(row) }}
-                </p>
+                <div class="flex items-center gap-2 min-w-0">
+                  <p class="text-sm truncate min-w-0" style="color: var(--tui-text-secondary)">
+                    {{ mobileSubtitle(row) }}
+                  </p>
+                  @if (row.googleLinked && !row.phone) {
+                    <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
+                  }
+                </div>
               </div>
               @if (row.banned) {
                 <span class="ss-badge ss-badge--negative">

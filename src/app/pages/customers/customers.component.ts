@@ -26,6 +26,7 @@ import {
 } from '../../shared/models/customer.model';
 import { SsAvatarComponent } from '../../shared/ui/ss-avatar.component';
 import { formatMemberId } from '../../shared/utils/member-id.util';
+import { hasLiveAccount } from '../../shared/utils/google-identity.util';
 
 const PAGE_SIZE = 20;
 
@@ -149,18 +150,22 @@ export class CustomersComponent implements OnInit {
 
   protected open(row: CustomerRow): void {
     // A deleted account still shows its history line but has no detail page.
-    // Presence of the phone (the account identifier since the phone-only
-    // migration — email is no longer served) marks a live account.
-    if (!row.phone) return;
+    // Any surviving identity field marks a live account — the phone, or for a
+    // Google-only player (docs/29, no phone yet) its email / googleLinked.
+    if (!this.hasAccount(row)) return;
     void this.router.navigate(['/customers', row.userId]);
   }
 
   // ── display helpers ────────────────────────────────────────────────────────
 
+  protected hasAccount(row: CustomerRow): boolean {
+    return hasLiveAccount(row);
+  }
+
   protected fullName(row: CustomerRow): string {
     const parts = [row.firstName, row.lastName].filter(Boolean);
     if (parts.length > 0) return parts.join(' ');
-    return row.email ?? tr('წაშლილი ანგარიში');
+    return row.email || row.phone || tr('წაშლილი ანგარიში');
   }
 
   protected initials(row: CustomerRow): string {
@@ -179,10 +184,13 @@ export class CustomersComponent implements OnInit {
     return formatMemberId(row.memberId);
   }
 
-  /** Mobile card subtitle: "ID 000042 · +9955…" (whichever parts exist). */
+  /**
+   * Mobile card subtitle: "ID 000042 · +9955…" (whichever parts exist). A
+   * Google-only player has no phone yet — its email takes the phone's slot.
+   */
   protected mobileSubtitle(row: CustomerRow): string {
     const id = formatMemberId(row.memberId);
-    const parts = [id ? `ID ${id}` : '', row.phone ?? ''].filter(Boolean);
+    const parts = [id ? `ID ${id}` : '', row.phone || row.email || ''].filter(Boolean);
     return parts.join(' · ') || '—';
   }
 }

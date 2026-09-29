@@ -17,6 +17,10 @@ import {
 import { UserManagementService } from '../../../../services/http-services/user-management.service';
 import { CreateUserDto, User, UserType } from '../../../../shared/models/user.model';
 import { arrayRequiredValidator } from '../../../../shared/validators/array-required.validator';
+import {
+  isGoogleLinked as userIsGoogleLinked,
+  isGoogleOnly,
+} from '../../../../shared/utils/google-identity.util';
 import { liveLabels, tr } from '../../../../shared/i18n/lang';
 import { TPipe } from '../../../../shared/i18n/t.pipe';
 
@@ -79,7 +83,12 @@ export class UserFormComponent implements OnInit {
     const phoneValue = this.formatPhoneForDisplay(editingUser?.phone || '');
 
     this.userForm = this.fb.group({
-      email: [editingUser?.email || '', [Validators.required, Validators.email]],
+      // A Google-linked player's email belongs to the Google account (docs/29):
+      // disabled → shown but never submitted, so an edit cannot rewrite it.
+      email: [
+        { value: editingUser?.email || '', disabled: this.isGoogleLinked },
+        [Validators.required, Validators.email],
+      ],
       password: ['', editingUser ? [] : [Validators.required, Validators.minLength(6)]],
       firstName: [editingUser?.firstName || ''],
       lastName: [editingUser?.lastName || ''],
@@ -102,6 +111,21 @@ export class UserFormComponent implements OnInit {
     return roles.includes(UserType.ADMIN) || roles.includes(UserType.SUPERADMIN);
   }
 
+  /** The edited account can sign in with Google (docs/29). */
+  protected get isGoogleLinked(): boolean {
+    return userIsGoogleLinked(this.context.data?.user);
+  }
+
+  /**
+   * A Google-only player (docs/29 — signed up with Google, no phone yet) is a
+   * valid player: the API rule is "phone OR googleId". The phone stays
+   * optional for them; a player that already HAS a phone keeps it required
+   * (there is no path that removes a phone).
+   */
+  protected get isPhoneOptional(): boolean {
+    return !this.isAdminAccount && isGoogleOnly(this.context.data?.user);
+  }
+
   private applyIdentityValidators(): void {
     const phone = this.userForm.get('phone');
     const username = this.userForm.get('username');
@@ -113,10 +137,8 @@ export class UserFormComponent implements OnInit {
       ]);
     } else {
       username?.clearValidators();
-      phone?.setValidators([
-        Validators.required,
-        Validators.pattern(/^\+9955\d{8}$/),
-      ]);
+      const format = Validators.pattern(/^\+9955\d{8}$/);
+      phone?.setValidators(this.isPhoneOptional ? [format] : [Validators.required, format]);
     }
     phone?.updateValueAndValidity({ emitEvent: false });
     username?.updateValueAndValidity({ emitEvent: false });
@@ -152,14 +174,20 @@ export class UserFormComponent implements OnInit {
     }
     // Only the identity field the account kind uses is sent — the API rejects
     // a phone on admin accounts and a username on player accounts, and $unsets
-    // the leftover field itself when a role changes.
+    // the leftover field itself when a role changes. An EMPTY phone (only
+    // reachable for a Google-only player) is omitted, never sent as '' — the
+    // account keeps its Google identity untouched.
+    const phoneDigits = this.extractPhoneDigits(String(formValue.phone ?? ''));
     const identity = this.isAdminAccount
       ? { username: String(formValue.username).trim().toLowerCase() }
-      : { phone: this.extractPhoneDigits(formValue.phone) };
+      : phoneDigits
+        ? { phone: phoneDigits }
+        : {};
 
     if (editingUser?._id) {
       const updateDto = {
-        email: formValue.email,
+        // Disabled (Google-owned) email is absent from `value` → not sent.
+        ...(formValue.email !== undefined ? { email: formValue.email } : {}),
         firstName: formValue.firstName || undefined,
         lastName: formValue.lastName || undefined,
         ...identity,

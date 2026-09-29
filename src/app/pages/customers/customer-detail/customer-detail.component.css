@@ -60,6 +60,19 @@
 .profile-meta span {
   overflow-wrap: anywhere;
 }
+/* email + "Google" badge (docs/29) on one line */
+.contact-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* Google-only player (docs/29): no phone yet */
+.no-phone-note {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-faint);
+}
 .profile-actions {
   display: flex;
   flex-wrap: wrap;

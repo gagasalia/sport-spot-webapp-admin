@@ -50,13 +50,21 @@
         <ss-avatar [name]="fullName()" [url]="d.profile.avatarUrl" [size]="64" />
         <div class="flex-1 min-w-0">
           <h1 class="text-2xl font-semibold truncate">{{ fullName() }}</h1>
-          <div class="profile-meta">
+          <div class="profile-meta" automation-id="customer-contact">
             @if (memberId()) {
               <span class="whitespace-nowrap">ID - {{ memberId() }}</span>
             }
-            <span>{{ d.profile.email }}</span>
             @if (d.profile.phone) {
               <span>{{ d.profile.phone }}</span>
+            }
+            <!-- Google-only players (docs/29) have no phone yet: the email takes its slot. -->
+            @if (d.profile.email) {
+              <span class="contact-line">
+                <span>{{ d.profile.email }}</span>
+                @if (d.profile.googleLinked) {
+                  <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
+                }
+              </span>
             }
             @if (d.profile.createdAt) {
               <span class="georgian-text" lang="ka">
@@ -64,6 +72,11 @@
               </span>
             }
           </div>
+          @if (!d.profile.phone) {
+            <p class="no-phone-note georgian-text" lang="ka" automation-id="customer-no-phone">
+              {{ 'ტელეფონი არ არის მითითებული' | t }}
+            </p>
+          }
           <div class="flex flex-wrap gap-1 mt-2">
             @if (d.profile.emailVerified) {
               <span class="ss-badge ss-badge--info georgian-text" lang="ka">

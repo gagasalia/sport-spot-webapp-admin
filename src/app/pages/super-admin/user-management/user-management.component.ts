@@ -27,6 +27,7 @@ import { SsDialogService } from '../../../shared/ui/dialog.service';
 import { SsConfirmComponent, SsConfirmData } from '../../../shared/ui/confirm.component';
 import { SsAvatarComponent } from '../../../shared/ui/ss-avatar.component';
 import { formatMemberId, parseMemberId } from '../../../shared/utils/member-id.util';
+import { isGoogleLinked } from '../../../shared/utils/google-identity.util';
 import { tr } from '../../../shared/i18n/lang';
 import { TPipe } from '../../../shared/i18n/t.pipe';
 const DEFAULT_PAGE_SIZE = 20;
@@ -334,6 +335,11 @@ export class UserManagementComponent implements OnInit {
   protected getInitials(user: User): string {
     const first = user.firstName?.charAt(0) ?? '';
     const last = user.lastName?.charAt(0) ?? '';
-    return (first + last).toUpperCase() || user.email.charAt(0).toUpperCase();
+    return (first + last).toUpperCase() || (user.email?.charAt(0) ?? '?').toUpperCase();
+  }
+
+  /** The player can sign in with Google (docs/29) — badge next to the email. */
+  protected isGoogleLinked(user: User): boolean {
+    return isGoogleLinked(user);
   }
 }

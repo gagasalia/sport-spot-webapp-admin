@@ -115,7 +115,14 @@
                 </td>
                 <td class="font-medium">{{ getFullName(user) }}</td>
                 <td class="text-sm whitespace-nowrap">{{ getMemberId(user) }}</td>
-                <td class="text-sm">{{ user.email }}</td>
+                <td class="text-sm">
+                  <span class="inline-flex items-center gap-1.5">
+                    <span>{{ user.email || '—' }}</span>
+                    @if (isGoogleLinked(user)) {
+                      <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
+                    }
+                  </span>
+                </td>
                 <td class="text-sm">{{ user.phone || user.username || '—' }}</td>
                 <td class="text-sm">{{ user.pid || '—' }}</td>
                 <td class="text-sm whitespace-nowrap">
@@ -187,9 +194,14 @@
               <ss-avatar [name]="getFullName(user)" [url]="user.avatarUrl" [size]="44" />
               <div class="flex-1 min-w-0">
                 <h3 class="font-semibold truncate">{{ getFullName(user) }}</h3>
-                <p class="text-sm truncate" style="color: var(--tui-text-secondary)">
-                  {{ user.email }}
-                </p>
+                <div class="flex items-center gap-2 min-w-0">
+                  <p class="text-sm truncate min-w-0" style="color: var(--tui-text-secondary)">
+                    {{ user.email }}
+                  </p>
+                  @if (isGoogleLinked(user)) {
+                    <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
+                  }
+                </div>
               </div>
               <div class="flex items-center gap-1">
                 <button
