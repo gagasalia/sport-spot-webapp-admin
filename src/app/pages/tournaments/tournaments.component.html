@@ -137,6 +137,21 @@
                         <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
                       </button>
                     }
+                    @if (hasResults(t)) {
+                      <button
+                        class="ss-icon-btn"
+                        type="button"
+                        data-testid="tournament-results"
+                        [attr.aria-label]="'შედეგები' | t"
+                        [title]="'შედეგები' | t"
+                        (click)="openResults(t)"
+                      >
+                        <i
+                          class="ss-ic"
+                          style="--ss-ic: url('assets/taiga-ui/icons/list-ordered.svg')"
+                        ></i>
+                      </button>
+                    }
                     @if (t.status === 'draft' || t.status === 'published') {
                       <button
                         class="ss-icon-btn"
@@ -261,6 +276,20 @@
                   (click)="openRegistrations(t)"
                 >
                   <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
+                </button>
+              }
+              @if (hasResults(t)) {
+                <button
+                  class="ss-icon-btn"
+                  type="button"
+                  data-testid="tournament-results"
+                  [attr.aria-label]="'შედეგები' | t"
+                  (click)="openResults(t)"
+                >
+                  <i
+                    class="ss-ic"
+                    style="--ss-ic: url('assets/taiga-ui/icons/list-ordered.svg')"
+                  ></i>
                 </button>
               }
               @if (t.status === 'draft' || t.status === 'published') {

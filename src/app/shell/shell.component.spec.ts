@@ -152,6 +152,39 @@ describe('ShellComponent', () => {
     fixture.detectChanges();
   });
 
+  // Ranking results moderation (docs/25 §6.5) is superadmin-only: its entry
+  // lives in the Super Admin group, in both hosts of the nav list.
+  it('shows the results-moderation entry to superadmins only', () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    const shell = fixture.componentInstance as unknown as {
+      isMobile: { set(v: boolean): void };
+      toggleMenu(): void;
+      closeMenu(): void;
+    };
+    shell.isMobile.set(false);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[automation-id="ranking-moderation"]')).toBeNull();
+
+    authStub.isSuperAdmin.set(true);
+    fixture.detectChanges();
+    const link: HTMLElement = fixture.nativeElement.querySelector(
+      '[automation-id="ranking-moderation"]',
+    );
+    expect(link.getAttribute('routerLink')).toBe('/super-admin/ranking-moderation');
+    expect(link.textContent).toContain('შედეგების მოდერაცია');
+
+    shell.isMobile.set(true);
+    shell.toggleMenu();
+    fixture.detectChanges();
+    expect(
+      fixture.nativeElement.querySelector('.menu-sheet [automation-id="ranking-moderation"]'),
+    ).not.toBeNull();
+
+    // Release the page-scroll lock the open sheet applied.
+    shell.closeMenu();
+    fixture.detectChanges();
+  });
+
   // The coaches module is switched off (environment.coachesEnabled = false)
   // until real coaches exist: no nav entry for anyone, in either nav host.
   it('hides the coaches entry while the module is switched off', () => {

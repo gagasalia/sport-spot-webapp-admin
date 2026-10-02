@@ -103,6 +103,11 @@ export interface TournamentRegistration {
   user: string;
   status: 'registered' | 'cancelled';
   partnerName?: string;
+  /**
+   * Doubles partner's phone, E.164 (docs/25 §3) — lets the results dialog
+   * rate both members of the pair. Absent on legacy/singles registrations.
+   */
+  partnerPhone?: string;
   paymentStatus: RegistrationPaymentStatus;
   playerName?: string;
   playerEmail?: string;
@@ -113,3 +118,12 @@ export interface TournamentRegistration {
   playerAvatar?: string;
   createdAt?: string;
 }
+
+/** PATCH /tournaments/:id/registrations/:registrationId — empty fields are ignored. */
+export interface UpdateRegistrationDto {
+  partnerPhone?: string;
+  partnerName?: string;
+}
+
+/** API bound on `partnerName` (UpdateRegistrationDTO). */
+export const PARTNER_NAME_MAX = 120;

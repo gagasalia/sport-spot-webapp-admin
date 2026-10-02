@@ -1,0 +1,217 @@
+/* Tournament results dialog (docs/25 §6.5) — kit tokens only, no new colour. */
+.rd {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 72vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+/* ── results list ─────────────────────────────────────────────────────────── */
+.rd-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rd-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.rd-item.is-void {
+  opacity: 0.6;
+}
+.rd-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--tui-text-secondary);
+}
+.rd-n {
+  font-weight: 700;
+  color: var(--text);
+}
+.rd-game {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+.rd-team {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-muted);
+}
+.rd-team--right {
+  text-align: right;
+}
+.rd-team.is-winner {
+  color: var(--text);
+  font-weight: 600;
+}
+.rd-score {
+  font-weight: 700;
+  white-space: nowrap;
+}
+.rd-deltas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12px;
+}
+.rd-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.rd-phone {
+  color: var(--tui-text-secondary);
+  font-family: var(--font-num);
+}
+.rd-void {
+  margin: 0;
+  font-size: 12px;
+  color: var(--tui-text-secondary);
+}
+.rd-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+/* ── `+ თამაში` form ──────────────────────────────────────────────────────── */
+.rf {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+}
+.rf-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rf-date {
+  width: 180px;
+}
+.rf-sides {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 720px) {
+  .rf-sides {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.rf-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+}
+.rf-side legend {
+  padding: 0 4px;
+  margin: 0;
+}
+.rf-slot {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rf-who {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 10px;
+  border-left: 2px solid var(--accent-line);
+}
+.rf-fixed {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.rf-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+/* the account behind a typed number (operator lookup) */
+.rf-account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.rf-account-name {
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.rf-score {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* label · team 1 · dash · team 2 · remove — the score rows share the grid */
+.rf-cols,
+.rf-row {
+  display: grid;
+  grid-template-columns: 72px 84px 14px 84px 32px;
+  align-items: center;
+  gap: 8px;
+}
+.rf-col {
+  font-size: 11px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rf-row-label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.rf-num {
+  height: 38px;
+  padding: 0 8px;
+  text-align: center;
+}
+.rf-dash {
+  text-align: center;
+  color: var(--text-faint);
+}
+.rf-add {
+  align-self: flex-start;
+}
+.rf-server {
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--tui-status-negative-pale);
+  color: var(--danger);
+  font-size: 13px;
+}
+.rf-server-detail {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}

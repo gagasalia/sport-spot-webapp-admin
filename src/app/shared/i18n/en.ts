@@ -1659,4 +1659,122 @@ export const EN: Record<string, string> = {
     'Signed up with %s and has no phone yet — the field may stay empty',
   'Facebook-ის ანგარიშმა ელ. ფოსტა არ გადმოსცა — ველი არასავალდებულოა':
     'The Facebook account shared no email — the field is optional',
+
+  // ── ranking (docs/25 §6.5) ────────────────────────────────────────────
+  // tier names = the i18n keys tier.1 … tier.7 (TIER_KEYS, working names
+  // until the emblem design pass)
+  'ახალბედა': 'Rookie',
+  'მოყვარული': 'Amateur',
+  'პრეტენდენტი': 'Contender',
+  'კონკურენტი': 'Competitor',
+  'ექსპერტი': 'Expert',
+  'მასტერი': 'Master',
+  'ჩემპიონი': 'Champion',
+  // scorecard statuses / sources
+  'დასადასტურებელი': 'Pending',
+  'უარყოფილი': 'Rejected',
+  'ანულირებული': 'Void',
+  'მეგობრული': 'Friendly',
+  'ღია თამაში': 'Open match',
+  // customer rating card
+  'რეიტინგი': 'Rating',
+  'კალიბრაცია': 'Calibrating',
+  'ყველა შედეგი': 'All results',
+  'რეიტინგი ვერ ჩაიტვირთა': 'Could not load the rating',
+  'რეიტინგი გამოჩნდება კალიბრაციის შემდეგ': 'The rating shows once calibration ends',
+  'ლიდერბორდზე': 'On the leaderboard',
+  'ლიდერბორდისთვის სიზუსტე არ კმარა': 'Not accurate enough for the leaderboard',
+  'სიზუსტე': 'Confidence',
+  'მოგება–წაგება': 'Won–lost',
+  // "9–4 (1 drawn)" — reads right for any count
+  'ფრე': 'drawn',
+  'სეტები': 'Sets',
+  'რეიტინგული თამაში ჯერ არ აქვს': 'No rated matches yet',
+  'რეიტინგის ცვლილებები': 'Rating changes',
+  'შედეგების ისტორია': 'Results history',
+  // tournament results dialog
+  'შედეგები': 'Results',
+  'შედეგები ვერ ჩაიტვირთა': 'Could not load the results',
+  'შედეგები ჯერ არ არის': 'No results yet',
+  'ანგარიშის გარეშე': 'No account',
+  'ტელეფონი აკლია': 'phone missing',
+  'გუნდი 1': 'Team 1',
+  'გუნდი 2': 'Team 2',
+  'წყვილები 2 × 2': 'Doubles 2 × 2',
+  'ერთი ერთზე': 'Singles 1 × 1',
+  'აირჩიეთ მოთამაშე': 'Choose a player',
+  '+ სხვა მოთამაშე (ტელეფონით)': '+ Other player (by phone)',
+  'შეიყვანეთ ტელეფონი': 'Enter a phone number',
+  'ტელეფონის ფორმატი არასწორია': 'Invalid phone format',
+  'სახელი — მინიმუმ 2 სიმბოლო': 'Name — at least 2 characters',
+  'სახელი — მაქსიმუმ 60 სიმბოლო': 'Name — at most 60 characters',
+  'ტელეფონი რეგისტრაციაშიც შეინახება': 'The phone is also saved to the registration',
+  'პარტნიორის ტელეფონი რეგისტრაციაში ვერ შეინახა':
+    'Could not save the partner’s phone to the registration',
+  'ანგარიშის შემოწმება…': 'Checking for an account…',
+  'ამ ნომერზე ანგარიში არ არის — მიუთითეთ სახელი': 'No account uses this number — enter a name',
+  'ერთი და იგივე ტელეფონი ორჯერაა მითითებული': 'The same phone number is used twice',
+  // registrations dialog: inline partner edit
+  'პარტნიორის ტელეფონი': 'Partner’s phone',
+  'პარტნიორის რედაქტირება': 'Edit partner',
+  'პარტნიორი განახლდა': 'Partner updated',
+  'შედეგის ანგარიში': 'Score',
+  'ქულები': 'Points',
+  'სეტი': 'Set',
+  'სეტის წაშლა': 'Remove set',
+  'სეტი: 6-0…6-4, 7-5 ან 7-6; სუპერ ტაიბრეიკი (10-x) — მხოლოდ ბოლო, მესამე სეტად':
+    'Set: 6-0…6-4, 7-5 or 7-6; super tiebreak (10-x) — only as the last, third set',
+  'ამერიკანო / მექსიკანო: ქულები 0–64, ფრე დასაშვებია':
+    'Americano / mexicano: points 0–64, a draw is allowed',
+  'შენახვა და რეიტინგი': 'Save and rate',
+  'შედეგი შენახულია — რეიტინგები განახლდა': 'Result saved — ratings updated',
+  'სეტის ანგარიში არასწორია': 'Invalid set score',
+  'ამ ნომერზე ანგარიში არ არის — მიუთითეთ მოთამაშის სახელი':
+    'No account uses this number — enter the player’s name',
+  'ერთი და იგივე მოთამაშე ორჯერაა მითითებული': 'The same player is entered twice',
+  'შედეგები მხოლოდ გამოქვეყნებულ ან დასრულებულ ტურნირს ემატება':
+    'Results can only be added to a published or completed tournament',
+  'ამ ტურნირზე წვდომა არ გაქვთ': 'You have no access to this tournament',
+  // score rules (client mirror of the API's invalid_set_score)
+  'შეიყვანეთ ორივე რიცხვი': 'Enter both numbers',
+  'დაუშვებელი სეტი — 6-0…6-4, 7-5 ან 7-6': 'Illegal set — 6-0…6-4, 7-5 or 7-6',
+  'დაუშვებელი სეტი — 6-0…6-4, 7-5, 7-6 ან სუპერ ტაიბრეიკი 10-x':
+    'Illegal set — 6-0…6-4, 7-5, 7-6 or a super tiebreak 10-x',
+  'სუპერ ტაიბრეიკი მხოლოდ ბოლო, მესამე ან შემდეგი სეტია':
+    'A super tiebreak can only be the last set, from the third set on',
+  'შეიყვანეთ მინიმუმ ერთი სეტი': 'Enter at least one set',
+  'თამაშში 1–5 სეტია': 'A match has 1–5 sets',
+  'თამაში დაუმთავრებელია — ერთმა მხარემ მეტი სეტი უნდა მოიგოს':
+    'The match is unfinished — one side must win more sets',
+  'ქულები — მთელი რიცხვები 0-დან 64-მდე': 'Points — whole numbers from 0 to 64',
+  '0-0 შედეგად არ ჩაითვლება': 'A 0-0 score does not count',
+  // void (tournament results + moderation)
+  'შედეგის ანულირება': 'Void the result',
+  'შედეგი ანულირდება და რეიტინგში აღარ ჩაითვლება. მოთამაშეების რეიტინგები გასწორდება ranking:replay-ის გაშვების შემდეგ.':
+    'The result is voided and no longer counts. The players’ ratings are repaired once ranking:replay runs.',
+  'მაგ: შეცდომით შეყვანილი ანგარიში': 'E.g. the score was entered by mistake',
+  'მაგ: ერთი და იგივე თამაში ორჯერ შეიყვანეს': 'E.g. the same match was entered twice',
+  'ანულირება': 'Void',
+  'შედეგი ანულირდა': 'Result voided',
+  'მხოლოდ დადასტურებული შედეგი ანულირდება': 'Only a confirmed result can be voided',
+  'ანულირება ვერ მოხერხდა': 'Could not void the result',
+  // super-admin moderation page
+  'შედეგების მოდერაცია': 'Results moderation',
+  // %s = the replay command, rendered as code
+  'გაუქმებული შედეგის რეიტინგები სწორდება %s-ით':
+    'Ratings affected by a voided result are repaired with %s',
+  'მომხმარებელი (სისტემური ID)': 'User (system ID)',
+  'ID — 24 სიმბოლო (0-9, a-f)': 'ID — 24 characters (0-9, a-f)',
+  'მხოლოდ ანგარიშის გარეშე': 'Shadow-only',
+  'შედეგები, სადაც შემტანის გარდა ყველა მონაწილე ანგარიშის გარეშეა':
+    'Results where everyone but the reporter has no account',
+  'ოპერატორი': 'Operator',
+  'შემტანი': 'Reporter',
+  'დადასტურებები': 'Approvals',
+  'ნიშნები': 'Flags',
+  'შეყვანა': 'Entered',
+  'დადასტურების ვადა': 'Approve by',
+  'დაადასტურა': 'Approved',
+  'უარყო': 'Rejected',
+  'ამ ფილტრით შედეგები ვერ მოიძებნა': 'No results match these filters',
 };

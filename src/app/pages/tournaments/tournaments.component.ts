@@ -25,6 +25,7 @@ import {
   TournamentFormComponent,
 } from './tournament-form/tournament-form.component';
 import { RegistrationsDialogComponent } from './registrations-dialog.component';
+import { TournamentResultsDialogComponent } from './results-dialog/tournament-results-dialog.component';
 
 import { liveLabels, tr } from '../../shared/i18n/lang';
 import { FacilityNamesService } from '../../shared/i18n/facility-names.service';
@@ -185,6 +186,25 @@ export class TournamentsComponent implements OnInit {
           data: { tournament },
         },
       )
+      .pipe(take(1))
+      .subscribe();
+  }
+
+  /** Results are entered once the tournament is live or over (docs/25 §4.1). */
+  protected hasResults(tournament: Tournament): boolean {
+    return tournament.status === 'published' || tournament.status === 'completed';
+  }
+
+  /** The results dialog: rated games + the `+ თამაში` entry form (docs/25 §6.5). */
+  protected openResults(tournament: Tournament): void {
+    this.dialogs
+      .open<void>(TournamentResultsDialogComponent, {
+        label: `${tr('შედეგები')} · ${localizedName(tournament)}`,
+        size: 'l',
+        dismissible: true,
+        closable: true,
+        data: { tournament },
+      })
       .pipe(take(1))
       .subscribe();
   }

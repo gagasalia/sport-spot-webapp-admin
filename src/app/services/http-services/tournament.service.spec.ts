@@ -5,6 +5,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { TournamentService } from './tournament.service';
 import { Tournament } from '../../shared/models/tournament.model';
 import { environment } from '../../../environments/environment';
+import { SKIP_ERROR_TOAST } from '../../shared/interceptors/error.interceptor';
 
 const base = environment.apiUrl;
 
@@ -123,5 +124,30 @@ describe('TournamentService', () => {
     req.flush(wrap({ deleted: true }));
 
     expect(done).toBeTrue();
+  });
+
+  // docs/25 §6.5: the doubles partner's phone/name, set by the operator.
+  it('PATCHes a registration’s partner quietly (callers show errors inline)', () => {
+    let phone: string | undefined;
+    service
+      .updateRegistration('t1', 'r1', { partnerPhone: '555000004' })
+      .subscribe((reg) => (phone = reg.partnerPhone));
+
+    const req = httpMock.expectOne(`${base}/tournaments/t1/registrations/r1`);
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ partnerPhone: '555000004' });
+    expect(req.request.context.get(SKIP_ERROR_TOAST)).toBeTrue();
+    req.flush(
+      wrap({
+        _id: 'r1',
+        tournament: 't1',
+        user: 'u1',
+        status: 'registered',
+        paymentStatus: 'paid',
+        partnerPhone: '+995555000004',
+      }),
+    );
+
+    expect(phone).toBe('+995555000004');
   });
 });

@@ -1,0 +1,334 @@
+<div class="pt-8 p-0 sm:p-8">
+  <header class="mb-2">
+    <h1 class="text-2xl font-semibold georgian-text" lang="ka">{{ 'შედეგების მოდერაცია' | t }}</h1>
+  </header>
+  <p class="rm-note georgian-text mb-6" lang="ka" data-testid="replay-note">
+    {{ replayNote()[0] }}<code>{{ replayCommand }}</code
+    >{{ replayNote()[1] }}
+  </p>
+
+  <!-- Filters -->
+  <div class="ss-card p-4 mb-6">
+    <div class="rm-filters">
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">{{ 'სტატუსი' | t }}</span>
+        <select
+          class="ss-input georgian-text"
+          lang="ka"
+          data-testid="filter-status"
+          [ngModel]="status()"
+          (ngModelChange)="setStatus($event)"
+        >
+          <option [ngValue]="null">{{ 'ყველა' | t }}</option>
+          @for (s of statusOptions; track s) {
+            <option [ngValue]="s">{{ statusLabels[s] }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">{{
+          'მომხმარებელი (სისტემური ID)' | t
+        }}</span>
+        <input
+          class="ss-input rm-mono"
+          type="text"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="64b8f0c2e1d3c2a5f0e4b9a1"
+          data-testid="filter-user"
+          [class.ss-input--invalid]="userIdInvalid()"
+          [ngModel]="userId()"
+          (ngModelChange)="setUserId($event)"
+        />
+        @if (userIdInvalid()) {
+          <span class="ss-error georgian-text" lang="ka">{{
+            'ID — 24 სიმბოლო (0-9, a-f)' | t
+          }}</span>
+        }
+      </label>
+
+      <!-- a phone finds players without an account too (shadows) -->
+      <label class="ss-field">
+        <span class="ss-label georgian-text" lang="ka">{{ 'ტელეფონი' | t }}</span>
+        <input
+          class="ss-input"
+          type="tel"
+          inputmode="tel"
+          autocomplete="off"
+          placeholder="+995 5XX XX XX XX"
+          data-testid="filter-phone"
+          [class.ss-input--invalid]="phoneInvalid()"
+          [ngModel]="phone()"
+          (ngModelChange)="setPhone($event)"
+        />
+        @if (phoneInvalid()) {
+          <span class="ss-error georgian-text" lang="ka">{{
+            'ტელეფონის ფორმატი არასწორია' | t
+          }}</span>
+        }
+      </label>
+
+      <label
+        class="rm-switch"
+        [title]="'შედეგები, სადაც შემტანის გარდა ყველა მონაწილე ანგარიშის გარეშეა' | t"
+      >
+        <input
+          type="checkbox"
+          class="ss-switch"
+          data-testid="filter-shadow"
+          [ngModel]="shadowOnly()"
+          (ngModelChange)="setShadowOnly($event)"
+        />
+        <span class="georgian-text" lang="ka">{{ 'მხოლოდ ანგარიშის გარეშე' | t }}</span>
+      </label>
+
+      <div class="flex items-end">
+        <button
+          class="ss-btn ss-btn--flat ss-btn--block"
+          type="button"
+          data-testid="filter-clear"
+          [disabled]="!hasActiveFilters()"
+          (click)="clearFilters()"
+        >
+          <span class="georgian-text" lang="ka">{{ 'გასუფთავება' | t }}</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  @if (hasError()) {
+    <div
+      class="rounded-lg p-4 mb-4 georgian-text"
+      lang="ka"
+      style="background: var(--tui-status-negative-pale); color: var(--tui-status-negative)"
+    >
+      {{ 'მონაცემების ჩატვირთვა ვერ მოხერხდა. სცადეთ თავიდან.' | t }}
+    </div>
+  }
+
+  <div class="ss-card overflow-x-auto">
+    <table class="ss-table rm-table">
+      <thead>
+        <tr>
+          <th class="georgian-text" lang="ka">{{ 'წყარო' | t }}</th>
+          <th class="georgian-text" lang="ka">{{ 'თარიღი' | t }}</th>
+          <th class="georgian-text" lang="ka">{{ 'ობიექტი' | t }}</th>
+          <th class="georgian-text rm-col-wide" lang="ka">{{ 'მონაწილეები' | t }}</th>
+          <th class="georgian-text rm-col-wide" lang="ka">{{ 'თამაშები' | t }}</th>
+          <th class="georgian-text" lang="ka">{{ 'სტატუსი' | t }}</th>
+          <th class="georgian-text" lang="ka">{{ 'შემტანი' | t }}</th>
+          <th class="georgian-text" lang="ka">{{ 'დადასტურებები' | t }}</th>
+          <th class="georgian-text" lang="ka">{{ 'ნიშნები' | t }}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (isLoading()) {
+          @for (n of [1, 2, 3, 4, 5]; track n) {
+            <tr>
+              <td colspan="10">
+                <div
+                  class="h-8 rounded animate-pulse"
+                  style="background: var(--tui-background-neutral-1)"
+                ></div>
+              </td>
+            </tr>
+          }
+        } @else {
+          @for (card of rows(); track card.id) {
+            <tr data-testid="scorecard-row">
+              <td>
+                <span class="georgian-text" lang="ka">{{ sourceLabels[card.source.type] }}</span>
+                <div class="rm-sub rm-mono" [title]="card.id">{{ shortId(card.id) }}</div>
+              </td>
+              <td class="whitespace-nowrap">
+                {{ card.playedAt | date: 'dd/MM/yyyy' }}
+                <div class="rm-sub">
+                  <span class="georgian-text" lang="ka">{{ 'შეყვანა' | t }}</span>
+                  {{ card.createdAt | date: 'dd/MM HH:mm' }}
+                </div>
+              </td>
+              <td>
+                @if (card.facility?.name) {
+                  {{ card.facility?.name }}
+                  @if (card.facility?.city) {
+                    <div class="rm-sub">{{ card.facility?.city }}</div>
+                  }
+                } @else {
+                  —
+                }
+              </td>
+              <td>
+                <ul class="rm-people">
+                  @for (p of card.participants; track p.key) {
+                    <li>
+                      @if (p.userId) {
+                        <a class="rm-link" [routerLink]="['/customers', p.userId]">{{ p.name }}</a>
+                      } @else {
+                        <span>{{ p.name }}</span>
+                        <span class="ss-badge ss-badge--muted georgian-text" lang="ka">
+                          {{ 'ანგარიშის გარეშე' | t }}
+                        </span>
+                      }
+                      @if (p.phone) {
+                        <span class="rm-sub rm-mono">{{ p.phone }}</span>
+                      }
+                    </li>
+                  }
+                </ul>
+              </td>
+              <td>
+                <ul class="rm-games">
+                  @for (game of card.games; track game.n) {
+                    <li>
+                      <span [class.rm-win]="game.winner === 0">{{ teamNames(card, game, 0) }}</span>
+                      <span class="rm-vs">vs</span>
+                      <span [class.rm-win]="game.winner === 1">{{ teamNames(card, game, 1) }}</span>
+                      <span class="rm-score ss-num" data-testid="scorecard-score">
+                        {{ scoreLabel(game.score) }}
+                      </span>
+                    </li>
+                  }
+                </ul>
+              </td>
+              <td>
+                <span
+                  class="georgian-text"
+                  lang="ka"
+                  data-testid="scorecard-status"
+                  [class]="statusClasses[card.status]"
+                >
+                  {{ statusLabels[card.status] }}
+                </span>
+                @switch (card.status) {
+                  @case ('pending') {
+                    @if (card.approvalDeadline) {
+                      <div class="rm-sub georgian-text" lang="ka">
+                        {{ 'დადასტურების ვადა' | t }}
+                        {{ card.approvalDeadline | date: 'dd/MM HH:mm' }}
+                      </div>
+                    }
+                  }
+                  @case ('void') {
+                    @if (card.voidedAt) {
+                      <div class="rm-sub">{{ card.voidedAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+                    }
+                    @if (card.voidReason) {
+                      <div class="rm-sub georgian-text" lang="ka">{{ card.voidReason }}</div>
+                    }
+                  }
+                  @case ('rejected') {
+                    @if (card.rejectedAt) {
+                      <div class="rm-sub">{{ card.rejectedAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+                    }
+                  }
+                  @case ('expired') {
+                    @if (card.expiredAt) {
+                      <div class="rm-sub">{{ card.expiredAt | date: 'dd/MM/yyyy HH:mm' }}</div>
+                    }
+                  }
+                }
+              </td>
+              <td class="georgian-text" lang="ka">{{ reporterLabel(card) }}</td>
+              <td>
+                @if (card.approvals.length === 0) {
+                  —
+                } @else {
+                  <ul class="rm-people">
+                    @for (a of card.approvals; track a.userId) {
+                      <li>
+                        <span
+                          [class]="
+                            a.decision === 'approve'
+                              ? 'ss-badge ss-badge--positive'
+                              : 'ss-badge ss-badge--negative'
+                          "
+                          class="georgian-text"
+                          lang="ka"
+                        >
+                          {{ (a.decision === 'approve' ? 'დაადასტურა' : 'უარყო') | t }}
+                        </span>
+                        <span>{{ approverName(card, a) }}</span>
+                        @if (a.reason) {
+                          <div class="rm-sub georgian-text" lang="ka">{{ a.reason }}</div>
+                        }
+                      </li>
+                    }
+                  </ul>
+                }
+              </td>
+              <td>
+                @if (card.flags.shadowOnly) {
+                  <span
+                    class="ss-badge ss-badge--warning georgian-text"
+                    lang="ka"
+                    data-testid="flag-shadow"
+                  >
+                    {{ 'მხოლოდ ანგარიშის გარეშე' | t }}
+                  </span>
+                } @else {
+                  —
+                }
+              </td>
+              <td class="text-right">
+                @if (card.status === 'confirmed') {
+                  <button
+                    class="ss-btn ss-btn--flat ss-btn--s"
+                    type="button"
+                    data-testid="scorecard-void"
+                    (click)="voidScorecard(card)"
+                  >
+                    <span class="georgian-text" lang="ka">{{ 'ანულირება' | t }}</span>
+                  </button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td
+                colspan="10"
+                class="px-4 py-8 text-center georgian-text"
+                lang="ka"
+                data-testid="scorecards-empty"
+              >
+                @if (hasActiveFilters()) {
+                  {{ 'ამ ფილტრით შედეგები ვერ მოიძებნა' | t }}
+                } @else {
+                  {{ 'შედეგები ჯერ არ არის' | t }}
+                }
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  @if (totalPages() > 1) {
+    <div class="flex items-center justify-end gap-3 mt-4">
+      <button
+        class="ss-btn ss-btn--outline ss-btn--s"
+        type="button"
+        data-testid="page-prev"
+        [disabled]="page() === 1"
+        (click)="prevPage()"
+      >
+        <span class="georgian-text" lang="ka">{{ 'წინა' | t }}</span>
+      </button>
+      <span class="text-sm" style="color: var(--tui-text-secondary)">
+        {{ page() }} / {{ totalPages() }}
+      </span>
+      <button
+        class="ss-btn ss-btn--outline ss-btn--s"
+        type="button"
+        data-testid="page-next"
+        [disabled]="page() >= totalPages()"
+        (click)="nextPage()"
+      >
+        <span class="georgian-text" lang="ka">{{ 'შემდეგი' | t }}</span>
+      </button>
+    </div>
+  }
+</div>

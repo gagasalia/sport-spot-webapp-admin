@@ -1,0 +1,454 @@
+<div class="rd">
+  <!-- ── the tournament's results ─────────────────────────────────────────── -->
+  @if (isLoading()) {
+    <div class="space-y-2 animate-pulse">
+      @for (n of [1, 2, 3]; track n) {
+        <div class="h-12 rounded-lg" style="background: var(--tui-background-neutral-1)"></div>
+      }
+    </div>
+  } @else if (loadError()) {
+    <div class="flex items-center gap-3 py-4">
+      <p class="m-0 text-sm georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
+        {{ 'შედეგები ვერ ჩაიტვირთა' | t }}
+      </p>
+      <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="loadResults()">
+        <span class="georgian-text" lang="ka">{{ 'თავიდან ცდა' | t }}</span>
+      </button>
+    </div>
+  } @else if (results().length === 0) {
+    <p class="py-6 m-0 text-center georgian-text" lang="ka" data-testid="results-empty">
+      {{ 'შედეგები ჯერ არ არის' | t }}
+    </p>
+  } @else {
+    <ol class="rd-list" data-testid="results-list">
+      @for (card of results(); track card.id; let n = $index) {
+        <li class="rd-item" [class.is-void]="card.status === 'void'" data-testid="result-row">
+          <div class="rd-head">
+            <span class="rd-n ss-num">#{{ n + 1 }}</span>
+            <span class="rd-date">{{ card.playedAt | date: 'dd/MM/yyyy' }}</span>
+            <span class="georgian-text" lang="ka" [class]="statusClasses[card.status]">
+              {{ statusLabels[card.status] }}
+            </span>
+            <span class="flex-1"></span>
+            @if (card.status === 'confirmed') {
+              <button
+                class="ss-btn ss-btn--flat ss-btn--s"
+                type="button"
+                data-testid="result-void"
+                (click)="voidResult(card)"
+              >
+                <span class="georgian-text" lang="ka">{{ 'ანულირება' | t }}</span>
+              </button>
+            }
+          </div>
+
+          @for (game of card.games; track game.n) {
+            <div class="rd-game">
+              <span class="rd-team" [class.is-winner]="game.winner === 0">
+                {{ teamNames(card, game, 0) }}
+              </span>
+              <span class="rd-score ss-num" data-testid="result-score">
+                {{ scoreLabel(game.score) }}
+              </span>
+              <span class="rd-team rd-team--right" [class.is-winner]="game.winner === 1">
+                {{ teamNames(card, game, 1) }}
+              </span>
+            </div>
+          }
+
+          <!-- per-player rating change (phones are operator-only data) -->
+          <div class="rd-deltas">
+            @for (p of participantsOf(card); track p.key) {
+              <span class="rd-player">
+                <span>{{ p.name }}</span>
+                @if (p.phone) {
+                  <span class="rd-phone">{{ p.phone }}</span>
+                }
+                @if (p.isShadow) {
+                  <span class="ss-badge ss-badge--muted georgian-text" lang="ka">
+                    {{ 'ანგარიშის გარეშე' | t }}
+                  </span>
+                }
+                @if (deltaOf(card, p.key); as d) {
+                  <span
+                    [class]="deltaClass(d.delta)"
+                    [title]="deltaTitle(d)"
+                    data-testid="result-delta"
+                  >
+                    {{ formatDelta(d.delta) }}
+                  </span>
+                }
+              </span>
+            }
+          </div>
+
+          @if (card.status === 'void' && card.voidReason) {
+            <p class="rd-void georgian-text" lang="ka">{{ 'მიზეზი' | t }}: {{ card.voidReason }}</p>
+          }
+        </li>
+      }
+    </ol>
+  }
+
+  <!-- ── `+ თამაში` ───────────────────────────────────────────────────────── -->
+  <div class="rd-actions">
+    <button
+      [class]="formOpen() ? 'ss-btn ss-btn--outline ss-btn--s' : 'ss-btn ss-btn--primary ss-btn--s'"
+      type="button"
+      data-testid="result-add-toggle"
+      (click)="toggleForm()"
+    >
+      @if (!formOpen()) {
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
+      }
+      <span class="georgian-text" lang="ka">{{ (formOpen() ? 'დახურვა' : 'თამაში') | t }}</span>
+    </button>
+  </div>
+
+  @if (formOpen()) {
+    <div class="rf" role="form" data-testid="result-form">
+      <!-- mode -->
+      <div class="rf-bar">
+        <div class="ss-chip-rail ss-chip-rail--wrap" role="group" [attr.aria-label]="'ფორმატი' | t">
+          <button
+            type="button"
+            class="ss-chip"
+            [class.is-active]="mode() === 'doubles'"
+            (click)="setMode('doubles')"
+          >
+            <span class="georgian-text" lang="ka">{{ 'წყვილები 2 × 2' | t }}</span>
+          </button>
+          <button
+            type="button"
+            class="ss-chip"
+            [class.is-active]="mode() === 'singles'"
+            (click)="setMode('singles')"
+          >
+            <span class="georgian-text" lang="ka">{{ 'ერთი ერთზე' | t }}</span>
+          </button>
+        </div>
+        <label class="ss-field rf-date">
+          <span class="ss-label georgian-text" lang="ka">{{ 'თამაშის თარიღი' | t }}</span>
+          <input
+            type="date"
+            class="ss-input"
+            name="playedOn"
+            [ngModel]="playedOn()"
+            (ngModelChange)="playedOn.set($event)"
+          />
+        </label>
+      </div>
+
+      <!-- two team pickers -->
+      <div class="rf-sides">
+        @for (side of sides(); track $index; let s = $index) {
+          <fieldset class="rf-side" [attr.data-testid]="'side-' + s">
+            <legend class="ss-label georgian-text" lang="ka">
+              {{ (s === 0 ? 'გუნდი 1' : 'გუნდი 2') | t }}
+            </legend>
+            @for (slot of side; track $index; let i = $index) {
+              @let errors = slotErrors()[s][i];
+              <div class="rf-slot">
+                <select
+                  class="ss-input georgian-text"
+                  lang="ka"
+                  [name]="'pick-' + s + '-' + i"
+                  [class.ss-input--invalid]="submitted() && !!errors.pick"
+                  [attr.aria-label]="'მოთამაშე' | t"
+                  [ngModel]="slot.pick"
+                  (ngModelChange)="pick(s, i, $event)"
+                  [attr.data-testid]="'slot-' + s + '-' + i"
+                >
+                  <option value="">{{ 'აირჩიეთ მოთამაშე' | t }}</option>
+                  @for (group of pool(); track group.reg._id) {
+                    @if (group.people.length > 1) {
+                      <optgroup [label]="groupLabel(group.reg)">
+                        @for (person of group.people; track person.value) {
+                          <option [value]="person.value" [disabled]="isTaken(person.value, s, i)">
+                            {{ personLabel(person) }}
+                          </option>
+                        }
+                      </optgroup>
+                    } @else {
+                      <option
+                        [value]="group.people[0].value"
+                        [disabled]="isTaken(group.people[0].value, s, i)"
+                      >
+                        {{ personLabel(group.people[0]) }}
+                      </option>
+                    }
+                  }
+                  <option [value]="walkIn">{{ '+ სხვა მოთამაშე (ტელეფონით)' | t }}</option>
+                </select>
+                @if (submitted() && errors.pick) {
+                  <span class="ss-error georgian-text" lang="ka">{{ errors.pick | t }}</span>
+                }
+
+                @if (slot.pick) {
+                  <div class="rf-who">
+                    @if (slot.phoneLocked) {
+                      <span class="rf-fixed ss-num">{{ slot.phone }}</span>
+                    } @else {
+                      <label class="ss-field">
+                        <span class="ss-label georgian-text" lang="ka">{{ 'ტელეფონი' | t }}</span>
+                        <input
+                          class="ss-input"
+                          type="tel"
+                          inputmode="tel"
+                          autocomplete="off"
+                          placeholder="+995 5XX XX XX XX"
+                          [name]="'phone-' + s + '-' + i"
+                          [class.ss-input--invalid]="showSlotError(errors, 'phone', slot)"
+                          [ngModel]="slot.phone"
+                          (ngModelChange)="setPhone(s, i, $event)"
+                          [attr.data-testid]="'phone-' + s + '-' + i"
+                        />
+                        @if (showSlotError(errors, 'phone', slot)) {
+                          <span class="ss-error georgian-text" lang="ka">{{
+                            errors.phone! | t
+                          }}</span>
+                        }
+                      </label>
+                      @if (isPartnerPhoneEntry(slot)) {
+                        <p class="rf-note georgian-text" lang="ka" data-testid="partner-phone-note">
+                          {{ 'ტელეფონი რეგისტრაციაშიც შეინახება' | t }}
+                        </p>
+                      }
+                      <!-- account lookup of the typed number (debounced) -->
+                      @if (lookupOf(slot); as lookup) {
+                        @switch (lookup.state) {
+                          @case ('loading') {
+                            <span class="rf-note georgian-text" lang="ka">
+                              {{ 'ანგარიშის შემოწმება…' | t }}
+                            </span>
+                          }
+                          @case ('found') {
+                            <div class="rf-account" [attr.data-testid]="'account-' + s + '-' + i">
+                              <ss-avatar
+                                [name]="lookup.account?.name"
+                                [url]="lookup.account?.avatar"
+                                [size]="28"
+                              />
+                              <span class="rf-account-name">{{ lookup.account?.name }}</span>
+                              @if (formatMemberId(lookup.account?.memberId); as memberId) {
+                                <span class="rf-fixed ss-num">ID {{ memberId }}</span>
+                              }
+                            </div>
+                          }
+                          @case ('missing') {
+                            <span
+                              class="rf-note georgian-text"
+                              lang="ka"
+                              [attr.data-testid]="'no-account-' + s + '-' + i"
+                            >
+                              {{ 'ამ ნომერზე ანგარიში არ არის — მიუთითეთ სახელი' | t }}
+                            </span>
+                          }
+                        }
+                      }
+                    }
+                    @if (accountOf(slot)) {
+                      <!-- the account's own name is used; no name field -->
+                    } @else if (slot.nameLocked) {
+                      <span class="rf-fixed">{{ slot.name }}</span>
+                    } @else {
+                      <label class="ss-field">
+                        <span class="ss-label georgian-text" lang="ka">{{ 'სახელი' | t }}</span>
+                        <input
+                          class="ss-input georgian-text"
+                          lang="ka"
+                          type="text"
+                          autocomplete="off"
+                          [maxlength]="nameMax"
+                          [name]="'name-' + s + '-' + i"
+                          [class.ss-input--invalid]="showSlotError(errors, 'name', slot)"
+                          [ngModel]="slot.name"
+                          (ngModelChange)="setName(s, i, $event)"
+                          [attr.data-testid]="'name-' + s + '-' + i"
+                        />
+                        @if (showSlotError(errors, 'name', slot)) {
+                          <span class="ss-error georgian-text" lang="ka">{{
+                            errors.name! | t
+                          }}</span>
+                        }
+                      </label>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </fieldset>
+        }
+      </div>
+      @if (duplicatePhone()) {
+        <span class="ss-error georgian-text" lang="ka" data-testid="duplicate-phone">
+          {{ 'ერთი და იგივე ტელეფონი ორჯერაა მითითებული' | t }}
+        </span>
+      }
+
+      <!-- score -->
+      <div class="rf-score">
+        <div
+          class="ss-chip-rail ss-chip-rail--wrap"
+          role="group"
+          [attr.aria-label]="'შედეგის ანგარიში' | t"
+        >
+          <button
+            type="button"
+            class="ss-chip"
+            [class.is-active]="scoreType() === 'sets'"
+            data-testid="score-sets"
+            (click)="setScoreType('sets')"
+          >
+            <span class="georgian-text" lang="ka">{{ 'სეტები' | t }}</span>
+          </button>
+          <button
+            type="button"
+            class="ss-chip"
+            [class.is-active]="scoreType() === 'points'"
+            data-testid="score-points"
+            (click)="setScoreType('points')"
+          >
+            <span class="georgian-text" lang="ka">{{ 'ქულები' | t }}</span>
+          </button>
+        </div>
+
+        <div class="rf-cols">
+          <span></span>
+          <span class="rf-col georgian-text" lang="ka">{{ sideLabel(0) }}</span>
+          <span></span>
+          <span class="rf-col georgian-text" lang="ka">{{ sideLabel(1) }}</span>
+          <span></span>
+        </div>
+
+        @if (scoreType() === 'sets') {
+          @for (row of setRows(); track $index; let r = $index) {
+            <div class="rf-row" [attr.data-testid]="'set-row-' + r">
+              <span class="rf-row-label georgian-text" lang="ka">{{ 'სეტი' | t }} {{ r + 1 }}</span>
+              <input
+                class="ss-input rf-num ss-num"
+                type="number"
+                inputmode="numeric"
+                min="0"
+                [max]="maxPoints"
+                [name]="'set-' + r + '-0'"
+                [attr.aria-label]="('სეტი' | t) + ' ' + (r + 1)"
+                [class.ss-input--invalid]="showRowError(r)"
+                [ngModel]="row[0]"
+                (ngModelChange)="setCell(r, 0, $event)"
+              />
+              <span class="rf-dash">–</span>
+              <input
+                class="ss-input rf-num ss-num"
+                type="number"
+                inputmode="numeric"
+                min="0"
+                [max]="maxPoints"
+                [name]="'set-' + r + '-1'"
+                [attr.aria-label]="('სეტი' | t) + ' ' + (r + 1)"
+                [class.ss-input--invalid]="showRowError(r)"
+                [ngModel]="row[1]"
+                (ngModelChange)="setCell(r, 1, $event)"
+              />
+              @if (setRows().length > 1) {
+                <button
+                  class="ss-icon-btn ss-icon-btn--s"
+                  type="button"
+                  [attr.aria-label]="'სეტის წაშლა' | t"
+                  [title]="'სეტის წაშლა' | t"
+                  (click)="removeSet(r)"
+                >
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/x.svg')"></i>
+                </button>
+              } @else {
+                <span></span>
+              }
+            </div>
+            @if (showRowError(r)) {
+              <span class="ss-error georgian-text" lang="ka" [attr.data-testid]="'set-error-' + r">
+                {{ setsCheck().rowErrors[r]! | t }}
+              </span>
+            }
+          }
+          @if (setRows().length < maxSets) {
+            <button class="ss-btn ss-btn--flat ss-btn--s rf-add" type="button" (click)="addSet()">
+              <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
+              <span class="georgian-text" lang="ka">{{ 'სეტი' | t }}</span>
+            </button>
+          }
+          @if (submitted() && setsCheck().gameError) {
+            <span class="ss-error georgian-text" lang="ka" data-testid="game-error">
+              {{ setsCheck().gameError! | t }}
+            </span>
+          }
+          <p class="rf-note georgian-text" lang="ka">
+            {{
+              'სეტი: 6-0…6-4, 7-5 ან 7-6; სუპერ ტაიბრეიკი (10-x) — მხოლოდ ბოლო, მესამე სეტად' | t
+            }}
+          </p>
+        } @else {
+          <div class="rf-row" data-testid="points-row">
+            <span class="rf-row-label georgian-text" lang="ka">{{ 'ქულები' | t }}</span>
+            <input
+              class="ss-input rf-num ss-num"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              [max]="maxPoints"
+              name="points-0"
+              [attr.aria-label]="'ქულები' | t"
+              [class.ss-input--invalid]="showPointsError()"
+              [ngModel]="pointsRow()[0]"
+              (ngModelChange)="setPoint(0, $event)"
+            />
+            <span class="rf-dash">–</span>
+            <input
+              class="ss-input rf-num ss-num"
+              type="number"
+              inputmode="numeric"
+              min="0"
+              [max]="maxPoints"
+              name="points-1"
+              [attr.aria-label]="'ქულები' | t"
+              [class.ss-input--invalid]="showPointsError()"
+              [ngModel]="pointsRow()[1]"
+              (ngModelChange)="setPoint(1, $event)"
+            />
+            <span></span>
+          </div>
+          @if (showPointsError()) {
+            <span class="ss-error georgian-text" lang="ka" data-testid="points-error">
+              {{ pointsCheck().error! | t }}
+            </span>
+          }
+          <p class="rf-note georgian-text" lang="ka">
+            {{ 'ამერიკანო / მექსიკანო: ქულები 0–64, ფრე დასაშვებია' | t }}
+          </p>
+        }
+      </div>
+
+      @if (serverError(); as e) {
+        <div class="rf-server georgian-text" lang="ka" role="alert" data-testid="server-error">
+          {{ e.message | t }}
+          @if (e.detail) {
+            <span class="rf-server-detail">{{ e.detail }}</span>
+          }
+        </div>
+      }
+
+      <div class="flex justify-end gap-3">
+        <button
+          class="ss-btn ss-btn--primary"
+          type="button"
+          (click)="save()"
+          data-testid="result-save"
+          [disabled]="isSaving()"
+        >
+          <span class="georgian-text" lang="ka">
+            {{ (isSaving() ? 'ინახება...' : 'შენახვა და რეიტინგი') | t }}
+          </span>
+        </button>
+      </div>
+    </div>
+  }
+</div>

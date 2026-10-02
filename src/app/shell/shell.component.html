@@ -288,6 +288,20 @@
             <span lang="ka" class="georgian-text nav-label">{{ 'ტრენერები' | t }}</span>
           </a>
         }
+        <!-- Ranking: every scorecard by status + void (docs/25 §6.5). -->
+        <a
+          automation-id="ranking-moderation"
+          class="nav-item nav-sub"
+          routerLink="/super-admin/ranking-moderation"
+          routerLinkActive="is-active"
+          (click)="closeMenu()"
+        >
+          <i
+            class="ss-ic nav-ic"
+            style="--ss-ic: url('assets/taiga-ui/icons/list-ordered.svg')"
+          ></i>
+          <span lang="ka" class="georgian-text nav-label">{{ 'შედეგების მოდერაცია' | t }}</span>
+        </a>
       }
     </div>
   }

@@ -1,13 +1,15 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiPage, ApiResponse } from '../../shared/models/api-response.model';
+import { SKIP_ERROR_TOAST } from '../../shared/interceptors/error.interceptor';
 import {
   CreateTournamentDto,
   Tournament,
   TournamentRegistration,
   TournamentStatus,
+  UpdateRegistrationDto,
   UpdateTournamentDto,
 } from '../../shared/models/tournament.model';
 
@@ -63,6 +65,25 @@ export class TournamentService {
     return this.http
       .get<ApiResponse<TournamentRegistration[]>>(
         `${this.apiUrl}/tournaments/${id}/registrations`,
+      )
+      .pipe(map((res) => res.result.data));
+  }
+
+  /**
+   * PATCH /tournaments/:id/registrations/:registrationId — sets a doubles
+   * partner's phone and/or name (docs/25 §6.5; the API ignores empty fields).
+   * Quiet: callers (results dialog, registrations dialog) show errors inline.
+   */
+  updateRegistration(
+    id: string,
+    registrationId: string,
+    dto: UpdateRegistrationDto,
+  ): Observable<TournamentRegistration> {
+    return this.http
+      .patch<ApiResponse<TournamentRegistration>>(
+        `${this.apiUrl}/tournaments/${id}/registrations/${registrationId}`,
+        dto,
+        { context: new HttpContext().set(SKIP_ERROR_TOAST, true) },
       )
       .pipe(map((res) => res.result.data));
   }

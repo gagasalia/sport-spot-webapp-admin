@@ -35,13 +35,14 @@ import {
 } from '../../../shared/utils/external-login.util';
 import { ReasonDialogComponent, ReasonDialogData } from '../reason-dialog.component';
 import { ContactDialogComponent, ContactDialogData } from '../contact-dialog.component';
+import { CustomerRatingCardComponent } from './customer-rating-card.component';
 
 const BOOKINGS_PAGE_SIZE = 10;
 
 /**
- * One customer's page: profile + moderation state, activity KPIs, the
- * moderation audit trail and the (scope-filtered) booking history — with the
- * operator actions: ban/unban, flag/unflag, contact fixes.
+ * One customer's page: profile + moderation state, activity KPIs, the rating
+ * card (docs/25), the moderation audit trail and the (scope-filtered) booking
+ * history — with the operator actions: ban/unban, flag/unflag, contact fixes.
  */
 @Component({
   selector: 'app-customer-detail',
@@ -52,6 +53,7 @@ const BOOKINGS_PAGE_SIZE = 10;
     KpiCardComponent,
     SsAvatarComponent,
     SsProviderBadgesComponent,
+    CustomerRatingCardComponent,
     TPipe,
   ],
   templateUrl: './customer-detail.component.html',

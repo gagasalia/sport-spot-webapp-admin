@@ -35,6 +35,26 @@ export function isAcceptablePhone(raw: string): boolean {
   return /^\+[1-9]\d{7,14}$/.test(stripped);
 }
 
+/**
+ * Best-effort E.164 form of an acceptable phone, for client-side comparisons
+ * only (e.g. "the same number twice"): Georgian shapes gain `+995`, anything
+ * else keeps its `+<country code>`. '' when the input is not acceptable. The
+ * server stays the authority — requests still carry what the operator typed.
+ */
+export function canonicalPhone(raw: string): string {
+  if (!isAcceptablePhone(raw)) {
+    return '';
+  }
+  const stripped = stripFormatting(raw);
+  if (/^\d{9}$/.test(stripped)) {
+    return `+995${stripped}`;
+  }
+  if (/^995\d{9}$/.test(stripped)) {
+    return `+${stripped}`;
+  }
+  return stripped;
+}
+
 /** Reactive-forms validator — `{ phoneFormat: true }` when not acceptable. */
 export function phoneFormatValidator(
   control: AbstractControl,

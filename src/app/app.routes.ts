@@ -191,6 +191,16 @@ export const routes: Routes = [
           ),
       },
       {
+        // Ranking results moderation (docs/25 §6.5) — friendly scorecards
+        // belong to no academy, so the list is superadmin-only (API too).
+        path: 'super-admin/ranking-moderation',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./pages/super-admin/ranking-moderation/ranking-moderation.component').then(
+            (m) => m.RankingModerationComponent,
+          ),
+      },
+      {
         path: '',
         redirectTo: 'reservations',
         pathMatch: 'full',

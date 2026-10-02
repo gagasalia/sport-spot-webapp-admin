@@ -1,0 +1,95 @@
+/* Results moderation (docs/25 §6.5) — kit tokens only, no new colour. */
+.rm-note {
+  font-size: 13px;
+  color: var(--tui-text-secondary);
+}
+.rm-note code,
+.rm-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.rm-note code {
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  background: var(--tui-background-neutral-1);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.rm-filters {
+  display: grid;
+  grid-template-columns: minmax(160px, 200px) minmax(220px, 300px) minmax(170px, 210px) auto auto;
+  gap: 16px;
+  align-items: end;
+}
+@media (max-width: 900px) {
+  .rm-filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.rm-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.rm-table {
+  min-width: 1280px; /* the card scrolls horizontally on narrow screens */
+  font-size: 13px;
+}
+.rm-table td {
+  vertical-align: top;
+}
+/* participants (name · badge · phone) and games keep one line per entry */
+.rm-col-wide {
+  min-width: 250px;
+}
+.rm-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--tui-text-secondary);
+}
+.rm-people,
+.rm-games {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rm-people li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+}
+.rm-link {
+  color: var(--tui-text-action);
+  text-decoration: none;
+}
+.rm-link:hover {
+  text-decoration: underline;
+}
+.rm-games li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+  color: var(--text-muted);
+}
+.rm-win {
+  color: var(--text);
+  font-weight: 600;
+}
+.rm-vs {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.rm-score {
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
