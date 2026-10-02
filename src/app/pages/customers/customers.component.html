@@ -107,14 +107,15 @@
                 </td>
                 <td>
                   <div class="font-medium">{{ fullName(row) }}</div>
-                  <!-- A player with a phone keeps the (Google) email under the name;
-                       a Google-only player's email moves into the phone column. -->
-                  @if (row.email && row.phone) {
+                  <!-- A player with a phone keeps its email + provider chips under the
+                       name; an external-only player's (Google/Facebook) move into the
+                       phone column. -->
+                  @if (row.phone && (row.email || isLinked(row))) {
                     <div class="text-sm contact-line" style="color: var(--tui-text-secondary)">
-                      <span>{{ row.email }}</span>
-                      @if (row.googleLinked) {
-                        <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
+                      @if (row.email) {
+                        <span>{{ row.email }}</span>
                       }
+                      <ss-provider-badges [account]="row" />
                     </div>
                   }
                 </td>
@@ -122,12 +123,14 @@
                 <td class="text-sm whitespace-nowrap" automation-id="customer-contact">
                   @if (row.phone) {
                     {{ row.phone }}
-                  } @else if (row.email) {
+                  } @else if (row.email || isLinked(row)) {
+                    <!-- No phone yet: the email, else (Facebook may share none) just
+                         the provider name chips. -->
                     <span class="contact-line">
-                      <span>{{ row.email }}</span>
-                      @if (row.googleLinked) {
-                        <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
+                      @if (row.email) {
+                        <span>{{ row.email }}</span>
                       }
+                      <ss-provider-badges [account]="row" />
                     </span>
                   } @else {
                     —
@@ -189,8 +192,8 @@
                   <p class="text-sm truncate min-w-0" style="color: var(--tui-text-secondary)">
                     {{ mobileSubtitle(row) }}
                   </p>
-                  @if (row.googleLinked && !row.phone) {
-                    <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
+                  @if (!row.phone) {
+                    <ss-provider-badges [account]="row" />
                   }
                 </div>
               </div>

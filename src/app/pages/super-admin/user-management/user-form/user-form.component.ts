@@ -18,9 +18,13 @@ import { UserManagementService } from '../../../../services/http-services/user-m
 import { CreateUserDto, User, UserType } from '../../../../shared/models/user.model';
 import { arrayRequiredValidator } from '../../../../shared/validators/array-required.validator';
 import {
+  externalProviderNames,
+  isExternallyLinked,
+  isExternalOnly,
+  isFacebookLinked,
   isGoogleLinked as userIsGoogleLinked,
-  isGoogleOnly,
-} from '../../../../shared/utils/google-identity.util';
+} from '../../../../shared/utils/external-login.util';
+import { SsProviderBadgesComponent } from '../../../../shared/ui/provider-badges.component';
 import { liveLabels, tr } from '../../../../shared/i18n/lang';
 import { TPipe } from '../../../../shared/i18n/t.pipe';
 
@@ -29,7 +33,7 @@ import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../../../shared/ui/dialog
 @Component({
   selector: 'app-user-form',
   standalone: true,
-  imports: [ReactiveFormsModule, CommonModule, MaskitoDirective, TPipe],
+  imports: [ReactiveFormsModule, CommonModule, MaskitoDirective, SsProviderBadgesComponent, TPipe],
   templateUrl: './user-form.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -85,9 +89,11 @@ export class UserFormComponent implements OnInit {
     this.userForm = this.fb.group({
       // A Google-linked player's email belongs to the Google account (docs/29):
       // disabled → shown but never submitted, so an edit cannot rewrite it.
+      // Any externally linked player (Google/Facebook) may have no email —
+      // Facebook does not always share one (docs/30) — so it is not required.
       email: [
         { value: editingUser?.email || '', disabled: this.isGoogleLinked },
-        [Validators.required, Validators.email],
+        this.isEmailOptional ? [Validators.email] : [Validators.required, Validators.email],
       ],
       password: ['', editingUser ? [] : [Validators.required, Validators.minLength(6)]],
       firstName: [editingUser?.firstName || ''],
@@ -111,19 +117,58 @@ export class UserFormComponent implements OnInit {
     return roles.includes(UserType.ADMIN) || roles.includes(UserType.SUPERADMIN);
   }
 
-  /** The edited account can sign in with Google (docs/29). */
+  /** The edited account can sign in with Google (docs/29) — it owns the email. */
   protected get isGoogleLinked(): boolean {
     return userIsGoogleLinked(this.context.data?.user);
   }
 
+  /** The edited account can sign in with Google and/or Facebook. */
+  protected get isExternallyLinked(): boolean {
+    return isExternallyLinked(this.context.data?.user);
+  }
+
+  /** The edited account (undefined in create mode) — feeds the provider chips. */
+  protected get editedUser(): User | undefined {
+    return this.context.data?.user;
+  }
+
   /**
-   * A Google-only player (docs/29 — signed up with Google, no phone yet) is a
-   * valid player: the API rule is "phone OR googleId". The phone stays
-   * optional for them; a player that already HAS a phone keeps it required
-   * (there is no path that removes a phone).
+   * Facebook-linked, not Google-linked, and no email on file (docs/30 §0.3):
+   * the email stays editable and optional.
+   */
+  protected get isFacebookWithoutEmail(): boolean {
+    const user = this.context.data?.user;
+    return isFacebookLinked(user) && !this.isGoogleLinked && !user?.email;
+  }
+
+  /**
+   * Email is optional for any externally linked account: Google's is locked
+   * anyway, and a Facebook account may share none (docs/30 §0.3). An empty
+   * value is never sent.
+   */
+  protected get isEmailOptional(): boolean {
+    return this.isExternallyLinked;
+  }
+
+  /**
+   * An external-only player (signed up with Google — docs/29 — or Facebook —
+   * docs/30 — and no phone yet) is a valid player: the API rule is "phone OR
+   * googleId OR facebookId". The phone stays optional for them; a player that
+   * already HAS a phone keeps it required (there is no path that removes a
+   * phone).
    */
   protected get isPhoneOptional(): boolean {
-    return !this.isAdminAccount && isGoogleOnly(this.context.data?.user);
+    return !this.isAdminAccount && isExternalOnly(this.context.data?.user);
+  }
+
+  /**
+   * "Signed up with Facebook and has no phone yet …" — rebuilt on every read so
+   * a language switch re-translates it (never baked).
+   */
+  protected get phoneOptionalHint(): string {
+    return tr(
+      '%s-ით დარეგისტრირებულ მოთამაშეს ტელეფონი ჯერ არ აქვს — ველი შეიძლება ცარიელი დარჩეს',
+    ).replace('%s', () => externalProviderNames(this.context.data?.user));
   }
 
   private applyIdentityValidators(): void {
@@ -175,19 +220,22 @@ export class UserFormComponent implements OnInit {
     // Only the identity field the account kind uses is sent — the API rejects
     // a phone on admin accounts and a username on player accounts, and $unsets
     // the leftover field itself when a role changes. An EMPTY phone (only
-    // reachable for a Google-only player) is omitted, never sent as '' — the
-    // account keeps its Google identity untouched.
+    // reachable for an external-only player) is omitted, never sent as '' —
+    // the account keeps its Google/Facebook identity untouched.
     const phoneDigits = this.extractPhoneDigits(String(formValue.phone ?? ''));
     const identity = this.isAdminAccount
       ? { username: String(formValue.username).trim().toLowerCase() }
       : phoneDigits
         ? { phone: phoneDigits }
         : {};
+    // Disabled (Google-owned) email is absent from `value`; an empty one (only
+    // valid on an externally linked account, e.g. Facebook without email) is
+    // omitted too — never sent as ''.
+    const email = String(formValue.email ?? '').trim();
 
     if (editingUser?._id) {
       const updateDto = {
-        // Disabled (Google-owned) email is absent from `value` → not sent.
-        ...(formValue.email !== undefined ? { email: formValue.email } : {}),
+        ...(email ? { email } : {}),
         firstName: formValue.firstName || undefined,
         lastName: formValue.lastName || undefined,
         ...identity,

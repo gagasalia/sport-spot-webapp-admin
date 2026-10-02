@@ -25,6 +25,22 @@ const googleProfile: CustomerProfile = {
   phoneVerified: false,
 };
 
+/** docs/30: signed up with Facebook — no phone, and Facebook shared no email. */
+const facebookProfile: CustomerProfile = {
+  _id: 'u4',
+  firstName: 'Giorgi',
+  lastName: 'Lomidze',
+  facebookLinked: true,
+  phoneVerified: false,
+};
+
+/** Both providers linked, no phone yet: the email still belongs to Google. */
+const bothProfile: CustomerProfile = {
+  ...googleProfile,
+  _id: 'u5',
+  facebookLinked: true,
+};
+
 describe('ContactDialogComponent', () => {
   let fixture: ComponentFixture<ContactDialogComponent>;
   let component: ContactDialogComponent;
@@ -85,6 +101,67 @@ describe('ContactDialogComponent', () => {
       form().patchValue({ phone: '599000222' });
       component['submit']();
       expect(context.completeWith).toHaveBeenCalledOnceWith({ phone: '599000222' });
+    });
+  });
+
+  describe('a Facebook-only player without an email (docs/30)', () => {
+    beforeEach(async () => setup({ profile: facebookProfile, allowEmail: true }));
+
+    const chips = (): string[] =>
+      Array.from(el().querySelectorAll('ss-provider-badges .ss-badge')).map((c) =>
+        c.textContent!.trim(),
+      );
+
+    it('starts empty: no-phone note with the Facebook chip, editable optional email', () => {
+      expect(form().getRawValue().phone).toBe('');
+      expect(form().getRawValue().email).toBe('');
+      expect(el().querySelector('[automation-id="contact-no-phone"]')).not.toBeNull();
+      expect(chips()).toEqual(['Facebook']);
+      // Facebook does not own the email: no read-only Google block, the input stays.
+      expect(el().querySelector('[automation-id="contact-google-email"]')).toBeNull();
+      expect(el().querySelector('input[type="email"]')).not.toBeNull();
+      expect(el().querySelector('[automation-id="contact-email-optional"]')).not.toBeNull();
+      expect(form().valid).toBeTrue();
+      expect(el().textContent).not.toContain('undefined');
+    });
+
+    it('a name fix emits only the name — never an empty phone or email', () => {
+      form().patchValue({ firstName: 'Gio' });
+      component['submit']();
+      expect(context.completeWith).toHaveBeenCalledOnceWith({ firstName: 'Gio' });
+    });
+
+    it('a whitespace-only phone counts as empty (nothing to send)', () => {
+      form().patchValue({ phone: '   ' });
+      component['submit']();
+      expect(context.completeWith).toHaveBeenCalledOnceWith(null);
+    });
+
+    it('an operator may add an email (it is not provider-owned)', () => {
+      form().patchValue({ email: 'giorgi@example.com' });
+      component['submit']();
+      expect(context.completeWith).toHaveBeenCalledOnceWith({ email: 'giorgi@example.com' });
+    });
+  });
+
+  describe('a player linked to both Google and Facebook', () => {
+    beforeEach(async () => setup({ profile: bothProfile, allowEmail: true }));
+
+    it('the Google-owned email stays read-only; both chips sit by the no-phone note', () => {
+      const google = el().querySelector('[automation-id="contact-google-email"]') as HTMLElement;
+      expect(google.textContent).toContain('nino@gmail.com');
+      expect(el().querySelector('input[type="email"]')).toBeNull();
+      expect(el().querySelector('[automation-id="contact-email-optional"]')).toBeNull();
+      const chips = Array.from(el().querySelectorAll('ss-provider-badges .ss-badge')).map((c) =>
+        c.textContent!.trim(),
+      );
+      expect(chips).toEqual(['Google', 'Facebook']);
+    });
+
+    it('never emits the email', () => {
+      form().patchValue({ email: 'someone@else.com', lastName: 'Beridze-Gelashvili' });
+      component['submit']();
+      expect(context.completeWith).toHaveBeenCalledOnceWith({ lastName: 'Beridze-Gelashvili' });
     });
   });
 

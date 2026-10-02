@@ -4,8 +4,9 @@
     <label class="ss-field">
       <span class="ss-label georgian-text" lang="ka">
         {{ 'ელ. ფოსტა' | t }}
-        @if (isGoogleLinked) {
-          <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
+        @if (isExternallyLinked) {
+          <!-- Google/Facebook-linked (docs/29, docs/30): email optional, chips instead of * -->
+          <ss-provider-badges [account]="editedUser" />
         } @else {
           <span class="text-red-500">*</span>
         }
@@ -22,6 +23,15 @@
       @if (isGoogleLinked) {
         <span class="text-xs georgian-text" lang="ka" style="color: var(--tui-text-secondary)">
           {{ 'ელ. ფოსტა Google ანგარიშიდან მოდის' | t }}
+        </span>
+      } @else if (isFacebookWithoutEmail) {
+        <span
+          class="text-xs georgian-text"
+          lang="ka"
+          style="color: var(--tui-text-secondary)"
+          automation-id="email-optional-hint"
+        >
+          {{ 'Facebook-ის ანგარიშმა ელ. ფოსტა არ გადმოსცა — ველი არასავალდებულოა' | t }}
         </span>
       }
     </label>
@@ -110,14 +120,14 @@
           </span>
         }
         @if (isPhoneOptional) {
-          <!-- Google-only player (docs/29): valid without a phone. -->
+          <!-- External-only player (Google docs/29, Facebook docs/30): valid without a phone. -->
           <span
             class="text-xs georgian-text"
             lang="ka"
             style="color: var(--tui-text-secondary)"
             automation-id="phone-optional-hint"
           >
-            {{ 'Google-ით დარეგისტრირებულ მოთამაშეს ტელეფონი ჯერ არ აქვს — ველი შეიძლება ცარიელი დარჩეს' | t }}
+            {{ phoneOptionalHint }}
           </span>
         }
       </label>

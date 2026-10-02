@@ -57,13 +57,15 @@
             @if (d.profile.phone) {
               <span>{{ d.profile.phone }}</span>
             }
-            <!-- Google-only players (docs/29) have no phone yet: the email takes its slot. -->
-            @if (d.profile.email) {
+            <!-- External-only players (Google docs/29, Facebook docs/30) have no phone
+                 yet: the email takes its slot, else (Facebook may share no email) the
+                 provider chips alone name how the player signs in. -->
+            @if (d.profile.email || isLinked()) {
               <span class="contact-line">
-                <span>{{ d.profile.email }}</span>
-                @if (d.profile.googleLinked) {
-                  <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
+                @if (d.profile.email) {
+                  <span>{{ d.profile.email }}</span>
                 }
+                <ss-provider-badges [account]="d.profile" />
               </span>
             }
             @if (d.profile.createdAt) {

@@ -27,7 +27,12 @@ import {
 } from '../../../shared/models/customer.model';
 import { KpiCardComponent } from '../../statistics/charts/kpi-card.component';
 import { SsAvatarComponent } from '../../../shared/ui/ss-avatar.component';
+import { SsProviderBadgesComponent } from '../../../shared/ui/provider-badges.component';
 import { formatMemberId } from '../../../shared/utils/member-id.util';
+import {
+  externalProviderNames,
+  isExternallyLinked,
+} from '../../../shared/utils/external-login.util';
 import { ReasonDialogComponent, ReasonDialogData } from '../reason-dialog.component';
 import { ContactDialogComponent, ContactDialogData } from '../contact-dialog.component';
 
@@ -41,7 +46,14 @@ const BOOKINGS_PAGE_SIZE = 10;
 @Component({
   selector: 'app-customer-detail',
   standalone: true,
-  imports: [DatePipe, RouterLink, KpiCardComponent, SsAvatarComponent, TPipe],
+  imports: [
+    DatePipe,
+    RouterLink,
+    KpiCardComponent,
+    SsAvatarComponent,
+    SsProviderBadgesComponent,
+    TPipe,
+  ],
   templateUrl: './customer-detail.component.html',
   styleUrl: './customer-detail.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -296,7 +308,7 @@ export class CustomerDetailComponent implements OnInit {
   /**
    * Superadmin: deep-link into the full account surface (password/balance),
    * filtered by the most precise identifier the account still has — the member
-   * ID, else the phone, else (Google-only player, docs/29) the email.
+   * ID, else the phone, else (external-only player, docs/29/30) the email.
    */
   protected openFullAccount(): void {
     const p = this.detail()?.profile;
@@ -330,8 +342,16 @@ export class CustomerDetailComponent implements OnInit {
     const p = this.detail()?.profile;
     if (!p) return '';
     const parts = [p.firstName, p.lastName].filter(Boolean);
-    // Nameless fallback: the (Google) email, else the phone — never `undefined`.
-    return parts.length > 0 ? parts.join(' ') : p.email || p.phone || '—';
+    // Nameless fallback: the email, else the phone, else (a Facebook player
+    // may share neither) the provider name — never `undefined`.
+    return parts.length > 0
+      ? parts.join(' ')
+      : p.email || p.phone || externalProviderNames(p) || '—';
+  }
+
+  /** Signs in with Google and/or Facebook — the provider chips render. */
+  protected isLinked(): boolean {
+    return isExternallyLinked(this.detail()?.profile);
   }
 
   /** Public member ID, zero-padded ("000042"); '' until the API backfill runs. */

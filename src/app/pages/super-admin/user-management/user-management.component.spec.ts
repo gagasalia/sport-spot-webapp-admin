@@ -14,6 +14,7 @@ import {
 } from '../../../services/http-services/user-management.service';
 import { User, UserType, FilterUsersDto } from '../../../shared/models/user.model';
 import { TPipe } from '../../../shared/i18n/t.pipe';
+import { SsProviderBadgesComponent } from '../../../shared/ui/provider-badges.component';
 
 import { SsToastService } from '../../../shared/ui/toast.service';
 import { SsDialogService } from '../../../shared/ui/dialog.service';
@@ -94,15 +95,94 @@ describe('UserManagementComponent', () => {
       schemas: [NO_ERRORS_SCHEMA],
     })
       // Keep only DatePipe; strip Taiga UI and FormsModule so NO_ERRORS_SCHEMA
-      // suppresses unknown-element/directive/control-accessor errors.
+      // suppresses unknown-element/directive/control-accessor errors. The
+      // provider chips are asserted, so their (dependency-free) component stays.
       .overrideComponent(UserManagementComponent, {
-        set: { imports: [DatePipe, TPipe], schemas: [NO_ERRORS_SCHEMA] },
+        set: {
+          imports: [DatePipe, TPipe, SsProviderBadgesComponent],
+          schemas: [NO_ERRORS_SCHEMA],
+        },
       })
       .compileComponents();
 
     fixture = TestBed.createComponent(UserManagementComponent);
     component = fixture.componentInstance;
     location = TestBed.inject(Location) as SpyLocation;
+  });
+
+  // ─── External sign-in chips (Google docs/29, Facebook docs/30) ───────────
+
+  describe('provider chips', () => {
+    const facebookOnly: User = {
+      _id: 'user-fb',
+      userType: [UserType.USER],
+      firstName: 'Giorgi',
+      lastName: 'Lomidze',
+      facebookLinked: true,
+    };
+    const bothProviders: User = {
+      _id: 'user-both',
+      email: 'tamar@gmail.com',
+      userType: [UserType.USER],
+      firstName: 'Tamar',
+      lastName: 'Gelashvili',
+      googleLinked: true,
+      facebookLinked: true,
+    };
+    const rawFacebook: User = {
+      _id: 'user-raw',
+      userType: [UserType.USER],
+      firstName: 'Raw',
+      phone: '+995599000555',
+      facebookId: '10230000000000001',
+    };
+
+    function render(): HTMLElement {
+      userServiceSpy.findAllUsers.and.returnValue(
+        of(page([mockUsers[0], facebookOnly, bothProviders, rawFacebook])),
+      );
+      fixture.detectChanges();
+      tick();
+      fixture.detectChanges();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    const emailCells = (el: HTMLElement): HTMLElement[] =>
+      Array.from(el.querySelectorAll('[automation-id="user-email"]'));
+    const chips = (scope: Element): string[] =>
+      Array.from(scope.querySelectorAll('ss-provider-badges .ss-badge')).map((c) =>
+        c.textContent!.trim(),
+      );
+
+    it('renders one chip per linked provider next to the email', fakeAsync(() => {
+      const [phone, fb, both, raw] = emailCells(render());
+
+      // phone player: email, no chips
+      expect(phone.textContent!.trim()).toBe('john@example.com');
+      expect(chips(phone)).toEqual([]);
+
+      // Facebook-only, no email: just the provider chip (no dash)
+      expect(chips(fb)).toEqual(['Facebook']);
+      expect(fb.querySelector('[automation-id="facebook-badge"]')).not.toBeNull();
+      expect(fb.textContent!.trim()).toBe('Facebook');
+
+      // both providers: Google first
+      expect(both.textContent).toContain('tamar@gmail.com');
+      expect(chips(both)).toEqual(['Google', 'Facebook']);
+
+      // raw /um document: facebookId alone counts as linked
+      expect(chips(raw)).toEqual(['Facebook']);
+
+      expect(fixture.nativeElement.textContent).not.toContain('undefined');
+      flush();
+    }));
+
+    it('falls back to "?" initials for a nameless Facebook player without email', () => {
+      const nameless: User = { ...facebookOnly, firstName: undefined, lastName: undefined };
+      expect((component as any).getInitials(nameless)).toBe('?');
+      expect((component as any).isExternallyLinked(nameless)).toBeTrue();
+      expect((component as any).isExternallyLinked(mockUsers[0])).toBeFalse();
+    });
   });
 
   it('should create the component', () => {

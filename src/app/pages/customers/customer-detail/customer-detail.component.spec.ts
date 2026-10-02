@@ -11,6 +11,7 @@ import { AuthService } from '../../../shared/services/auth.service';
 import { FacilityNamesService } from '../../../shared/i18n/facility-names.service';
 import { SsDialogService } from '../../../shared/ui/dialog.service';
 import { SsToastService } from '../../../shared/ui/toast.service';
+import { SsProviderBadgesComponent } from '../../../shared/ui/provider-badges.component';
 import {
   CustomerDetail,
   CustomerModeration,
@@ -58,6 +59,30 @@ const googleDetail: CustomerDetail = {
     googleLinked: true,
     phoneVerified: false,
     createdAt: '2026-09-29T00:00:00.000Z',
+  },
+};
+
+/** docs/30: signed up with Facebook — no phone, and Facebook shared no email. */
+const facebookDetail: CustomerDetail = {
+  ...detail,
+  profile: {
+    _id: 'u4',
+    memberId: 43,
+    firstName: 'Giorgi',
+    lastName: 'Lomidze',
+    facebookLinked: true,
+    phoneVerified: false,
+    createdAt: '2026-10-01T00:00:00.000Z',
+  },
+};
+
+/** Both providers linked, no phone yet: the Google email + two chips. */
+const bothDetail: CustomerDetail = {
+  ...detail,
+  profile: {
+    ...googleDetail.profile,
+    _id: 'u5',
+    facebookLinked: true,
   },
 };
 
@@ -134,8 +159,12 @@ describe('CustomerDetailComponent', () => {
     })
       .overrideComponent(CustomerDetailComponent, {
         // set:{imports} REPLACES the array — the template renders `| date`
-        // unconditionally and every label through `| t`; keep both pipes.
-        set: { imports: [DatePipe, TPipe], schemas: [NO_ERRORS_SCHEMA] },
+        // unconditionally and every label through `| t`; keep both pipes, and
+        // the provider chips (asserted below).
+        set: {
+          imports: [DatePipe, TPipe, SsProviderBadgesComponent],
+          schemas: [NO_ERRORS_SCHEMA],
+        },
       })
       .compileComponents();
 
@@ -312,6 +341,72 @@ describe('CustomerDetailComponent', () => {
       });
       expect(component['fullName']()).toBe('+995599000111');
       expect(component['initials']()).toBe('?');
+    });
+  });
+
+  describe('Facebook-linked players (docs/30)', () => {
+    const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
+    const chips = (scope: Element): string[] =>
+      Array.from(scope.querySelectorAll('ss-provider-badges .ss-badge')).map((c) =>
+        c.textContent!.trim(),
+      );
+
+    it('a Facebook-only player (no phone, no email) shows the provider chip and the note', async () => {
+      await setup(true, facebookDetail);
+      fixture.detectChanges();
+
+      const contact = el().querySelector('[automation-id="customer-contact"]') as HTMLElement;
+      expect(contact.textContent).toContain('ID - 000043');
+      expect(chips(contact)).toEqual(['Facebook']);
+      expect(contact.querySelector('[automation-id="facebook-badge"]')).not.toBeNull();
+      expect(contact.querySelector('[automation-id="google-badge"]')).toBeNull();
+      expect(
+        el().querySelector('[automation-id="customer-no-phone"]')?.textContent?.trim(),
+      ).toBe('ტელეფონი არ არის მითითებული');
+      expect(el().querySelector('[automation-id="customer-edit"]')).not.toBeNull();
+      expect(el().textContent).not.toContain('undefined');
+    });
+
+    it('both providers: the email with a Google and a Facebook chip', async () => {
+      await setup(true, bothDetail);
+      fixture.detectChanges();
+
+      const contact = el().querySelector('[automation-id="customer-contact"]') as HTMLElement;
+      expect(contact.textContent).toContain('nino@gmail.com');
+      expect(chips(contact)).toEqual(['Google', 'Facebook']);
+      expect(el().querySelector('[automation-id="customer-no-phone"]')).not.toBeNull();
+    });
+
+    it('a phone player that linked Facebook keeps the phone, gains the chip, no note', async () => {
+      await setup(false, {
+        ...detail,
+        profile: { ...detail.profile, email: undefined, facebookLinked: true },
+      });
+      fixture.detectChanges();
+
+      const contact = el().querySelector('[automation-id="customer-contact"]') as HTMLElement;
+      expect(contact.textContent).toContain('+995599000111');
+      expect(chips(contact)).toEqual(['Facebook']);
+      expect(el().querySelector('[automation-id="customer-no-phone"]')).toBeNull();
+    });
+
+    it('name helpers fall back to the provider name, deep link uses the member ID', async () => {
+      await setup(true, facebookDetail);
+      expect(component['fullName']()).toBe('Giorgi Lomidze');
+      expect(component['initials']()).toBe('GL');
+
+      component['detail'].set({
+        ...facebookDetail,
+        profile: { ...facebookDetail.profile, firstName: undefined, lastName: undefined },
+      });
+      expect(component['fullName']()).toBe('Facebook');
+      expect(component['initials']()).toBe('?');
+
+      component['openFullAccount']();
+      expect(routerSpy.navigate).toHaveBeenCalledWith(
+        ['/super-admin/user-management'],
+        { queryParams: { memberId: '43' } },
+      );
     });
   });
 

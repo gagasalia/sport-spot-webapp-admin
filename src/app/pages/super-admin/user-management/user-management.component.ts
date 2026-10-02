@@ -27,7 +27,8 @@ import { SsDialogService } from '../../../shared/ui/dialog.service';
 import { SsConfirmComponent, SsConfirmData } from '../../../shared/ui/confirm.component';
 import { SsAvatarComponent } from '../../../shared/ui/ss-avatar.component';
 import { formatMemberId, parseMemberId } from '../../../shared/utils/member-id.util';
-import { isGoogleLinked } from '../../../shared/utils/google-identity.util';
+import { SsProviderBadgesComponent } from '../../../shared/ui/provider-badges.component';
+import { isExternallyLinked } from '../../../shared/utils/external-login.util';
 import { tr } from '../../../shared/i18n/lang';
 import { TPipe } from '../../../shared/i18n/t.pipe';
 const DEFAULT_PAGE_SIZE = 20;
@@ -35,7 +36,7 @@ const DEFAULT_PAGE_SIZE = 20;
 @Component({
   selector: 'app-user-management',
   standalone: true,
-  imports: [DatePipe, FormsModule, SsAvatarComponent, TPipe],
+  imports: [DatePipe, FormsModule, SsAvatarComponent, SsProviderBadgesComponent, TPipe],
   templateUrl: './user-management.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -338,8 +339,11 @@ export class UserManagementComponent implements OnInit {
     return (first + last).toUpperCase() || (user.email?.charAt(0) ?? '?').toUpperCase();
   }
 
-  /** The player can sign in with Google (docs/29) — badge next to the email. */
-  protected isGoogleLinked(user: User): boolean {
-    return isGoogleLinked(user);
+  /**
+   * The player can sign in with Google (docs/29) and/or Facebook (docs/30) —
+   * provider chips next to the email (alone when Facebook shared no email).
+   */
+  protected isExternallyLinked(user: User): boolean {
+    return isExternallyLinked(user);
   }
 }

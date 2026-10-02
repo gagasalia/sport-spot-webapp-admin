@@ -10,6 +10,7 @@ import { CustomersService } from '../../services/http-services/customers.service
 import { AcademyService } from '../../services/http-services/academy.service';
 import { AuthService } from '../../shared/services/auth.service';
 import { CustomerRow } from '../../shared/models/customer.model';
+import { SsProviderBadgesComponent } from '../../shared/ui/provider-badges.component';
 
 const row: CustomerRow = {
   userId: 'u1',
@@ -56,6 +57,41 @@ const deletedRow: CustomerRow = {
   googleLinked: undefined,
 };
 
+/** docs/30: signed up with Facebook — no phone yet, and Facebook shared no email. */
+const facebookRow: CustomerRow = {
+  ...googleRow,
+  userId: 'u4',
+  memberId: 43,
+  firstName: 'Giorgi',
+  lastName: 'Lomidze',
+  email: undefined,
+  googleLinked: undefined,
+  facebookLinked: true,
+};
+
+/** Both providers linked, still no phone: the Google email + two chips. */
+const bothRow: CustomerRow = {
+  ...googleRow,
+  userId: 'u5',
+  memberId: 44,
+  firstName: 'Tamar',
+  lastName: 'Gelashvili',
+  email: 'tamar@gmail.com',
+  googleLinked: true,
+  facebookLinked: true,
+};
+
+/** A phone player that also linked Facebook (no email): chip under the name. */
+const phoneFacebookRow: CustomerRow = {
+  ...row,
+  userId: 'u6',
+  firstName: 'Luka',
+  lastName: 'Kvaratskhelia',
+  email: undefined,
+  phone: '+995599000333',
+  facebookLinked: true,
+};
+
 describe('CustomersComponent', () => {
   let component: CustomersComponent;
   let fixture: ComponentFixture<CustomersComponent>;
@@ -91,8 +127,12 @@ describe('CustomersComponent', () => {
     })
       .overrideComponent(CustomersComponent, {
         // set:{imports} REPLACES the array — the desktop table renders `| date`
-        // and every label goes through `| t`, so both pipes must ride along.
-        set: { imports: [DatePipe, TPipe], schemas: [NO_ERRORS_SCHEMA] },
+        // and every label goes through `| t`, so both pipes must ride along;
+        // the provider chips are asserted, so their component does too.
+        set: {
+          imports: [DatePipe, TPipe, SsProviderBadgesComponent],
+          schemas: [NO_ERRORS_SCHEMA],
+        },
       })
       .compileComponents();
 
@@ -159,6 +199,11 @@ describe('CustomersComponent', () => {
       expect(routerSpy.navigate).toHaveBeenCalledWith(['/customers', 'u2']);
     });
 
+    it('opens a Facebook-only player with neither phone nor email (docs/30)', () => {
+      component['open'](facebookRow);
+      expect(routerSpy.navigate).toHaveBeenCalledWith(['/customers', 'u4']);
+    });
+
     it('the search hint mentions email', () => {
       const input = (fixture.nativeElement as HTMLElement).querySelector(
         '[automation-id="customers-search"]',
@@ -216,6 +261,84 @@ describe('CustomersComponent', () => {
       expect(phoneCard.querySelector('[automation-id="google-badge"]')).toBeNull();
 
       expect(el.textContent).not.toContain('undefined');
+    });
+  });
+
+  describe('Facebook-linked rows (docs/30)', () => {
+    beforeEach(async () => setup(false));
+
+    function render(mobile: boolean): HTMLElement {
+      component['isMobile'].set(mobile);
+      component['rows'].set([facebookRow, bothRow, phoneFacebookRow]);
+      fixture.detectChanges();
+      TestBed.inject(ApplicationRef).tick();
+      return fixture.nativeElement as HTMLElement;
+    }
+
+    const chips = (scope: Element): string[] =>
+      Array.from(scope.querySelectorAll('ss-provider-badges .ss-badge')).map((c) =>
+        c.textContent!.trim(),
+      );
+
+    it('desktop: a Facebook-only row with no phone and no email shows its provider name', () => {
+      const el = render(false);
+      const [fbRow] = Array.from(el.querySelectorAll('tbody tr.customer-row'));
+      const contact = fbRow.querySelector('[automation-id="customer-contact"]') as HTMLElement;
+
+      expect(chips(contact)).toEqual(['Facebook']);
+      expect(contact.querySelector('[automation-id="facebook-badge"]')).not.toBeNull();
+      expect(contact.querySelector('[automation-id="google-badge"]')).toBeNull();
+      expect(contact.textContent!.trim()).toBe('Facebook'); // no dash, no email
+      expect(fbRow.classList).toContain('is-open');
+      expect(fbRow.textContent).toContain('Giorgi Lomidze');
+      expect(el.textContent).not.toContain('undefined');
+    });
+
+    it('desktop: both providers render one chip each, Google first', () => {
+      const el = render(false);
+      const both = Array.from(el.querySelectorAll('tbody tr.customer-row'))[1];
+      const contact = both.querySelector('[automation-id="customer-contact"]') as HTMLElement;
+
+      expect(contact.textContent).toContain('tamar@gmail.com');
+      expect(chips(contact)).toEqual(['Google', 'Facebook']);
+      // the email is not repeated under the name
+      expect(both.textContent!.split('tamar@gmail.com').length - 1).toBe(1);
+    });
+
+    it('desktop: a phone player with Facebook keeps the phone, chip under the name', () => {
+      const el = render(false);
+      const phoneFb = Array.from(el.querySelectorAll('tbody tr.customer-row'))[2];
+      const contact = phoneFb.querySelector('[automation-id="customer-contact"]') as HTMLElement;
+
+      expect(contact.textContent!.trim()).toBe('+995599000333');
+      expect(chips(contact)).toEqual([]);
+      expect(chips(phoneFb)).toEqual(['Facebook']);
+      expect(phoneFb.textContent).not.toContain('undefined');
+    });
+
+    it('mobile: a Facebook-only card shows the ID and the Facebook chip', () => {
+      const el = render(true);
+      const cards = Array.from(el.querySelectorAll('.ss-card.p-4'));
+      const fbCard = cards.find((c) => c.textContent!.includes('Giorgi Lomidze'))!;
+      expect(fbCard.textContent).toContain('ID 000043');
+      expect(chips(fbCard)).toEqual(['Facebook']);
+
+      const bothCard = cards.find((c) => c.textContent!.includes('Tamar Gelashvili'))!;
+      expect(bothCard.textContent).toContain('ID 000044 · tamar@gmail.com');
+      expect(chips(bothCard)).toEqual(['Google', 'Facebook']);
+
+      expect(el.textContent).not.toContain('undefined');
+    });
+
+    it('name and subtitle helpers never read as a deleted account', () => {
+      expect(component['mobileSubtitle'](facebookRow)).toBe('ID 000043');
+      expect(
+        component['fullName']({ ...facebookRow, firstName: undefined, lastName: undefined }),
+      ).toBe('Facebook');
+      expect(component['initials'](facebookRow)).toBe('GL');
+      expect(
+        component['initials']({ ...facebookRow, firstName: undefined, lastName: undefined }),
+      ).toBe('?');
     });
   });
 

@@ -1653,6 +1653,10 @@ export const EN: Record<string, string> = {
   // ── Google sign-in players (docs/29) ──────────────────────────────────
   'ტელეფონი არ არის მითითებული': 'No phone number on file',
   'ელ. ფოსტა Google ანგარიშიდან მოდის': 'The email comes from the Google account',
-  'Google-ით დარეგისტრირებულ მოთამაშეს ტელეფონი ჯერ არ აქვს — ველი შეიძლება ცარიელი დარჩეს':
-    'Signed up with Google and has no phone yet — the field may stay empty',
+
+  // ── Facebook sign-in players (docs/30) — %s = "Google", "Facebook", "Google / Facebook"
+  '%s-ით დარეგისტრირებულ მოთამაშეს ტელეფონი ჯერ არ აქვს — ველი შეიძლება ცარიელი დარჩეს':
+    'Signed up with %s and has no phone yet — the field may stay empty',
+  'Facebook-ის ანგარიშმა ელ. ფოსტა არ გადმოსცა — ველი არასავალდებულოა':
+    'The Facebook account shared no email — the field is optional',
 };

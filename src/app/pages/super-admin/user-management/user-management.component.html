@@ -115,12 +115,14 @@
                 </td>
                 <td class="font-medium">{{ getFullName(user) }}</td>
                 <td class="text-sm whitespace-nowrap">{{ getMemberId(user) }}</td>
-                <td class="text-sm">
+                <td class="text-sm" automation-id="user-email">
+                  <!-- One chip per linked provider (Google docs/29, Facebook docs/30); a
+                       Facebook player without an email shows just its chip(s). -->
                   <span class="inline-flex items-center gap-1.5">
-                    <span>{{ user.email || '—' }}</span>
-                    @if (isGoogleLinked(user)) {
-                      <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
+                    @if (user.email || !isExternallyLinked(user)) {
+                      <span>{{ user.email || '—' }}</span>
                     }
+                    <ss-provider-badges [account]="user" />
                   </span>
                 </td>
                 <td class="text-sm">{{ user.phone || user.username || '—' }}</td>
@@ -198,9 +200,7 @@
                   <p class="text-sm truncate min-w-0" style="color: var(--tui-text-secondary)">
                     {{ user.email }}
                   </p>
-                  @if (isGoogleLinked(user)) {
-                    <span class="ss-badge ss-badge--neutral" automation-id="google-badge">Google</span>
-                  }
+                  <ss-provider-badges [account]="user" />
                 </div>
               </div>
               <div class="flex items-center gap-1">

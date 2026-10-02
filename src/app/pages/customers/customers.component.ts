@@ -25,8 +25,13 @@ import {
   CustomerRow,
 } from '../../shared/models/customer.model';
 import { SsAvatarComponent } from '../../shared/ui/ss-avatar.component';
+import { SsProviderBadgesComponent } from '../../shared/ui/provider-badges.component';
 import { formatMemberId } from '../../shared/utils/member-id.util';
-import { hasLiveAccount } from '../../shared/utils/google-identity.util';
+import {
+  externalProviderNames,
+  hasLiveAccount,
+  isExternallyLinked,
+} from '../../shared/utils/external-login.util';
 
 const PAGE_SIZE = 20;
 
@@ -38,7 +43,14 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'app-customers',
   standalone: true,
-  imports: [DatePipe, FormsModule, SsAvatarComponent, AcademySelectComponent, TPipe],
+  imports: [
+    DatePipe,
+    FormsModule,
+    SsAvatarComponent,
+    SsProviderBadgesComponent,
+    AcademySelectComponent,
+    TPipe,
+  ],
   templateUrl: './customers.component.html',
   styleUrl: './customers.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -150,8 +162,9 @@ export class CustomersComponent implements OnInit {
 
   protected open(row: CustomerRow): void {
     // A deleted account still shows its history line but has no detail page.
-    // Any surviving identity field marks a live account — the phone, or for a
-    // Google-only player (docs/29, no phone yet) its email / googleLinked.
+    // Any surviving identity field marks a live account — the phone, or for an
+    // external-only player (Google docs/29, Facebook docs/30 — no phone yet)
+    // its email / provider flag (a Facebook player may have no email at all).
     if (!this.hasAccount(row)) return;
     void this.router.navigate(['/customers', row.userId]);
   }
@@ -162,10 +175,19 @@ export class CustomersComponent implements OnInit {
     return hasLiveAccount(row);
   }
 
+  /** Signs in with Google and/or Facebook — the provider chips render. */
+  protected isLinked(row: CustomerRow): boolean {
+    return isExternallyLinked(row);
+  }
+
   protected fullName(row: CustomerRow): string {
     const parts = [row.firstName, row.lastName].filter(Boolean);
     if (parts.length > 0) return parts.join(' ');
-    return row.email || row.phone || tr('წაშლილი ანგარიში');
+    // A nameless Facebook player may have neither email nor phone: the
+    // provider name keeps it from reading as a deleted account.
+    return (
+      row.email || row.phone || externalProviderNames(row) || tr('წაშლილი ანგარიში')
+    );
   }
 
   protected initials(row: CustomerRow): string {
@@ -185,8 +207,9 @@ export class CustomersComponent implements OnInit {
   }
 
   /**
-   * Mobile card subtitle: "ID 000042 · +9955…" (whichever parts exist). A
-   * Google-only player has no phone yet — its email takes the phone's slot.
+   * Mobile card subtitle: "ID 000042 · +9955…" (whichever parts exist). An
+   * external-only player has no phone yet — its email takes the phone's slot;
+   * with no email either (Facebook) the provider chips beside it say enough.
    */
   protected mobileSubtitle(row: CustomerRow): string {
     const id = formatMemberId(row.memberId);

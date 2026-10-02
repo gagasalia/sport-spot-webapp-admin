@@ -11,6 +11,8 @@ import {
   UpdateCustomerContactDto,
 } from '../../shared/models/customer.model';
 import { phoneFormatValidator } from '../../shared/validators/phone-format.validator';
+import { SsProviderBadgesComponent } from '../../shared/ui/provider-badges.component';
+import { isFacebookLinked, isGoogleLinked } from '../../shared/utils/external-login.util';
 
 /** Payload for {@link ContactDialogComponent}. */
 export interface ContactDialogData {
@@ -22,14 +24,15 @@ export interface ContactDialogData {
 /**
  * "Manual account fix" dialog: operator-side correction of a player's contact
  * details. Emits ONLY the fields that actually changed (the API treats absent
- * fields as untouched); cancel emits null. A Google-only player (docs/29) has
- * no phone: the field starts empty with a note, and an empty phone is never
- * sent (nothing here can clear an identity).
+ * fields as untouched); cancel emits null. An external-only player (Google
+ * docs/29, Facebook docs/30) has no phone: the field starts empty with a note
+ * and the provider chips, and an empty phone or email is never sent (nothing
+ * here can clear an identity).
  */
 @Component({
   selector: 'app-contact-dialog',
   standalone: true,
-  imports: [ReactiveFormsModule, TPipe],
+  imports: [ReactiveFormsModule, SsProviderBadgesComponent, TPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="flex flex-col gap-4" [formGroup]="form" (ngSubmit)="submit()">
@@ -58,14 +61,18 @@ export interface ContactDialogData {
           </span>
         }
         @if (!data.profile.phone) {
-          <!-- Google-only player (docs/29): no phone on the account yet. -->
-          <span
-            class="text-xs georgian-text"
-            lang="ka"
-            style="color: var(--text-faint)"
-            automation-id="contact-no-phone"
-          >
-            {{ 'ტელეფონი არ არის მითითებული' | t }}
+          <!-- External-only player (Google docs/29, Facebook docs/30): no phone on
+               the account yet; the chips say which provider it signs in with. -->
+          <span class="flex flex-wrap items-center gap-2">
+            <span
+              class="text-xs georgian-text"
+              lang="ka"
+              style="color: var(--text-faint)"
+              automation-id="contact-no-phone"
+            >
+              {{ 'ტელეფონი არ არის მითითებული' | t }}
+            </span>
+            <ss-provider-badges [account]="data.profile" />
           </span>
         }
       </label>
@@ -88,6 +95,17 @@ export interface ContactDialogData {
           @if (form.get('email')?.touched && form.get('email')?.invalid) {
             <span class="ss-error georgian-text" lang="ka">
               {{ 'ელ. ფოსტის ფორმატი არასწორია' | t }}
+            </span>
+          }
+          @if (facebookWithoutEmail) {
+            <!-- Facebook may share no email (docs/30 §0.3): optional, never sent empty. -->
+            <span
+              class="text-xs georgian-text"
+              lang="ka"
+              style="color: var(--tui-text-secondary)"
+              automation-id="contact-email-optional"
+            >
+              {{ 'Facebook-ის ანგარიშმა ელ. ფოსტა არ გადმოსცა — ველი არასავალდებულოა' | t }}
             </span>
           }
         </label>
@@ -122,9 +140,17 @@ export class ContactDialogComponent {
 
   /**
    * Google-linked account (docs/29): its email belongs to the Google account —
-   * shown read-only and never part of the emitted DTO.
+   * shown read-only and never part of the emitted DTO. Facebook (docs/30) only
+   * copies an email when the account has none, so it does not lock the field.
    */
-  protected readonly googleLinked = !!this.data.profile.googleLinked;
+  protected readonly googleLinked = isGoogleLinked(this.data.profile);
+
+  /**
+   * Facebook-linked, not Google-linked, and no email on file: the email input
+   * stays editable and optional (an empty value is never emitted).
+   */
+  protected readonly facebookWithoutEmail =
+    !this.googleLinked && isFacebookLinked(this.data.profile) && !this.data.profile.email;
 
   protected readonly form = this.fb.group({
     firstName: [this.data.profile.firstName ?? ''],

@@ -66,7 +66,7 @@
 .customer-row.is-open:hover td {
   background: var(--tui-background-neutral-1);
 }
-/* email + "Google" badge (docs/29) on one line */
+/* email + provider chips (Google docs/29, Facebook docs/30) on one line */
 .contact-line {
   display: inline-flex;
   align-items: center;

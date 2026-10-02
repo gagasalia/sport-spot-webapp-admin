@@ -23,17 +23,21 @@ export interface CustomerRow {
   firstName?: string;
   lastName?: string;
   /**
-   * Google sign-in email (docs/29) — only Google players carry one; phone-only
-   * players and hard-deleted accounts have none.
+   * External sign-in email — Google (docs/29) always brings one, Facebook
+   * (docs/30) only when the Facebook account shares it; phone-only players
+   * and hard-deleted accounts have none.
    */
   email?: string;
   /**
-   * Absent on a Google-only player (transitional: the webapp asks for a phone
-   * right after the first Google sign-in) and on a hard-deleted account.
+   * Absent on an external-only player (transitional: the webapp asks for a
+   * phone right after the first Google/Facebook sign-in) and on a
+   * hard-deleted account.
    */
   phone?: string;
   /** True when the account can sign in with Google (docs/29). */
   googleLinked?: boolean;
+  /** True when the account can sign in with Facebook (docs/30). */
+  facebookLinked?: boolean;
   avatarUrl?: string;
   banned: boolean;
   flagged: boolean;
@@ -76,14 +80,19 @@ export interface CustomerProfile {
   _id: string;
   /** Public numeric member ID — absent on legacy docs until the API backfill. */
   memberId?: number;
-  /** Google sign-in email (docs/29) — absent on phone-only players. */
+  /**
+   * External sign-in email (Google docs/29, Facebook docs/30) — absent on
+   * phone-only players and on Facebook accounts that share no email.
+   */
   email?: string;
   firstName?: string;
   lastName?: string;
-  /** Absent on a Google-only player that has not added a phone yet. */
+  /** Absent on an external-only (Google/Facebook) player without a phone yet. */
   phone?: string;
   /** True when the account can sign in with Google (docs/29). */
   googleLinked?: boolean;
+  /** True when the account can sign in with Facebook (docs/30). */
+  facebookLinked?: boolean;
   avatarUrl?: string;
   /** Legacy (pre phone-only) flag — no longer served; optional for old payloads. */
   emailVerified?: boolean;
