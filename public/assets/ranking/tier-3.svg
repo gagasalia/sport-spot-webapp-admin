@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 78">
+<path id="outline" fill="#5a3c0a" d="M32 4L51 15.5V30L62 15C63.5 21 62.6 27 60 32L51 41V42C51 55 42 65.5 32 71C22 65.5 13 55 13 42V41L4 32C1.4 27 .5 21 2 15L13 30V15.5Z"/>
+<defs>
+<linearGradient id="t3-body" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="#f6dc80"/><stop offset=".45" stop-color="#d4a53f"/><stop offset="1" stop-color="#946512"/></linearGradient>
+<radialGradient id="t3-sheen" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff3b8" stop-opacity=".95"/><stop offset=".55" stop-color="#fff3b8" stop-opacity=".25"/><stop offset="1" stop-color="#fff3b8" stop-opacity="0"/></radialGradient>
+<clipPath id="t3-clip"><path d="M32 6.3L49 16.6V42C49 54 41 63.5 32 68.4C23 63.5 15 54 15 42V16.6Z"/></clipPath>
+</defs>
+<g id="body" fill="url(#t3-body)">
+<path d="M32 6.3L49 16.6V42C49 54 41 63.5 32 68.4C23 63.5 15 54 15 42V16.6Z"/>
+<path d="M52.6 31.6L60.6 17.6C61.4 22.4 60.7 26.8 58.7 30.4L52.6 39Z"/>
+<path d="M11.4 31.6L3.4 17.6C2.6 22.4 3.3 26.8 5.3 30.4L11.4 39Z"/>
+<path fill="#5a3c0a" opacity=".3" fill-rule="evenodd" d="M32 6.3L49 16.6V42C49 54 41 63.5 32 68.4C23 63.5 15 54 15 42V16.6ZM32 9L46.8 18V42C46.8 52.5 40 61 32 65.6C24 61 17.2 52.5 17.2 42V18Z"/>
+<path fill="none" stroke="#5a3c0a" stroke-width="1.5" opacity=".7" d="M32 11L45 18.9V42C45 50.5 39.5 58.5 32 63C24.5 58.5 19 50.5 19 42V18.9Z"/>
+</g>
+<g id="ornament" fill="#5a3c0a">
+<path d="M21 47L32 40.5L43 47V50.6L32 44.1L21 50.6Z"/>
+<path d="M23 53.6L32 48.3L41 53.6V57.2L32 51.9L23 57.2Z"/>
+<circle cx="32" cy="35" r="7.8"/>
+<circle cx="32" cy="35" r="6.2" fill="#e3b850"/>
+<path fill="none" stroke="#5a3c0a" stroke-width="1.5" d="M27.2 30.7c2.9 2.9 2.9 5.7 0 8.6M36.8 30.7c-2.9 2.9-2.9 5.7 0 8.6"/>
+</g>
+<g id="light">
+<g clip-path="url(#t3-clip)"><circle cx="24" cy="21" r="14" fill="url(#t3-sheen)" opacity=".45"/><path fill="none" stroke="#fff3b8" stroke-width="4" stroke-linecap="round" opacity=".3" d="M16.5 31V17.5L31 8.8"/><path fill="none" stroke="#5a3c0a" stroke-width="3" stroke-linecap="round" opacity=".28" d="M47.5 42C47.5 53 41 62 33 66.5"/></g>
+<circle cx="31.2" cy="33.6" r="6.2" fill="url(#t3-sheen)"/>
+<path fill="none" stroke="#fff3b8" stroke-width="1.6" stroke-linecap="round" opacity=".6" d="M55 30L59 21M9 30L5 21"/>
+</g>
+</svg>

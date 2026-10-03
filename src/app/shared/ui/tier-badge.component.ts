@@ -6,13 +6,27 @@ import { tierLabel } from '../utils/ranking-display.util';
 const STAR_SLOTS = [1, 2, 3, 4, 5];
 
 /**
- * The rank badge (docs/25 §2.8): a tier emblem 1–7 with its five-star row
- * and the tier's name, or a greyed "?" emblem while the player calibrates.
+ * Star colour per tier, from the emblem set's palette (copper, steel, gold,
+ * platinum, emerald, ruby, diamond) — the same values as the player app.
+ */
+const STAR_COLORS: readonly string[] = [
+  '#c07a4f',
+  '#7a8793',
+  '#d4a13a',
+  '#8e9aa7',
+  '#2fb37a',
+  '#e04a63',
+  '#6f9ee8',
+];
+
+/**
+ * The rank badge (docs/25 §2.8): the tier's emblem 1–7
+ * (`public/assets/ranking/tier-<n>.svg`) with its five-star row directly
+ * under it and the tier's name beside, or the set's greyed neutral crest
+ * while the player calibrates.
  *
- * The emblem is a PLACEHOLDER (a token-coloured shield whose fill deepens
- * with the tier) until the Claude Design pass delivers the real set — the
- * component API `{ tier, stars, calibrating }` is the stable seam, so the swap
- * touches this template only.
+ * The component API `{ tier, stars, calibrating }` is the stable seam — a new
+ * emblem set replaces the asset files and `STAR_COLORS` only.
  */
 @Component({
   selector: 'ss-tier-badge',
@@ -23,29 +37,30 @@ const STAR_SLOTS = [1, 2, 3, 4, 5];
     <span
       class="tb"
       [class.is-calibrating]="hidden()"
-      [class.is-deep]="!hidden() && (tier() ?? 0) > 4"
-      [style.--tb-mix]="mix()"
       [attr.title]="title()"
       data-testid="tier-badge"
     >
-      <svg class="tb-emblem" viewBox="0 0 32 36" aria-hidden="true">
-        <path
-          class="tb-shield"
-          d="M16 1.5 29.5 7v10.5c0 8-5.6 14-13.5 17-7.9-3-13.5-9-13.5-17V7z"
-        />
-        <text class="tb-num" x="16" y="23" text-anchor="middle">{{ hidden() ? '?' : tier() }}</text>
-      </svg>
-      <span class="tb-body">
-        <span class="tb-name georgian-text" lang="ka" data-testid="tier-name">
-          {{ hidden() ? ('კალიბრაცია' | t) : name() }}
-        </span>
+      <span class="tb-rank">
+        <img class="tb-emblem" [src]="emblem()" width="36" height="44" alt="" draggable="false" />
         @if (!hidden()) {
-          <span class="tb-stars" aria-hidden="true" data-testid="tier-stars">
+          <span
+            class="tb-stars"
+            aria-hidden="true"
+            data-testid="tier-stars"
+            [style.--tb-star]="starColor()"
+          >
             @for (slot of starSlots; track slot) {
-              <span class="tb-star" [class.is-on]="slot <= (stars() ?? 0)">★</span>
+              <svg class="tb-star" [class.is-on]="slot <= (stars() ?? 0)" viewBox="0 0 24 24">
+                <path
+                  d="M12 2.6l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.5l-5.9 3.1 1.2-6.5-4.8-4.6 6.6-.9z"
+                />
+              </svg>
             }
           </span>
         }
+      </span>
+      <span class="tb-name georgian-text" lang="ka" data-testid="tier-name">
+        {{ hidden() ? ('კალიბრაცია' | t) : name() }}
       </span>
     </span>
   `,
@@ -54,43 +69,25 @@ const STAR_SLOTS = [1, 2, 3, 4, 5];
       display: inline-flex;
     }
     .tb {
-      --tb-mix: 30%;
       display: inline-flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+    }
+    .tb-rank {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      flex: 0 0 auto;
+      line-height: 0;
     }
     .tb-emblem {
-      width: 34px;
-      height: 38px;
-      flex: 0 0 auto;
+      display: block;
+      width: 36px;
+      height: 44px;
     }
-    .tb-shield {
-      fill: color-mix(in srgb, var(--accent) var(--tb-mix), transparent);
-      stroke: var(--accent);
-      stroke-width: 1.5;
-    }
-    .tb-num {
-      font-family: var(--font-num);
-      font-size: 13px;
-      font-weight: 700;
-      fill: var(--text);
-    }
-    .is-deep .tb-num {
-      fill: var(--on-accent);
-    }
-    .is-calibrating .tb-shield {
-      fill: var(--tui-background-neutral-1);
-      stroke: var(--hairline-2);
-      stroke-dasharray: 3 2;
-    }
-    .is-calibrating .tb-num {
-      fill: var(--text-faint);
-    }
-    .tb-body {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
+    .is-calibrating .tb-emblem {
+      opacity: 0.45;
     }
     .tb-name {
       font-weight: 600;
@@ -100,14 +97,15 @@ const STAR_SLOTS = [1, 2, 3, 4, 5];
     .tb-stars {
       display: inline-flex;
       gap: 1px;
-      font-size: 12px;
-      line-height: 1;
     }
     .tb-star {
-      color: var(--hairline-2);
+      width: 7px;
+      height: 7px;
+      fill: var(--tb-star);
+      opacity: 0.28;
     }
     .tb-star.is-on {
-      color: var(--warning);
+      opacity: 1;
     }
   `,
 })
@@ -120,15 +118,14 @@ export class SsTierBadgeComponent {
 
   protected readonly starSlots = STAR_SLOTS;
 
-  /** Calibrating, or no tier yet: the greyed "?" emblem, no stars. */
+  /** Calibrating, or no tier yet: the greyed neutral crest, no stars. */
   protected readonly hidden = computed(() => this.calibrating() || !tierLabel(this.tier()));
   protected readonly name = computed(() => tierLabel(this.tier()));
 
-  /** Shield fill: tier 1 → 22 %, tier 7 → 100 % accent. */
-  protected readonly mix = computed(() => {
-    const tier = Math.min(7, Math.max(1, this.tier() ?? 1));
-    return `${Math.round(22 + ((tier - 1) * 78) / 6)}%`;
-  });
+  protected readonly emblem = computed(() =>
+    this.hidden() ? 'assets/ranking/calibrating.svg' : `assets/ranking/tier-${this.tier()}.svg`,
+  );
+  protected readonly starColor = computed(() => STAR_COLORS[(this.tier() ?? 1) - 1]);
 
   protected readonly title = computed(() =>
     this.hidden() ? tr('კალიბრაცია') : `${this.name()} · ${this.stars() ?? 0}/5`,

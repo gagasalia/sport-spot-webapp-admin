@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 78">
+<path id="outline" fill="#2f3942" d="M32 5.48C43.34 5.48 52.52 11.42 52.52 22.76V42.2C52.52 56.24 42.8 67.58 32 73.52C21.2 67.58 11.48 56.24 11.48 42.2V22.76C11.48 11.42 20.66 5.48 32 5.48Z"/>
+<defs>
+<linearGradient id="t2-body" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#cfd6dc"/><stop offset=".28" stop-color="#86919b"/><stop offset=".5" stop-color="#dfe5e9"/><stop offset=".7" stop-color="#7f8a94"/><stop offset="1" stop-color="#b3bcc4"/></linearGradient>
+<radialGradient id="t2-sheen" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#edf4f1" stop-opacity=".95"/><stop offset=".55" stop-color="#edf4f1" stop-opacity=".25"/><stop offset="1" stop-color="#edf4f1" stop-opacity="0"/></radialGradient>
+<clipPath id="t2-clip"><path d="M32 7.64C42.26 7.64 50.36 13.04 50.36 23.3V42.2C50.36 55.16 41.72 65.42 32 70.71C22.28 65.42 13.64 55.16 13.64 42.2V23.3C13.64 13.04 21.74 7.64 32 7.64Z"/></clipPath>
+</defs>
+<g id="body" fill="url(#t2-body)">
+<path d="M32 7.64C42.26 7.64 50.36 13.04 50.36 23.3V42.2C50.36 55.16 41.72 65.42 32 70.71C22.28 65.42 13.64 55.16 13.64 42.2V23.3C13.64 13.04 21.74 7.64 32 7.64Z"/>
+<path fill="#2f3942" opacity=".32" fill-rule="evenodd" d="M32 7.64C42.26 7.64 50.36 13.04 50.36 23.3V42.2C50.36 55.16 41.72 65.42 32 70.71C22.28 65.42 13.64 55.16 13.64 42.2V23.3C13.64 13.04 21.74 7.64 32 7.64ZM32 10.02C40.86 10.02 47.98 14.66 47.98 23.84V42.2C47.98 53.54 40.64 62.72 32 67.69C23.36 62.72 16.02 53.54 16.02 42.2V23.84C16.02 14.66 23.14 10.02 32 10.02Z"/>
+<path fill="none" stroke="#2f3942" stroke-width="1.6" opacity=".7" d="M32 11.96C40.1 11.96 46.04 16.28 46.04 24.38V42.2C46.04 51.38 40.1 60.02 32 64.88C23.9 60.02 17.96 51.38 17.96 42.2V24.38C17.96 16.28 23.9 11.96 32 11.96Z"/>
+</g>
+<g id="ornament" fill="#2f3942">
+<path d="M17.96 47.06H46.04V50.84H17.96Z"/>
+<circle cx="27.68" cy="48.95" r="1.3" fill="#dfe5e9"/><circle cx="36.32" cy="48.95" r="1.3" fill="#dfe5e9"/>
+<path d="M25.52 56.24H38.48V58.94H25.52Z"/>
+<circle cx="32" cy="32.48" r="8.64"/>
+<circle cx="32" cy="32.48" r="6.91" fill="#aab4bd"/>
+<path fill="none" stroke="#2f3942" stroke-width="1.6" d="M26.6 27.62c3.24 3.24 3.24 6.48 0 9.72M37.4 27.62c-3.24 3.24-3.24 6.48 0 9.72"/>
+</g>
+<g id="light">
+<g clip-path="url(#t2-clip)"><circle cx="23.36" cy="20.6" r="15.12" fill="url(#t2-sheen)" opacity=".45"/><path fill="none" stroke="#edf4f1" stroke-width="4.3" stroke-linecap="round" opacity=".3" d="M15.26 30.32C15.26 16.28 22.28 9.26 30.92 9.26"/><path fill="none" stroke="#2f3942" stroke-width="3.2" stroke-linecap="round" opacity=".28" d="M48.74 42.2C48.74 54.08 41.72 63.8 33.08 68.66"/></g>
+<circle cx="30.92" cy="30.86" r="6.91" fill="url(#t2-sheen)"/>
+</g>
+</svg>

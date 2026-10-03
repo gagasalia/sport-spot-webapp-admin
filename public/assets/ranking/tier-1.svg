@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 78">
+<path id="outline" fill="#3f2114" d="M32 6.72C44.48 6.72 54.88 12.96 54.88 25.44V42.08C54.88 56.64 44.48 68.08 32 74.32C19.52 68.08 9.12 56.64 9.12 42.08V25.44C9.12 12.96 19.52 6.72 32 6.72Z"/>
+<defs>
+<linearGradient id="t1-body" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="#c88054"/><stop offset=".45" stop-color="#9a5633"/><stop offset="1" stop-color="#5f2f18"/></linearGradient>
+<radialGradient id="t1-sheen" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#f3bf98" stop-opacity=".9"/><stop offset=".55" stop-color="#f3bf98" stop-opacity=".25"/><stop offset="1" stop-color="#f3bf98" stop-opacity="0"/></radialGradient>
+<clipPath id="t1-clip"><path d="M32 8.8C43.44 8.8 52.8 14.52 52.8 25.44V42.08C52.8 55.6 43.44 66 32 71.82C20.56 66 11.2 55.6 11.2 42.08V25.44C11.2 14.52 20.56 8.8 32 8.8Z"/></clipPath>
+</defs>
+<g id="body">
+<path fill="url(#t1-body)" d="M32 8.8C43.44 8.8 52.8 14.52 52.8 25.44V42.08C52.8 55.6 43.44 66 32 71.82C20.56 66 11.2 55.6 11.2 42.08V25.44C11.2 14.52 20.56 8.8 32 8.8Z"/>
+<path fill="#3f2114" opacity=".35" d="M32 8.8C43.44 8.8 52.8 14.52 52.8 25.44V42.08C52.8 55.6 43.44 66 32 71.82C20.56 66 11.2 55.6 11.2 42.08V25.44C11.2 14.52 20.56 8.8 32 8.8ZM32 11.4C21.81 11.4 13.59 16.6 13.59 25.96V42.08C13.59 54.04 21.6 63.4 32 68.81C42.4 63.4 50.41 54.04 50.41 42.08V25.96C50.41 16.6 42.19 11.4 32 11.4Z"/>
+<path fill="none" stroke="#3f2114" stroke-width="1.6" opacity=".7" d="M32 14C40.84 14 48.12 18.47 48.12 27V42.08C48.12 52.48 41.36 60.8 32 66C22.64 60.8 15.88 52.48 15.88 42.08V27C15.88 18.47 23.16 14 32 14Z"/>
+</g>
+<g id="ornament" fill="#3f2114">
+<path d="M13.59 49.36H50.41V53H13.59Z"/>
+<circle cx="32" cy="51.18" r="1.25" fill="#f3bf98"/>
+<circle cx="32" cy="37.92" r="8.32"/>
+<circle cx="32" cy="37.92" r="6.66" fill="#b8683e"/>
+<path fill="none" stroke="#3f2114" stroke-width="1.6" d="M26.8 33.24c3.12 3.12 3.12 6.24 0 9.36M37.2 33.24c-3.12 3.12-3.12 6.24 0 9.36"/>
+</g>
+<g id="light">
+<g clip-path="url(#t1-clip)"><circle cx="21.6" cy="21.28" r="15.6" fill="url(#t1-sheen)" opacity=".45"/><path fill="none" stroke="#f3bf98" stroke-width="4.2" stroke-linecap="round" opacity=".3" d="M12.76 30.64C12.76 17.64 20.56 10.36 30.96 10.36"/><path fill="none" stroke="#3f2114" stroke-width="3.1" stroke-linecap="round" opacity=".28" d="M51.24 42.08C51.24 54.56 43.44 63.92 33.04 69.64"/></g>
+<circle cx="30.96" cy="36.36" r="6.66" fill="url(#t1-sheen)"/>
+</g>
+</svg>

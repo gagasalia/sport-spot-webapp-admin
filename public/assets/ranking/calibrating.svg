@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 78">
+<path id="outline" fill="#4b5955" d="M32 8C44 8 54 14 54 26V42C54 56 44 67 32 73C20 67 10 56 10 42V26C10 14 20 8 32 8Z"/>
+<defs>
+<linearGradient id="cal-body" x1="0" y1="0" x2=".3" y2="1"><stop offset="0" stop-color="#9aaba6"/><stop offset=".5" stop-color="#7a8c87"/><stop offset="1" stop-color="#5a6b66"/></linearGradient>
+</defs>
+<g id="body">
+<path fill="url(#cal-body)" d="M32 10C43 10 52 15.5 52 26V42C52 55 43 65 32 70.6C21 65 12 55 12 42V26C12 15.5 21 10 32 10Z"/>
+<path fill="#4b5955" opacity=".3" fill-rule="evenodd" d="M32 10C43 10 52 15.5 52 26V42C52 55 43 65 32 70.6C21 65 12 55 12 42V26C12 15.5 21 10 32 10ZM32 12.5C22.2 12.5 14.3 17.5 14.3 26.5V42C14.3 53.5 22 62.5 32 67.7C42 62.5 49.7 53.5 49.7 42V26.5C49.7 17.5 41.8 12.5 32 12.5Z"/>
+</g>
+<g id="ornament" fill="none" stroke="#4b5955" stroke-width="2">
+<circle cx="32" cy="38" r="7.5" stroke-dasharray="3.2 2.6"/>
+</g>
+<g id="light"/>
+</svg>
