@@ -139,7 +139,9 @@
                           ? 'ss-badge ss-badge--negative'
                           : role === 'admin'
                             ? 'ss-badge ss-badge--info'
-                            : 'ss-badge ss-badge--positive'
+                            : role === 'organizer'
+                              ? 'ss-badge ss-badge--warning'
+                              : 'ss-badge ss-badge--positive'
                       "
                     >
                       {{ role }}
@@ -239,7 +241,9 @@
                       ? 'ss-badge ss-badge--negative'
                       : role === 'admin'
                         ? 'ss-badge ss-badge--info'
-                        : 'ss-badge ss-badge--positive'
+                        : role === 'organizer'
+                          ? 'ss-badge ss-badge--warning'
+                          : 'ss-badge ss-badge--positive'
                   "
                 >
                   {{ role }}
@@ -248,7 +252,7 @@
             </div>
 
             <div class="flex flex-col gap-1 text-sm">
-              @if (user.memberId != null) {
+              @if (user.memberId !== null && user.memberId !== undefined) {
                 <div class="flex items-center gap-2">
                   <span style="color: var(--tui-text-secondary)">ID</span>
                   <span>{{ getMemberId(user) }}</span>

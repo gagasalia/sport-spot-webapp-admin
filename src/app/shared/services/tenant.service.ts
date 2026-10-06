@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, of, shareReplay, tap } from 'rxjs';
 import { AcademyService } from '../../services/http-services/academy.service';
 import { Academy } from '../models/academy.model';
+import { AuthService } from './auth.service';
 
 /**
  * Holds the tenant (academy) context for the logged-in operator.
@@ -11,12 +12,16 @@ import { Academy } from '../models/academy.model';
  * caller's admin membership (returning `null` data for a superadmin or an
  * operator with no academy), so a single call works for every operator —
  * unlike `GET /academy/:id`, which the API 403s for non-superadmins.
+ *
+ * A tournament maker (organizer, docs/33 §6) belongs to no academy and the
+ * academy endpoints answer 403 for it: it resolves to `null` without a call.
  */
 @Injectable({
   providedIn: 'root',
 })
 export class TenantService {
   private readonly academyService = inject(AcademyService);
+  private readonly auth = inject(AuthService);
 
   private readonly _academyId = signal<string | null>(null);
   /** The resolved academy `_id` for the current operator, or `null`. */
@@ -65,6 +70,11 @@ export class TenantService {
   ensure(): Observable<Academy | null> {
     if (this._resolved()) {
       return of(this._academy());
+    }
+    if (this.auth.isOrganizer()) {
+      // No academy, and GET /academy/my would 403 for this role.
+      this.setAcademy(null);
+      return of(null);
     }
     if (!this.resolve$) {
       this.resolve$ = this.academyService.getMyAcademy().pipe(

@@ -94,6 +94,33 @@ describe('TournamentService', () => {
     expect(result?.status).toBe('published');
   });
 
+  // docs/33 §2.5: a lifecycle action on every category of the event.
+  it('PATCHes a lifecycle transition for the whole event', () => {
+    service.setStatus('t1', 'published', true).subscribe();
+    const req = httpMock.expectOne(`${base}/tournaments/t1/status`);
+    expect(req.request.body).toEqual({ status: 'published', wholeEvent: true });
+    req.flush(wrap({ ...mockTournament, status: 'published' }));
+  });
+
+  it('GETs one tournament (the console header)', () => {
+    let name = '';
+    service.getTournament('t1').subscribe((t) => (name = t.name));
+    const req = httpMock.expectOne(`${base}/tournaments/t1`);
+    expect(req.request.method).toBe('GET');
+    req.flush(wrap(mockTournament));
+    expect(name).toBe('Summer Open');
+  });
+
+  // docs/33 §6: where the caller may host — every role.
+  it('GETs the venues the caller may host at', () => {
+    let ids: string[] = [];
+    service.getVenues().subscribe((venues) => (ids = venues.map((v) => v._id)));
+    const req = httpMock.expectOne(`${base}/tournaments/venues`);
+    expect(req.request.method).toBe('GET');
+    req.flush(wrap([{ _id: 'f1', name: 'Green Hills', city: 'Tbilisi' }]));
+    expect(ids).toEqual(['f1']);
+  });
+
   it('GETs the registrations of one tournament', () => {
     let count = -1;
     service.getRegistrations('t1').subscribe((regs) => (count = regs.length));

@@ -1,0 +1,143 @@
+.ds {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.ds-start {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 24px;
+}
+.ds-title,
+.ds-sub {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.ds-sub {
+  font-size: 15px;
+}
+.ds-text,
+.ds-hint {
+  max-width: 640px;
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+.ds-hint {
+  font-size: 12.5px;
+}
+.ds-warn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--tui-status-warning-pale);
+  color: var(--warning);
+  font-size: 13px;
+}
+.ds-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.ds-go {
+  height: 52px;
+  padding: 0 32px;
+  font-size: 16px;
+}
+.ds-error {
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--tui-status-negative-pale);
+  color: var(--danger);
+  font-size: 13px;
+}
+.ds-detail {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+.ds-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--tui-status-positive-pale-hover);
+  border-radius: var(--r-lg);
+  background: var(--tui-status-positive-pale);
+  color: var(--success);
+}
+.ds-banner.is-draft {
+  border-color: var(--tui-status-warning-pale-hover);
+  background: var(--tui-status-warning-pale);
+  color: var(--warning);
+}
+.ds-banner-text {
+  flex: 1 1 220px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.ds-actions,
+.ds-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ds-podium {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px;
+}
+.ds-place {
+  display: flex;
+  flex: 1 1 200px;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+}
+.ds-medal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  font-weight: 800;
+}
+.ds-place.is-1 .ds-medal {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.ds-place-name {
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.ds-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  gap: 14px;
+}
+.ds-bracket {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+}

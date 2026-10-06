@@ -1,0 +1,134 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+.gc {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+}
+.gc-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gc-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.gc-scroll {
+  overflow-x: auto;
+}
+.gc-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 3px;
+  font-size: 13px;
+}
+.gc-table th {
+  padding: 0 6px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-align: center;
+  white-space: nowrap;
+}
+.gc-table td {
+  padding: 5px 6px;
+  text-align: center;
+  white-space: nowrap;
+  background: var(--bg-2);
+}
+.gc-table td:first-child {
+  border-radius: var(--r-sm) 0 0 var(--r-sm);
+  box-shadow: inset 3px 0 0 transparent;
+}
+.gc-table td:last-child {
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+}
+.gc-table .gc-left {
+  width: 100%;
+  text-align: left;
+}
+tr.z-direct td:first-child {
+  box-shadow: inset 3px 0 0 var(--success);
+}
+tr.z-playoff td:first-child {
+  box-shadow: inset 3px 0 0 var(--warning);
+}
+tr.z-wildcard td:first-child {
+  box-shadow: inset 3px 0 0 var(--tui-status-info);
+}
+tr.is-focus td {
+  background: var(--accent-soft);
+}
+.gc-rank {
+  color: var(--text-muted);
+}
+.gc-name {
+  max-width: 220px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.gc-name.is-pickable {
+  padding: 1px 6px;
+  border: 1px dashed var(--hairline-2);
+  border-radius: var(--r-sm);
+}
+.gc-name.is-picked {
+  border-style: solid;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.gc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.gc-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.z-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.z-dot.z-direct {
+  background: var(--success);
+}
+.z-dot.z-playoff {
+  background: var(--warning);
+}
+.z-dot.z-wildcard {
+  background: var(--tui-status-info);
+}
+.gc-matches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px;
+}
+@media (max-width: 480px) {
+  .gc-games {
+    display: none;
+  }
+  .gc-name {
+    max-width: 150px;
+  }
+}

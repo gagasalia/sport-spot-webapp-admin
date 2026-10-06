@@ -1,0 +1,106 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+.mc {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-2) var(--ease),
+    background var(--dur-2) var(--ease);
+}
+button.mc:hover:not(:disabled) {
+  border-color: var(--accent-line);
+}
+button.mc:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+.mc:disabled {
+  cursor: default;
+}
+.mc.is-done {
+  background: var(--bg-2);
+}
+.mc.is-focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.mc-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.mc-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 22px;
+  font-size: 13px;
+}
+.mc-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mc-row.is-winner {
+  font-weight: 700;
+}
+.mc-row.is-loser {
+  color: var(--text-muted);
+}
+.mc-row.is-ph {
+  color: var(--text-faint);
+  font-style: italic;
+}
+.mc-score {
+  display: inline-flex;
+  gap: 6px;
+  font-size: 12.5px;
+}
+.mc-score span {
+  min-width: 12px;
+  text-align: center;
+}
+.mc-foot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.mc-rated {
+  margin-left: auto;
+  color: var(--tui-text-action);
+}
+.mc-pick {
+  border: 1px dashed var(--hairline-2);
+  border-radius: var(--r-sm);
+  padding: 2px 6px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.mc-pick:hover {
+  border-color: var(--accent-line);
+}
+.mc-pick.is-picked {
+  border-style: solid;
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}

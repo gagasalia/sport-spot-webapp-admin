@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { environment } from '../environments/environment';
 import { authGuard } from './shared/guards/auth.guard';
+import { organizerGuard } from './shared/guards/organizer.guard';
 import { superAdminGuard } from './shared/guards/super-admin.guard';
 
 export const routes: Routes = [
@@ -14,9 +15,11 @@ export const routes: Routes = [
   {
     // Authenticated app shell. The parent-level guard protects every child —
     // including the empty-path and wildcard redirects — so no guarded surface
-    // can be reached without authentication.
+    // can be reached without authentication. A tournament maker (organizer,
+    // docs/33 §6) is kept inside /tournaments by the child guard.
     path: '',
     canActivate: [authGuard],
+    canActivateChild: [organizerGuard],
     loadComponent: () => import('./shell/shell.component').then((m) => m.ShellComponent),
     children: [
       {
@@ -146,6 +149,15 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/tournaments/tournaments.component').then(
             (m) => m.TournamentsComponent,
+          ),
+      },
+      {
+        // The organizer console (docs/33 §7): one tournament's entrants,
+        // format, draw, schedule and results — a full page, not a dialog.
+        path: 'tournaments/:id',
+        loadComponent: () =>
+          import('./pages/tournaments/console/tournament-console.component').then(
+            (m) => m.TournamentConsoleComponent,
           ),
       },
       {

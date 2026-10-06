@@ -7,20 +7,16 @@ import { of } from 'rxjs';
 import { TournamentFormComponent } from './tournament-form.component';
 import { TPipe } from '../../../shared/i18n/t.pipe';
 import { TournamentService } from '../../../services/http-services/tournament.service';
-import { FacilityService } from '../../../services/http-services/facility.service';
-import { AcademyService } from '../../../services/http-services/academy.service';
 import { VenueService } from '../../../services/http-services/venue.service';
 import { AuthService } from '../../../shared/services/auth.service';
-import { TenantService } from '../../../shared/services/tenant.service';
 import { SS_DIALOG_CONTEXT } from '../../../shared/ui/dialog.service';
 import { SsToastService } from '../../../shared/ui/toast.service';
-import { Academy, AcademyStatus } from '../../../shared/models/academy.model';
 import {
   CreateTournamentDto,
   Tournament,
   UpdateTournamentDto,
 } from '../../../shared/models/tournament.model';
-import { Facility } from '../../../shared/models/facility.model';
+import { TournamentVenue } from '../../../shared/models/tournament-engine.model';
 import { Venue } from '../../../shared/models/venue.model';
 
 const internal: Tournament = {
@@ -64,41 +60,37 @@ describe('TournamentFormComponent', () => {
   let component: TournamentFormComponent;
   let fixture: ComponentFixture<TournamentFormComponent>;
   let tournamentSpy: jasmine.SpyObj<TournamentService>;
-  let facilitySpy: jasmine.SpyObj<FacilityService>;
-  let academySpy: jasmine.SpyObj<AcademyService>;
   let venueSpy: jasmine.SpyObj<VenueService>;
   let completeWith: jasmine.Spy;
 
-  async function setup(opts: { superAdmin: boolean; tournament?: Tournament }) {
+  async function setup(opts: {
+    superAdmin: boolean;
+    organizer?: boolean;
+    tournament?: Tournament;
+    hosts?: TournamentVenue[];
+  }) {
     tournamentSpy = jasmine.createSpyObj<TournamentService>('TournamentService', [
       'createTournament',
       'updateTournament',
+      'getVenues',
     ]);
     tournamentSpy.createTournament.and.returnValue(of(internal));
     tournamentSpy.updateTournament.and.returnValue(of(internal));
-    facilitySpy = jasmine.createSpyObj<FacilityService>('FacilityService', [
-      'getFacilitiesByAcademy',
-    ]);
-    // The operator's own academy (aca-1) keeps bare ids; any other is prefixed.
-    facilitySpy.getFacilitiesByAcademy.and.callFake((academyId: string) => {
-      const prefix = academyId === 'aca-1' ? '' : `${academyId}-`;
-      return of([
-        { _id: `${prefix}f-1`, name: 'ვაკე' } as Facility,
-        { _id: `${prefix}f-2`, name: 'საბურთალო' } as Facility,
-      ]);
-    });
-    academySpy = jasmine.createSpyObj<AcademyService>('AcademyService', ['getAllAcademies']);
-    academySpy.getAllAcademies.and.returnValue(
-      of([{ _id: 'aca-9', name: 'A9', admins: [], status: AcademyStatus.PUBLISHED }]),
+    // GET /tournaments/venues: an admin gets its academy's facilities, a
+    // superadmin / organizer every live one (ids prefixed here).
+    const prefix = opts.superAdmin || opts.organizer ? 'aca-9-' : '';
+    tournamentSpy.getVenues.and.returnValue(
+      of(
+        opts.hosts ?? [
+          { _id: `${prefix}f-1`, name: 'ვაკე' },
+          { _id: `${prefix}f-2`, name: 'საბურთალო' },
+        ],
+      ),
     );
     venueSpy = jasmine.createSpyObj<VenueService>('VenueService', ['getVenues']);
     venueSpy.getVenues.and.returnValue(of({ data: venues }));
     completeWith = jasmine.createSpy('completeWith');
 
-    // An operator resolves their academy; a superadmin resolves none.
-    const academy: Academy | null = opts.superAdmin
-      ? null
-      : { _id: 'aca-1', name: 'A1', admins: [], status: AcademyStatus.PUBLISHED };
     const toast = jasmine.createSpyObj<SsToastService>('SsToastService', ['open']);
     toast.open.and.returnValue(of(undefined));
 
@@ -110,13 +102,13 @@ describe('TournamentFormComponent', () => {
           useValue: { data: { tournament: opts.tournament }, completeWith },
         },
         { provide: TournamentService, useValue: tournamentSpy },
-        { provide: FacilityService, useValue: facilitySpy },
-        { provide: AcademyService, useValue: academySpy },
         { provide: VenueService, useValue: venueSpy },
-        { provide: AuthService, useValue: { isSuperAdmin: signal(opts.superAdmin) } },
         {
-          provide: TenantService,
-          useValue: { ensure: () => of(academy), academyId: signal(academy?._id ?? null) },
+          provide: AuthService,
+          useValue: {
+            isSuperAdmin: signal(opts.superAdmin),
+            isOrganizer: signal(!!opts.organizer),
+          },
         },
         { provide: SsToastService, useValue: toast },
       ],
@@ -189,7 +181,7 @@ describe('TournamentFormComponent', () => {
     beforeEach(async () => setup({ superAdmin: true }));
 
     it('loads every facility (no preselection) and the venues directory', () => {
-      expect(academySpy.getAllAcademies).toHaveBeenCalled();
+      expect(tournamentSpy.getVenues).toHaveBeenCalled();
       expect(component['facilities']().map((f) => f._id)).toEqual(['aca-9-f-1', 'aca-9-f-2']);
       expect(form().get('facility')!.value).toBe('');
       expect(venueSpy.getVenues).toHaveBeenCalledWith({ page: 1, limit: 100 });
@@ -336,6 +328,128 @@ describe('TournamentFormComponent', () => {
       const body = updateBody();
       expect(body.facility).toBe('f-1');
       expect('external' in body).toBeFalse();
+    });
+
+    it('keeps the tournament’s own venue on the rail although GET /venues lacks it', () => {
+      expect(component['facilities']().map((f) => f._id)).toContain('f-1');
+    });
+  });
+
+  // docs/33 §6: GET /tournaments/venues for every role.
+  describe('as an organizer', () => {
+    it('picks from every live facility — no guess when there are several', async () => {
+      await setup({ superAdmin: false, organizer: true });
+      expect(tournamentSpy.getVenues).toHaveBeenCalled();
+      expect(form().get('facility')!.value).toBe('');
+      expect(q('external-block')).toBeNull();
+    });
+
+    it('preselects the only venue on offer', async () => {
+      await setup({ superAdmin: false, organizer: true, hosts: [{ _id: 'f-9', name: 'ერთადერთი' }] });
+      expect(form().get('facility')!.value).toBe('f-9');
+    });
+  });
+
+  // docs/33 §5: a multi-category event in one create.
+  describe('«კატეგორიები» (create)', () => {
+    const rows = () => (component as unknown as { categoryRows: { length: number; at(i: number): { patchValue(v: object): void } } }).categoryRows;
+    const add = () => (component as unknown as { addCategory(): void }).addCategory();
+    const remove = (i: number) => (component as unknown as { removeCategory(i: number): void }).removeCategory(i);
+
+    beforeEach(async () => setup({ superAdmin: false }));
+
+    it('zero rows = today’s single tournament', () => {
+      form().patchValue({ name: 'Vake Cup', startDate: '2026-11-01' });
+      submit();
+      const body = createBody();
+      expect('categories' in body).toBeFalse();
+      expect(body.type).toBe('doubles');
+      expect(body.format).toBe('knockout');
+    });
+
+    it('the first «+ კატეგორია» makes two rows (current values + a new one) and hides the top-level fields', () => {
+      form().patchValue({ format: 'groups_playoffs', entryFeeGel: 30, maxParticipants: 12 });
+      add();
+      fixture.detectChanges();
+
+      expect(rows().length).toBe(2);
+      expect(q('category-row-0')).not.toBeNull();
+      expect(q('category-row-1')).not.toBeNull();
+      expect(form().get('format')!.disabled).toBeTrue();
+      expect(form().get('entryFeeGel')!.disabled).toBeTrue();
+      // the top-level type / format selects are gone from the page
+      expect(fixture.nativeElement.querySelector('select[formcontrolname="format"]')?.closest('[data-testid^="category-row"]')).not.toBeNull();
+    });
+
+    it('sends categories (fee in tetri, empty labels left out) and no top-level category fields', () => {
+      form().patchValue({ name: 'Autumn Open', startDate: '2026-11-01' });
+      add();
+      rows().at(0).patchValue({ label: 'კაცები A', labelEn: 'Men A', category: 'men', entryFeeGel: 50, maxParticipants: 16 });
+      rows().at(1).patchValue({ label: '  ', category: 'women', format: 'round_robin', entryFeeGel: 40.5, maxParticipants: 8 });
+      submit();
+
+      const body = createBody();
+      expect(body.facility).toBe('f-1');
+      expect(body.name).toBe('Autumn Open');
+      expect(body.type).toBeUndefined();
+      expect(body.format).toBeUndefined();
+      expect(body.entryFeeTetri).toBeUndefined();
+      expect(body.maxParticipants).toBeUndefined();
+      expect(body.categories).toEqual([
+        {
+          label: 'კაცები A',
+          labelEn: 'Men A',
+          type: 'doubles',
+          format: 'knockout',
+          category: 'men',
+          level: 'any',
+          entryFeeTetri: 5000,
+          maxParticipants: 16,
+        },
+        {
+          type: 'doubles',
+          format: 'round_robin',
+          category: 'women',
+          level: 'any',
+          entryFeeTetri: 4050,
+          maxParticipants: 8,
+        },
+      ]);
+    });
+
+    it('removing down to one row folds it back into a single tournament', () => {
+      add();
+      rows().at(1).patchValue({ format: 'americano', maxParticipants: 24 });
+      remove(0);
+      fixture.detectChanges();
+
+      expect(rows().length).toBe(0);
+      expect(form().get('format')!.enabled).toBeTrue();
+      expect(form().get('format')!.value).toBe('americano');
+      expect(form().get('maxParticipants')!.value).toBe(24);
+    });
+  });
+
+  // docs/33 §5: editing one category of an event.
+  describe('editing a category of an event', () => {
+    const category: Tournament = {
+      ...internal,
+      _id: 't-men',
+      event: { id: 'ev-1', label: 'კაცები A', labelEn: 'Men A', order: 0 },
+    };
+
+    beforeEach(async () => setup({ superAdmin: false, tournament: category }));
+
+    it('shows label / labelEn with the shared-fields hint and PUTs them', () => {
+      expect(q('category-label-block')).not.toBeNull();
+      expect(q('categories-block')).toBeNull();
+      expect(form().get('label')!.value).toBe('კაცები A');
+      form().patchValue({ label: ' კაცები B ', labelEn: '' });
+      submit();
+
+      const body = updateBody();
+      expect(body.label).toBe('კაცები B');
+      expect(body.labelEn).toBe('');
     });
   });
 });

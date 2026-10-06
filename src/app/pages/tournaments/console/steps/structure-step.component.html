@@ -1,0 +1,259 @@
+<ng-template #bestOfLabel let-n>
+  @switch (n) {
+    @case (1) {
+      {{ '1 სეტი' | t }}
+    }
+    @case (3) {
+      {{ '3 სეტიდან' | t }}
+    }
+    @default {
+      {{ '5 სეტიდან' | t }}
+    }
+  }
+</ng-template>
+
+<ng-template #pointsPicker>
+  <div class="st-field">
+    <span class="ss-label georgian-text" lang="ka">{{ 'თამაში ქულებამდე' | t }}</span>
+    <div class="ss-chip-rail ss-chip-rail--wrap" role="radiogroup">
+      @for (p of pointsPresets; track p) {
+        <button
+          type="button"
+          class="ss-chip ss-num"
+          role="radio"
+          [class.is-active]="!customPoints() && form().pointsTarget === p"
+          [attr.aria-checked]="!customPoints() && form().pointsTarget === p"
+          [attr.data-testid]="'points-' + p"
+          (click)="setPoints(p)"
+        >
+          {{ p }}
+        </button>
+      }
+      <button
+        type="button"
+        class="ss-chip"
+        role="radio"
+        [class.is-active]="customPoints()"
+        [attr.aria-checked]="customPoints()"
+        (click)="chooseCustomPoints()"
+      >
+        <span class="georgian-text" lang="ka">{{ 'სხვა' | t }}</span>
+      </button>
+      <button
+        type="button"
+        class="ss-chip"
+        role="radio"
+        data-testid="points-timed"
+        [class.is-active]="!customPoints() && form().pointsTarget === null"
+        [attr.aria-checked]="!customPoints() && form().pointsTarget === null"
+        (click)="setPoints(null)"
+      >
+        <span class="georgian-text" lang="ka">{{ 'დროზე' | t }}</span>
+      </button>
+    </div>
+    @if (customPoints()) {
+      <input
+        class="ss-input st-num"
+        type="number"
+        data-testid="points-custom"
+        [min]="limits.pointsMin"
+        [max]="limits.pointsMax"
+        [attr.aria-label]="'ქულები' | t"
+        [ngModel]="form().pointsTarget"
+        (ngModelChange)="setNumber('pointsTarget', $event)"
+      />
+    }
+  </div>
+</ng-template>
+
+<div class="st">
+  <div class="st-main">
+    <div class="st-head">
+      <span class="st-format georgian-text" lang="ka">{{ formatLabel() }} · {{ typeLabel() }}</span>
+      <span class="st-note georgian-text" lang="ka">{{ 'ფორმატი იცვლება ტურნირის რედაქტირებაში' | t }}</span>
+    </div>
+    @if (store.hasDraw()) {
+      <p class="st-note georgian-text" lang="ka" data-testid="structure-locked">
+        {{ 'კენჭისყრის შემდეგ პარამეტრები ჩაკეტილია' | t }}
+      </p>
+    }
+
+    <fieldset class="st-fields" [disabled]="readOnly()">
+      @if (knockout()) {
+        <div class="st-field">
+          <span class="ss-label georgian-text" lang="ka">{{ 'მატჩი' | t }}</span>
+          <div class="ss-chip-rail ss-chip-rail--wrap" role="radiogroup">
+            @for (n of bestOfOptions; track n) {
+              <button type="button" class="ss-chip georgian-text" lang="ka" role="radio" [attr.data-testid]="'bestof-' + n" [class.is-active]="form().bestOf === n" [attr.aria-checked]="form().bestOf === n" (click)="setBestOf(n)">
+                <ng-container [ngTemplateOutlet]="bestOfLabel" [ngTemplateOutletContext]="{ $implicit: n }" />
+              </button>
+            }
+          </div>
+        </div>
+        @if (form().bestOf > 1) {
+          <label class="st-toggle">
+            <input class="ss-switch" type="checkbox" data-testid="super-tiebreak" [checked]="form().superTiebreak" (change)="patch({ superTiebreak: !form().superTiebreak })" />
+            <span class="georgian-text" lang="ka">{{ 'გადამწყვეტი სეტი — სუპერ ტაიბრეიკი (10-მდე)' | t }}</span>
+          </label>
+        }
+        <label class="st-toggle">
+          <input class="ss-switch" type="checkbox" [checked]="form().thirdPlace" (change)="patch({ thirdPlace: !form().thirdPlace })" />
+          <span class="georgian-text" lang="ka">{{ 'მატჩი მესამე ადგილისთვის' | t }}</span>
+        </label>
+      }
+
+      @if (league() || playoffs()) {
+        @if (playoffs()) {
+          <label class="st-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'ჯგუფების რაოდენობა' | t }}</span>
+            <input class="ss-input st-num" type="number" min="1" data-testid="group-count" [max]="limits.groups" [ngModel]="form().groupCount" (ngModelChange)="setNumber('groupCount', $event)" />
+          </label>
+        }
+        <div class="st-field">
+          <span class="ss-label georgian-text" lang="ka">{{ 'ჯგუფში თამაშდება' | t }}</span>
+          <div class="ss-chip-rail ss-chip-rail--wrap" role="radiogroup">
+            <button type="button" class="ss-chip" role="radio" [class.is-active]="form().groupRounds === 1" [attr.aria-checked]="form().groupRounds === 1" (click)="patch({ groupRounds: 1 })">
+              <span class="georgian-text" lang="ka">{{ 'ერთ წრედ' | t }}</span>
+            </button>
+            <button type="button" class="ss-chip" role="radio" [class.is-active]="form().groupRounds === 2" [attr.aria-checked]="form().groupRounds === 2" (click)="patch({ groupRounds: 2 })">
+              <span class="georgian-text" lang="ka">{{ 'ორ წრედ' | t }}</span>
+            </button>
+          </div>
+        </div>
+        <div class="st-field">
+          <span class="ss-label georgian-text" lang="ka">{{ (playoffs() ? 'ჯგუფური მატჩის ანგარიში' : 'მატჩის ანგარიში') | t }}</span>
+          <div class="ss-chip-rail ss-chip-rail--wrap" role="radiogroup">
+            <button type="button" class="ss-chip" role="radio" data-testid="scoring-sets" [class.is-active]="form().scoringType === 'sets'" [attr.aria-checked]="form().scoringType === 'sets'" (click)="setScoringType('sets')">
+              <span class="georgian-text" lang="ka">{{ 'სეტები' | t }}</span>
+            </button>
+            <button type="button" class="ss-chip" role="radio" data-testid="scoring-points" [class.is-active]="form().scoringType === 'points'" [attr.aria-checked]="form().scoringType === 'points'" (click)="setScoringType('points')">
+              <span class="georgian-text" lang="ka">{{ 'ქულები' | t }}</span>
+            </button>
+          </div>
+        </div>
+        @if (form().scoringType === 'sets') {
+          <div class="st-field">
+            <div class="ss-chip-rail ss-chip-rail--wrap" role="radiogroup">
+              @for (n of bestOfOptions; track n) {
+                <button type="button" class="ss-chip georgian-text" lang="ka" role="radio" [class.is-active]="form().bestOf === n" [attr.aria-checked]="form().bestOf === n" (click)="setBestOf(n)">
+                  <ng-container [ngTemplateOutlet]="bestOfLabel" [ngTemplateOutletContext]="{ $implicit: n }" />
+                </button>
+              }
+            </div>
+          </div>
+          @if (form().bestOf > 1) {
+            <label class="st-toggle">
+              <input class="ss-switch" type="checkbox" [checked]="form().superTiebreak" (change)="patch({ superTiebreak: !form().superTiebreak })" />
+              <span class="georgian-text" lang="ka">{{ 'გადამწყვეტი სეტი — სუპერ ტაიბრეიკი (10-მდე)' | t }}</span>
+            </label>
+          }
+        } @else {
+          <ng-container [ngTemplateOutlet]="pointsPicker" />
+        }
+
+        @if (playoffs()) {
+          <div class="st-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'ვინ გადის ჯგუფიდან' | t }}</span>
+            <div class="st-adv" data-testid="advancement">
+              @for (pos of positions(); track pos.index) {
+                <button
+                  type="button"
+                  class="st-adv-chip georgian-text"
+                  lang="ka"
+                  [class]="'st-adv-chip is-' + pos.rule"
+                  [attr.data-testid]="'adv-' + (pos.index + 1)"
+                  (click)="cycleAdvancement(pos.index)"
+                >
+                  {{ positionLabel(pos.index) }} · {{ advancementLabel(pos.rule) }}
+                </button>
+              }
+            </div>
+            <span class="st-note georgian-text" lang="ka">{{ 'შეეხეთ: პირდაპირ → საკვალიფიკაციო → გავარდა' | t }}</span>
+          </div>
+          <label class="st-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'დამატებითი ადგილები (საუკეთესო შემდეგი ადგილიდან)' | t }}</span>
+            <input class="ss-input st-num" type="number" min="0" [max]="limits.wildcards" [ngModel]="form().wildcards" (ngModelChange)="setNumber('wildcards', $event)" />
+          </label>
+          <div class="st-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'ბადის მატჩი' | t }}</span>
+            <div class="ss-chip-rail ss-chip-rail--wrap" role="radiogroup">
+              @for (n of bestOfOptions; track n) {
+                <button type="button" class="ss-chip georgian-text" lang="ka" role="radio" [class.is-active]="form().koBestOf === n" [attr.aria-checked]="form().koBestOf === n" (click)="setKoBestOf(n)">
+                  <ng-container [ngTemplateOutlet]="bestOfLabel" [ngTemplateOutletContext]="{ $implicit: n }" />
+                </button>
+              }
+            </div>
+          </div>
+          @if (form().koBestOf > 1) {
+            <label class="st-toggle">
+              <input class="ss-switch" type="checkbox" [checked]="form().koSuperTiebreak" (change)="patch({ koSuperTiebreak: !form().koSuperTiebreak })" />
+              <span class="georgian-text" lang="ka">{{ 'გადამწყვეტი სეტი — სუპერ ტაიბრეიკი (10-მდე)' | t }}</span>
+            </label>
+          }
+          <label class="st-toggle">
+            <input class="ss-switch" type="checkbox" [checked]="form().thirdPlace" (change)="patch({ thirdPlace: !form().thirdPlace })" />
+            <span class="georgian-text" lang="ka">{{ 'მატჩი მესამე ადგილისთვის' | t }}</span>
+          </label>
+        }
+      }
+
+      @if (social()) {
+        <ng-container [ngTemplateOutlet]="pointsPicker" />
+        <div class="st-row">
+          <label class="st-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'რაუნდები' | t }}</span>
+            <input class="ss-input st-num" type="number" min="1" data-testid="social-rounds" [max]="limits.rounds" [ngModel]="form().socialRounds" (ngModelChange)="setNumber('socialRounds', $event)" />
+          </label>
+          <label class="st-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'კორტები' | t }}</span>
+            <input class="ss-input st-num" type="number" min="1" data-testid="social-courts" [max]="limits.courts" [ngModel]="form().socialCourts" (ngModelChange)="setNumber('socialCourts', $event)" />
+          </label>
+        </div>
+        @if (format() === 'mexicano' && individual()) {
+          <div class="st-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'წყვილები ოთხეულში' | t }}</span>
+            <div class="ss-chip-rail ss-chip-rail--wrap" role="radiogroup">
+              <button type="button" class="ss-chip ss-num" role="radio" [class.is-active]="form().pairing === '1-4_2-3'" [attr.aria-checked]="form().pairing === '1-4_2-3'" (click)="setPairing('1-4_2-3')">1+4 v 2+3</button>
+              <button type="button" class="ss-chip ss-num" role="radio" [class.is-active]="form().pairing === '1-3_2-4'" [attr.aria-checked]="form().pairing === '1-3_2-4'" (click)="setPairing('1-3_2-4')">1+3 v 2+4</button>
+            </div>
+          </div>
+        }
+      }
+
+      <label class="st-toggle">
+        <input class="ss-switch" type="checkbox" data-testid="rated" [checked]="form().rated" (change)="patch({ rated: !form().rated })" />
+        <span class="georgian-text" lang="ka">{{ 'რეიტინგში ითვლება' | t }}</span>
+      </label>
+    </fieldset>
+
+    @if (problem(); as p) {
+      <span class="ss-error georgian-text" lang="ka" data-testid="structure-problem">{{ p | t }}</span>
+    }
+    @if (error(); as e) {
+      <div class="st-error georgian-text" lang="ka" role="alert">
+        {{ e.message | t }}
+        @if (e.detail) {
+          <span class="st-detail">{{ e.detail }}</span>
+        }
+      </div>
+    }
+    @if (!readOnly()) {
+      <div class="st-actions">
+        @if (dirty()) {
+          <span class="st-note georgian-text" lang="ka">{{ (store.structure() ? 'შეუნახავი ცვლილებები' : 'პარამეტრები ჯერ არ არის შენახული') | t }}</span>
+        }
+        <button class="ss-btn ss-btn--primary" type="button" data-testid="structure-save" [disabled]="busy() || !!problem()" (click)="save()">
+          <span class="georgian-text" lang="ka">{{ (busy() ? 'ინახება...' : 'შენახვა') | t }}</span>
+        </button>
+      </div>
+    }
+  </div>
+
+  <aside class="st-summary ss-card" data-testid="structure-summary">
+    <span class="st-summary-title georgian-text" lang="ka">{{ 'შეჯამება' | t }}</span>
+    <p class="st-summary-text georgian-text" lang="ka">{{ summaryText() }}</p>
+    @if (shortfallText()) {
+      <p class="st-warn georgian-text" lang="ka" data-testid="structure-shortfall">{{ shortfallText() }}</p>
+    }
+  </aside>
+</div>

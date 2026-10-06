@@ -47,6 +47,7 @@ export class UserFormComponent implements OnInit {
     [UserType.ADMIN]: 'ადმინი',
     [UserType.USER]: 'მომხმარებელი',
     [UserType.SUPERADMIN]: 'სუპერადმინი',
+    [UserType.ORGANIZER]: 'ორგანიზატორი',
   });
 
   readonly phoneMask: MaskitoOptions = {
@@ -108,13 +109,19 @@ export class UserFormComponent implements OnInit {
   }
 
   /**
-   * Player/admin identity split (mirrors the API rule): admin accounts sign in
-   * by USERNAME and carry no phone; player accounts sign in by PHONE and carry
-   * no username. Only the active identity field is validated (and submitted).
+   * Player/operator identity split (mirrors the API rule): operator accounts
+   * — admin, superadmin and the tournament maker (organizer, docs/33 §6) —
+   * sign in by USERNAME and carry no phone; player accounts sign in by PHONE
+   * and carry no username. Only the active identity field is validated (and
+   * submitted).
    */
   protected get isAdminAccount(): boolean {
     const roles: UserType[] = this.userForm?.get('userType')?.value ?? [];
-    return roles.includes(UserType.ADMIN) || roles.includes(UserType.SUPERADMIN);
+    return (
+      roles.includes(UserType.ADMIN) ||
+      roles.includes(UserType.SUPERADMIN) ||
+      roles.includes(UserType.ORGANIZER)
+    );
   }
 
   /** The edited account can sign in with Google (docs/29) — it owns the email. */

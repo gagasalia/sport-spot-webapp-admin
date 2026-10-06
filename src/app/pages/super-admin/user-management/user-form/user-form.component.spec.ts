@@ -144,6 +144,64 @@ describe('UserFormComponent — Google-only players (docs/29)', () => {
   });
 });
 
+// docs/33 §6: the tournament maker is an operator account like an admin.
+describe('UserFormComponent — organizer role (docs/33)', () => {
+  let fixture: ComponentFixture<UserFormComponent>;
+  let component: UserFormComponent;
+  let serviceSpy: jasmine.SpyObj<UserManagementService>;
+
+  beforeEach(async () => {
+    serviceSpy = jasmine.createSpyObj<UserManagementService>('UserManagementService', [
+      'createUser',
+      'updateUser',
+    ]);
+    serviceSpy.createUser.and.callFake((dto) => of({ ...dto, _id: 'u9' } as User));
+    const context = jasmine.createSpyObj<SsDialogContext<User | null, { user?: User }>>(
+      'SsDialogContext',
+      ['completeWith', 'dismiss'],
+      { data: {} },
+    );
+    await TestBed.configureTestingModule({
+      imports: [UserFormComponent],
+      providers: [
+        { provide: SS_DIALOG_CONTEXT, useValue: context },
+        { provide: UserManagementService, useValue: serviceSpy },
+        { provide: SsToastService, useValue: { open: () => of(undefined) } },
+      ],
+    }).compileComponents();
+    fixture = TestBed.createComponent(UserFormComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  const toggleRole = (type: UserType) =>
+    (component as unknown as { toggleRole(t: UserType): void }).toggleRole(type);
+
+  it('lists «ორგანიზატორი» among the roles', () => {
+    const labels = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('label.cursor-pointer span'),
+    ).map((s) => s.textContent?.trim());
+    expect(labels).toContain('ორგანიზატორი');
+  });
+
+  it('an organizer signs in by username (no phone), exactly like an admin', () => {
+    toggleRole(UserType.ORGANIZER);
+    fixture.detectChanges();
+    component.userForm.patchValue({ email: 'maker@example.com', password: 'secret123' });
+
+    expect(component.userForm.get('phone')!.hasError('required')).toBeFalse();
+    expect(component.userForm.get('username')!.hasError('required')).toBeTrue();
+    component.userForm.patchValue({ username: 'Maker.One' });
+    expect(component.userForm.valid).toBeTrue();
+
+    component.onSubmit();
+    const dto = serviceSpy.createUser.calls.mostRecent().args[0];
+    expect(dto.userType).toEqual([UserType.ORGANIZER]);
+    expect(dto.username).toBe('maker.one');
+    expect('phone' in dto).toBeFalse();
+  });
+});
+
 describe('UserFormComponent — Facebook-linked players (docs/30)', () => {
   let fixture: ComponentFixture<UserFormComponent>;
   let component: UserFormComponent;

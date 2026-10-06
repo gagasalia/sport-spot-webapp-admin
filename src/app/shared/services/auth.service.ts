@@ -31,10 +31,22 @@ export class AuthService {
   readonly isAdmin = computed(() => hasAdminRole(this._currentUser()));
 
   /**
+   * A tournament maker (docs/33 §6) that is NOT also an admin / superadmin:
+   * the panel shows it «ტურნირები» only and never calls the academy
+   * endpoints (they answer 403 for this role).
+   */
+  readonly isOrganizer = computed(
+    () =>
+      (this._currentUser()?.userType ?? []).includes(UserType.ORGANIZER) &&
+      !hasAdminRole(this._currentUser()),
+  );
+
+  /**
    * Authenticates the user, persists the token, and updates `currentUser`.
-   * Admin accounts sign in by USERNAME (stored lowercased, so lowercase here).
-   * Non-admin accounts are rejected with {@link NonAdminLoginError} and their
-   * token is never persisted — the admin panel is operator-only.
+   * Operator accounts (admin, superadmin, organizer) sign in by USERNAME
+   * (stored lowercased, so lowercase here). Anything else is rejected with
+   * {@link NonAdminLoginError} and its token is never persisted — the admin
+   * panel is operator-only.
    */
   login(username: string, password: string): Observable<LoginResponse> {
     return this.http
@@ -48,7 +60,7 @@ export class AuthService {
       .pipe(
         map((res) => res.result.data),
         tap((data) => {
-          if (!hasAdminRole(decodeJwt(data.accessToken))) {
+          if (!hasPanelRole(decodeJwt(data.accessToken))) {
             throw new NonAdminLoginError();
           }
           this.setToken(data.accessToken);
@@ -81,6 +93,11 @@ export class AuthService {
 function hasAdminRole(payload: JwtPayload | null): boolean {
   const types = payload?.userType ?? [];
   return types.includes(UserType.ADMIN) || types.includes(UserType.SUPERADMIN);
+}
+
+/** True when the token may use this panel: an admin, superadmin or organizer. */
+function hasPanelRole(payload: JwtPayload | null): boolean {
+  return hasAdminRole(payload) || (payload?.userType ?? []).includes(UserType.ORGANIZER);
 }
 
 /** Suppresses the global loading spinner; re-exported for callers that need it. */

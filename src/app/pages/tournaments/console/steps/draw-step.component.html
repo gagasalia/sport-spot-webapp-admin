@@ -1,0 +1,184 @@
+<div class="ds">
+  @if (!store.hasDraw()) {
+    <section class="ds-start ss-card" data-testid="draw-start">
+      <h2 class="ds-title georgian-text" lang="ka">{{ 'კენჭისყრა' | t }}</h2>
+      <p class="ds-text georgian-text" lang="ka">
+        {{ 'განთესილი მონაწილეები ადგილს რიგის მიხედვით იკავებენ, დანარჩენები — კენჭისყრით. შედეგი ჯერ დრაფტია: მოთამაშეები მას გამოქვეყნების შემდეგ დაინახავენ.' | t }}
+      </p>
+      @if (!store.structure()) {
+        <div class="ds-warn georgian-text" lang="ka">
+          {{ 'ჯერ ფორმატის პარამეტრები შეინახეთ' | t }}
+          <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="goto.emit('structure')">
+            <span class="georgian-text" lang="ka">{{ 'ფორმატი' | t }}</span>
+          </button>
+        </div>
+      } @else if (shortfall()) {
+        <div class="ds-warn georgian-text" lang="ka" data-testid="draw-shortfall">{{ shortfall() }}</div>
+      }
+      <label class="ds-check">
+        <input class="ss-checkbox" type="checkbox" [checked]="shuffle()" (change)="shuffle.set(!shuffle())" />
+        <span class="georgian-text" lang="ka">{{ 'განუთესავები შემთხვევით აირიოს' | t }}</span>
+      </label>
+      <button
+        class="ss-btn ss-btn--primary ds-go"
+        type="button"
+        data-testid="draw-generate"
+        [disabled]="busy() || !store.editable() || !store.structure()"
+        (click)="generate()"
+      >
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trophy.svg')"></i>
+        <span class="georgian-text" lang="ka">{{ (busy() ? 'მიმდინარეობს…' : 'კენჭისყრა') | t }}</span>
+      </button>
+      @if (error(); as e) {
+        <div class="ds-error georgian-text" lang="ka" role="alert">
+          {{ e.message | t }}
+          @if (e.detail) {
+            <span class="ds-detail">{{ e.detail }}</span>
+          }
+        </div>
+      }
+    </section>
+  } @else {
+    <div class="ds-banner" [class.is-draft]="draw()?.status === 'draft'" data-testid="draw-banner">
+      <span class="ds-banner-text georgian-text" lang="ka">
+        @if (draw()?.status === 'draft') {
+          {{ 'დრაფტი — მოთამაშეები ჯერ ვერ ხედავენ' | t }}
+        } @else {
+          {{ 'გამოქვეყნებულია — მოთამაშეები ხედავენ' | t }}
+        }
+      </span>
+      @if (store.editable()) {
+        <span class="ds-actions">
+          @if (draw()?.status === 'draft') {
+            <button
+              class="ss-btn ss-btn--primary ss-btn--s"
+              type="button"
+              data-testid="draw-publish"
+              [disabled]="busy()"
+              (click)="publish()"
+            >
+              <span class="georgian-text" lang="ka">{{ 'გამოქვეყნება' | t }}</span>
+            </button>
+          }
+          <button
+            class="ss-btn ss-btn--danger ss-btn--s"
+            type="button"
+            data-testid="draw-reset"
+            [disabled]="busy()"
+            (click)="reset()"
+          >
+            <span class="georgian-text" lang="ka">{{ 'კენჭისყრის გაუქმება' | t }}</span>
+          </button>
+        </span>
+      }
+    </div>
+
+    @if (error(); as e) {
+      <div class="ds-error georgian-text" lang="ka" role="alert" data-testid="draw-error">
+        {{ e.message | t }}
+        @if (e.detail) {
+          <span class="ds-detail">{{ e.detail }}</span>
+        }
+      </div>
+    }
+
+    @if (podium().length) {
+      <section class="ds-podium ss-card" data-testid="podium">
+        @for (p of podium(); track $index) {
+          <div class="ds-place" [class]="'is-' + p.place">
+            <span class="ds-medal ss-num">{{ p.place }}</span>
+            <span class="ds-place-name">{{ p.names }}</span>
+          </div>
+        }
+      </section>
+    }
+
+    @if (canSwap() || canCloseGroups() || canReopenGroups()) {
+      <div class="ds-tools">
+        @if (canSwap()) {
+          <button
+            type="button"
+            data-testid="swap-toggle"
+            [class]="swapMode() ? 'ss-btn ss-btn--primary ss-btn--s' : 'ss-btn ss-btn--outline ss-btn--s'"
+            (click)="toggleSwap()"
+          >
+            <span class="georgian-text" lang="ka">{{ (swapMode() ? 'გაცვლის დასრულება' : 'გაცვლა') | t }}</span>
+          </button>
+        }
+        @if (canCloseGroups()) {
+          <button
+            class="ss-btn ss-btn--outline ss-btn--s"
+            type="button"
+            data-testid="close-groups"
+            [disabled]="busy()"
+            (click)="closeGroups()"
+          >
+            <span class="georgian-text" lang="ka">{{ 'ჯგუფური ეტაპის დახურვა' | t }}</span>
+          </button>
+        }
+        @if (canReopenGroups()) {
+          <button
+            class="ss-btn ss-btn--flat ss-btn--s"
+            type="button"
+            data-testid="reopen-groups"
+            [disabled]="busy()"
+            (click)="reopenGroups()"
+          >
+            <span class="georgian-text" lang="ka">{{ 'ხელახლა გახსნა' | t }}</span>
+          </button>
+        }
+      </div>
+      @if (swapMode()) {
+        <p class="ds-hint georgian-text" lang="ka">
+          {{ 'აირჩიეთ ორი მონაწილე — ისინი ადგილებს გაცვლიან (ჯგუფებშიც და ბადეშიც)' | t }}
+        </p>
+      }
+    }
+
+    @if (draw()?.social; as social) {
+      <app-social-board
+        [social]="social"
+        [matchById]="store.matchById()"
+        [entrants]="store.entrantById()"
+        [interactive]="store.playable()"
+        [canAdvance]="store.editable()"
+        [busy]="busy()"
+        (openMatch)="openMatch($event)"
+        (nextRound)="nextRound()"
+      />
+    } @else {
+      @if (groups().length) {
+        <div class="ds-groups">
+          @for (group of groups(); track group.key) {
+            <app-group-card
+              [group]="group"
+              [scoring]="scoringType()"
+              [entrants]="store.entrantById()"
+              [matches]="matchesByGroup().get(group.key) ?? []"
+              [interactive]="store.playable() && !swapMode()"
+              [swapMode]="swapMode()"
+              [selected]="swapFirst()"
+              (openMatch)="openMatch($event)"
+              (pick)="pick($event)"
+            />
+          }
+        </div>
+      }
+      @if (draw()?.knockout; as knockout) {
+        <section class="ds-bracket ss-card">
+          <h3 class="ds-sub georgian-text" lang="ka">{{ 'ბადე' | t }}</h3>
+          <app-bracket
+            [knockout]="knockout"
+            [matchById]="store.matchById()"
+            [entrants]="store.entrantById()"
+            [interactive]="store.playable() && !swapMode()"
+            [swapMode]="swapMode()"
+            [selected]="swapFirst()"
+            (openMatch)="openMatch($event)"
+            (pick)="pick($event)"
+          />
+        </section>
+      }
+    }
+  }
+</div>

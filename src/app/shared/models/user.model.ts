@@ -2,6 +2,12 @@ export enum UserType {
   ADMIN = 'admin',
   USER = 'user',
   SUPERADMIN = 'superadmin',
+  /**
+   * Tournament maker (docs/33 §6): a platform-wide limited operator — signs
+   * in to this panel by username like an admin and sees ONLY «ტურნირები»
+   * (the tournaments it organizes).
+   */
+  ORGANIZER = 'organizer',
 }
 
 export interface User {

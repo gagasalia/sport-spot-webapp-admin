@@ -1,0 +1,101 @@
+<div class="ms">
+  @if (!store.hasDraw()) {
+    <p class="ms-empty georgian-text" lang="ka">{{ 'მატჩები კენჭისყრის შემდეგ გამოჩნდება' | t }}</p>
+  } @else {
+    <div class="ms-filters">
+      <div class="ss-chip-rail" role="radiogroup" [attr.aria-label]="'სტატუსი' | t">
+        <button type="button" class="ss-chip" role="radio" data-testid="filter-all" [class.is-active]="status() === 'all'" [attr.aria-checked]="status() === 'all'" (click)="status.set('all')">
+          <span class="georgian-text" lang="ka">{{ 'ყველა' | t }}</span>
+          <span class="ss-num ms-count">{{ counts().all }}</span>
+        </button>
+        <button type="button" class="ss-chip" role="radio" data-testid="filter-todo" [class.is-active]="status() === 'todo'" [attr.aria-checked]="status() === 'todo'" (click)="status.set('todo')">
+          <span class="georgian-text" lang="ka">{{ 'დასათამაშებელი' | t }}</span>
+          <span class="ss-num ms-count">{{ counts().todo }}</span>
+        </button>
+        <button type="button" class="ss-chip" role="radio" data-testid="filter-done" [class.is-active]="status() === 'done'" [attr.aria-checked]="status() === 'done'" (click)="status.set('done')">
+          <span class="georgian-text" lang="ka">{{ 'დასრულებული' | t }}</span>
+          <span class="ss-num ms-count">{{ counts().done }}</span>
+        </button>
+      </div>
+      @if (groupKeys().length > 1) {
+        <div class="ss-chip-rail" role="radiogroup" [attr.aria-label]="'ჯგუფი' | t">
+          <button type="button" class="ss-chip" role="radio" [class.is-active]="!group()" [attr.aria-checked]="!group()" (click)="group.set(null)">
+            <span class="georgian-text" lang="ka">{{ 'ყველა ჯგუფი' | t }}</span>
+          </button>
+          @for (key of groupKeys(); track key) {
+            <button type="button" class="ss-chip" role="radio" [attr.data-testid]="'filter-group-' + key" [class.is-active]="group() === key" [attr.aria-checked]="group() === key" (click)="group.set(group() === key ? null : key)">
+              {{ key }}
+            </button>
+          }
+        </div>
+      }
+      @if (courtNames().length) {
+        <div class="ss-chip-rail" role="radiogroup" [attr.aria-label]="'კორტი' | t">
+          <button type="button" class="ss-chip" role="radio" [class.is-active]="!court()" [attr.aria-checked]="!court()" (click)="court.set(null)">
+            <span class="georgian-text" lang="ka">{{ 'ყველა კორტი' | t }}</span>
+          </button>
+          @for (name of courtNames(); track name) {
+            <button type="button" class="ss-chip" role="radio" [class.is-active]="court() === name" [attr.aria-checked]="court() === name" (click)="court.set(court() === name ? null : name)">
+              {{ name }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    @for (section of sections(); track section.key) {
+      <section class="ms-section" [attr.data-testid]="'section-' + section.key">
+        <h3 class="ms-title georgian-text" lang="ka">
+          @if (section.sample.stage === 'group') {
+            {{ 'ჯგუფური ეტაპი' | t }} · {{ 'ტური' | t }} {{ section.sample.round }}
+          } @else {
+            {{ store.matchLabel(section.sample) }}
+          }
+        </h3>
+        <div class="ms-list">
+          @for (m of section.matches; track m.id) {
+            <button
+              type="button"
+              class="ms-row"
+              [class.is-done]="m.status === 'done'"
+              [disabled]="!store.playable() || !isPlayable(m)"
+              [attr.data-testid]="'row-' + m.id"
+              (click)="open(m)"
+            >
+              <span class="ms-when">
+                @if (m.stage === 'group') {
+                  <b>{{ m.group }}</b>
+                }
+                <span class="ss-num">{{ timeLabel(m) || '—' }}</span>
+                @if (m.court) {
+                  <span class="ms-court">{{ m.court }}</span>
+                }
+              </span>
+              <span class="ms-side ms-side--a" [class.is-winner]="m.status === 'done' && m.winner === 0">{{ names(m)[0] }}</span>
+              <span class="ms-score">
+                @if (m.status === 'done') {
+                  <span class="ss-num">{{ scoreLabel(m.score) || '✓' }}</span>
+                  @if (m.outcome && m.outcome !== 'played') {
+                    <span class="ms-outcome georgian-text" lang="ka">{{ outcomeLabels[m.outcome] }}</span>
+                  }
+                } @else if (store.playable() && isPlayable(m)) {
+                  <span class="ms-enter georgian-text" lang="ka">{{ 'შედეგის შეყვანა' | t }}</span>
+                } @else {
+                  <span class="ms-wait">vs</span>
+                }
+              </span>
+              <span class="ms-side ms-side--b" [class.is-winner]="m.status === 'done' && m.winner === 1">{{ names(m)[1] }}</span>
+              <span class="ms-badges">
+                @if (m.rated) {
+                  <span class="ss-badge ss-badge--accent georgian-text" lang="ka">{{ 'რეიტინგში' | t }}</span>
+                }
+              </span>
+            </button>
+          }
+        </div>
+      </section>
+    } @empty {
+      <p class="ms-empty georgian-text" lang="ka">{{ 'ამ ფილტრით მატჩები არ არის' | t }}</p>
+    }
+  }
+</div>

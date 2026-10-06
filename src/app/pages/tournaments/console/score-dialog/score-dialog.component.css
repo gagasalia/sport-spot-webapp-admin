@@ -1,0 +1,130 @@
+/* Score dialog (docs/33 §7) — kit tokens only; big one-thumb cells. */
+.sd {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sd-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.sd-board {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+  overflow-x: auto;
+}
+.sd-board.is-muted {
+  opacity: 0.75;
+}
+.sd-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-template-columns: minmax(96px, 1fr);
+  grid-auto-columns: 52px;
+  align-items: center;
+  gap: 8px;
+}
+.sd-row--head {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-align: center;
+}
+.sd-col.is-tb {
+  color: var(--tui-text-action);
+}
+.sd-name {
+  min-width: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.sd-row.is-winner .sd-name {
+  color: var(--text);
+  font-weight: 700;
+}
+.sd-cell {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  transition:
+    border-color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease);
+}
+.sd-cell:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.sd-cell--wide {
+  width: 72px;
+}
+.sd-row:has(.sd-cell--wide) {
+  grid-auto-columns: 72px;
+}
+.sd-hint {
+  margin: -6px 0 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.sd-alt,
+.sd-winner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.sd-alt-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.sd-winner {
+  width: 100%;
+}
+.sd-errors {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--danger);
+}
+.sd-server {
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--tui-status-negative-pale);
+  color: var(--danger);
+  font-size: 13px;
+}
+.sd-server-detail {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+.sd-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.sd-spacer {
+  flex: 1;
+}

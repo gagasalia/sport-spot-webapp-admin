@@ -1,0 +1,127 @@
+<div class="tc">
+  <a class="tc-back georgian-text" lang="ka" routerLink="/tournaments" data-testid="console-back">
+    <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/chevron-left.svg')"></i>
+    {{ 'ტურნირები' | t }}
+  </a>
+
+  @if (store.loading() && !store.tournament()) {
+    <div class="tc-loading georgian-text" lang="ka">{{ 'იტვირთება...' | t }}</div>
+  } @else if (store.loadError()) {
+    <div class="tc-failed ss-card" data-testid="console-error">
+      <p class="georgian-text" lang="ka">{{ 'ტურნირი ვერ ჩაიტვირთა' | t }}</p>
+      <button class="ss-btn ss-btn--outline ss-btn--s" type="button" (click)="reload()">
+        <span class="georgian-text" lang="ka">{{ 'თავიდან ცდა' | t }}</span>
+      </button>
+    </div>
+  } @else if (store.tournament(); as t) {
+    <header class="tc-head">
+      <div class="tc-title-row">
+        <h1 class="tc-title" data-testid="console-title">
+          {{ store.name() }}
+          @if (categoryName()) {
+            <span class="tc-cat georgian-text" lang="ka">· {{ categoryName() }}</span>
+          }
+        </h1>
+        <span class="georgian-text" lang="ka" data-testid="console-status" [class]="statusClasses[t.status]">
+          {{ statusLabels[t.status] }}
+        </span>
+        @if (lifecycle(); as next) {
+          <button
+            type="button"
+            data-testid="console-lifecycle"
+            [class]="
+              next === 'completed'
+                ? 'ss-btn ss-btn--primary ss-btn--s tc-life'
+                : 'ss-btn ss-btn--outline ss-btn--s tc-life'
+            "
+            [disabled]="moving()"
+            (click)="moveOn()"
+          >
+            <span class="georgian-text" lang="ka">
+              {{ (next === 'published' ? 'გამოქვეყნება' : 'ტურნირის დასრულება') | t }}
+            </span>
+          </button>
+        }
+      </div>
+      <p class="tc-meta">
+        {{ facility() }} · <span class="ss-num">{{ t.startDate }} {{ t.startTime }}</span>
+        @if (t.endDate) {
+          <span class="ss-num">→ {{ t.endDate }}</span>
+        }
+      </p>
+      @if (t.external) {
+        <p class="tc-note georgian-text" lang="ka">{{ 'გარე ტურნირს აქ კენჭისყრა არ აქვს' | t }}</p>
+      }
+
+      @if (store.isEvent()) {
+        <div class="tc-cats" data-testid="category-switcher">
+          <div class="ss-chip-rail" role="tablist" [attr.aria-label]="'კატეგორიები' | t">
+            @for (c of store.categories(); track c._id) {
+              <a
+                class="ss-chip georgian-text"
+                lang="ka"
+                role="tab"
+                [class.is-active]="c._id === t._id"
+                [attr.aria-selected]="c._id === t._id"
+                [routerLink]="['/tournaments', c._id]"
+              >
+                {{ categoryChip(c) }}
+                <span class="tc-cat-count ss-num">{{ c.registeredCount }}/{{ c.maxParticipants }}</span>
+              </a>
+            }
+          </div>
+          @if (canAddCategory()) {
+            <button class="ss-btn ss-btn--outline ss-btn--s" type="button" data-testid="add-category" (click)="addCategory()">
+              <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
+              <span class="georgian-text" lang="ka">{{ 'კატეგორია' | t }}</span>
+            </button>
+          }
+        </div>
+      }
+    </header>
+
+    <nav class="tc-steps" role="tablist" [attr.aria-label]="'ეტაპები' | t" data-testid="console-steps">
+      @for (key of stepKeys; track key; let i = $index) {
+        <button
+          type="button"
+          role="tab"
+          class="tc-step"
+          [class]="'tc-step is-' + states()[key]"
+          [class.is-open]="step() === key"
+          [attr.aria-selected]="step() === key"
+          [attr.data-testid]="'step-' + key"
+          (click)="select(key)"
+        >
+          <span class="tc-step-n ss-num">
+            @if (states()[key] === 'done') {
+              <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/check.svg')"></i>
+            } @else {
+              {{ i + 1 }}
+            }
+          </span>
+          <span class="tc-step-label georgian-text" lang="ka">{{ stepLabels[key] }}</span>
+        </button>
+      }
+    </nav>
+
+    <section class="tc-body" role="tabpanel">
+      @switch (step()) {
+        @case ('entrants') {
+          <app-entrants-step />
+        }
+        @case ('structure') {
+          <app-structure-step />
+        }
+        @case ('draw') {
+          <app-draw-step (goto)="select($event)" />
+        }
+        @case ('schedule') {
+          <app-schedule-step />
+        }
+        @case ('matches') {
+          <app-matches-step />
+        }
+      }
+    </section>
+  }
+</div>

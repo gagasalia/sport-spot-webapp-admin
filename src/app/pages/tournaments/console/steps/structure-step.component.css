@@ -1,0 +1,141 @@
+.st {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .st {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.st-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.st-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.st-format {
+  font-size: 16px;
+  font-weight: 700;
+}
+.st-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.st-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.st-fields:disabled {
+  opacity: 0.7;
+}
+.st-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.st-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.st-num {
+  width: 120px;
+  margin-top: 6px;
+}
+.st-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.st-adv {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.st-adv-chip {
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--text-faint);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.st-adv-chip.is-direct {
+  border-color: var(--success);
+  background: var(--tui-status-positive-pale);
+  color: var(--success);
+}
+.st-adv-chip.is-playoff {
+  border-color: var(--warning);
+  background: var(--tui-status-warning-pale);
+  color: var(--warning);
+}
+.st-adv-chip:disabled {
+  cursor: default;
+}
+.st-error {
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--tui-status-negative-pale);
+  color: var(--danger);
+  font-size: 13px;
+}
+.st-detail {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+.st-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.st-summary {
+  position: sticky;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+.st-summary-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.st-summary-text {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.55;
+}
+.st-warn {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--tui-status-warning-pale);
+  color: var(--warning);
+  font-size: 13px;
+}

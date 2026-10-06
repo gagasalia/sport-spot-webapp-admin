@@ -21,6 +21,42 @@
       <input class="ss-input" formControlName="nameEn" placeholder="Summer Open 2026" />
     </label>
 
+    <!-- One category of an event (docs/33 §2.5): its own display name -->
+    @if (isEventCategory) {
+      <div
+        class="rounded-lg p-3 space-y-3"
+        style="border: 1px solid var(--hairline-2)"
+        data-testid="category-label-block"
+      >
+        <div class="grid grid-cols-2 gap-4">
+          <label class="ss-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'კატეგორიის სახელი' | t }}</span>
+            <input
+              class="ss-input georgian-text"
+              lang="ka"
+              formControlName="label"
+              data-testid="category-label"
+              [attr.maxlength]="labelMax"
+              [placeholder]="'მაგ. კაცები A' | t"
+            />
+          </label>
+          <label class="ss-field">
+            <span class="ss-label">Label (English)</span>
+            <input
+              class="ss-input"
+              formControlName="labelEn"
+              data-testid="category-label-en"
+              [attr.maxlength]="labelMax"
+              placeholder="Men A"
+            />
+          </label>
+        </div>
+        <p class="text-xs georgian-text m-0" lang="ka" style="color: var(--tui-text-secondary)">
+          {{ 'სახელი, ობიექტი, თარიღები, აღწერა და პრიზი ღონისძიების ყველა კატეგორიას აქვს საერთო' | t }}
+        </p>
+      </div>
+    }
+
     <!-- External tournament (superadmin only): a non-partner club's event -->
     @if (isSuperAdmin()) {
       <div
@@ -149,49 +185,174 @@
       </div>
     }
 
-    <!-- Type + Format -->
-    <div class="grid grid-cols-2 gap-4">
-      <label class="ss-field">
-        <span class="ss-label georgian-text" lang="ka">
-          {{ 'ტიპი' | t }} <span class="text-red-500">*</span>
-        </span>
-        <select class="ss-input georgian-text" lang="ka" formControlName="type">
-          @for (option of typeOptions; track option) {
-            <option [value]="option">{{ stringifyType(option) }}</option>
-          }
-        </select>
-      </label>
-      <label class="ss-field">
-        <span class="ss-label georgian-text" lang="ka">
-          {{ 'ფორმატი' | t }} <span class="text-red-500">*</span>
-        </span>
-        <select class="ss-input georgian-text" lang="ka" formControlName="format">
-          @for (option of formatOptions; track option) {
-            <option [value]="option">{{ stringifyFormat(option) }}</option>
-          }
-        </select>
-      </label>
-    </div>
+    @if (categoryCount() < 2) {
+      <!-- Type + Format -->
+      <div class="grid grid-cols-2 gap-4">
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">
+            {{ 'ტიპი' | t }} <span class="text-red-500">*</span>
+          </span>
+          <select class="ss-input georgian-text" lang="ka" formControlName="type">
+            @for (option of typeOptions; track option) {
+              <option [value]="option">{{ stringifyType(option) }}</option>
+            }
+          </select>
+        </label>
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">
+            {{ 'ფორმატი' | t }} <span class="text-red-500">*</span>
+          </span>
+          <select class="ss-input georgian-text" lang="ka" formControlName="format">
+            @for (option of formatOptions; track option) {
+              <option [value]="option">{{ stringifyFormat(option) }}</option>
+            }
+          </select>
+        </label>
+      </div>
 
-    <!-- Level + Category -->
-    <div class="grid grid-cols-2 gap-4">
-      <label class="ss-field">
-        <span class="ss-label georgian-text" lang="ka">{{ 'დონე' | t }}</span>
-        <select class="ss-input georgian-text" lang="ka" formControlName="level">
-          @for (option of levelOptions; track option) {
-            <option [value]="option">{{ stringifyLevel(option) }}</option>
+      <!-- Level + Category -->
+      <div class="grid grid-cols-2 gap-4">
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">{{ 'დონე' | t }}</span>
+          <select class="ss-input georgian-text" lang="ka" formControlName="level">
+            @for (option of levelOptions; track option) {
+              <option [value]="option">{{ stringifyLevel(option) }}</option>
+            }
+          </select>
+        </label>
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">{{ 'კატეგორია' | t }}</span>
+          <select class="ss-input georgian-text" lang="ka" formControlName="category">
+            @for (option of categoryOptions; track option) {
+              <option [value]="option">{{ stringifyCategory(option) }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    }
+
+    <!-- «კატეგორიები»: a multi-category event (create, internal only — docs/33 §5) -->
+    @if (!isEditMode && !isExternal()) {
+      <div class="space-y-3" data-testid="categories-block" formArrayName="categories">
+        <div class="flex items-center justify-between gap-2">
+          <span class="ss-label georgian-text m-0" lang="ka">{{ 'კატეგორიები' | t }}</span>
+          @if (categoryCount() < categoriesMax) {
+            <button
+              class="ss-btn ss-btn--outline ss-btn--s"
+              type="button"
+              data-testid="category-add"
+              (click)="addCategory()"
+            >
+              <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
+              <span class="georgian-text" lang="ka">{{ 'კატეგორია' | t }}</span>
+            </button>
           }
-        </select>
-      </label>
-      <label class="ss-field">
-        <span class="ss-label georgian-text" lang="ka">{{ 'კატეგორია' | t }}</span>
-        <select class="ss-input georgian-text" lang="ka" formControlName="category">
-          @for (option of categoryOptions; track option) {
-            <option [value]="option">{{ stringifyCategory(option) }}</option>
-          }
-        </select>
-      </label>
-    </div>
+        </div>
+        @if (categoryCount() === 0) {
+          <p class="text-xs georgian-text m-0" lang="ka" style="color: var(--tui-text-secondary)">
+            {{ 'ერთი ტურნირი. რამდენიმე კატეგორიისთვის (მაგ. კაცები, ქალები, შერეული) დაამატეთ კატეგორია.' | t }}
+          </p>
+        }
+        @for (row of categoryRows.controls; track row; let i = $index) {
+          <div
+            class="rounded-lg p-3 space-y-3"
+            style="border: 1px solid var(--hairline-2)"
+            [formGroupName]="i"
+            [attr.data-testid]="'category-row-' + i"
+          >
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-sm font-semibold georgian-text" lang="ka">
+                {{ 'კატეგორია' | t }} {{ i + 1 }}
+              </span>
+              <button
+                class="ss-icon-btn ss-icon-btn--s ss-icon-btn--danger"
+                type="button"
+                [attr.aria-label]="'კატეგორიის წაშლა' | t"
+                [title]="'კატეგორიის წაშლა' | t"
+                (click)="removeCategory(i)"
+              >
+                <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/x.svg')"></i>
+              </button>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="ss-field">
+                <span class="ss-label georgian-text" lang="ka">{{ 'სახელი (KA)' | t }}</span>
+                <input
+                  class="ss-input georgian-text"
+                  lang="ka"
+                  formControlName="label"
+                  [attr.maxlength]="labelMax"
+                  [placeholder]="'მაგ. კაცები A' | t"
+                />
+              </label>
+              <label class="ss-field">
+                <span class="ss-label">Label (EN)</span>
+                <input class="ss-input" formControlName="labelEn" [attr.maxlength]="labelMax" placeholder="Men A" />
+              </label>
+              <label class="ss-field">
+                <span class="ss-label georgian-text" lang="ka">{{ 'ტიპი' | t }}</span>
+                <select class="ss-input georgian-text" lang="ka" formControlName="type">
+                  @for (option of typeOptions; track option) {
+                    <option [value]="option">{{ typeLabels[option] }}</option>
+                  }
+                </select>
+              </label>
+              <label class="ss-field">
+                <span class="ss-label georgian-text" lang="ka">{{ 'ფორმატი' | t }}</span>
+                <select class="ss-input georgian-text" lang="ka" formControlName="format">
+                  @for (option of formatOptions; track option) {
+                    <option [value]="option">{{ formatLabels[option] }}</option>
+                  }
+                </select>
+              </label>
+              <label class="ss-field">
+                <span class="ss-label georgian-text" lang="ka">{{ 'კატეგორია' | t }}</span>
+                <select class="ss-input georgian-text" lang="ka" formControlName="category">
+                  @for (option of categoryOptions; track option) {
+                    <option [value]="option">{{ categoryLabels[option] }}</option>
+                  }
+                </select>
+              </label>
+              <label class="ss-field">
+                <span class="ss-label georgian-text" lang="ka">{{ 'დონე' | t }}</span>
+                <select class="ss-input georgian-text" lang="ka" formControlName="level">
+                  @for (option of levelOptions; track option) {
+                    <option [value]="option">{{ levelLabels[option] }}</option>
+                  }
+                </select>
+              </label>
+              <label class="ss-field">
+                <span class="ss-label georgian-text" lang="ka">{{ 'საფასური (₾)' | t }}</span>
+                <input
+                  class="ss-input"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  formControlName="entryFeeGel"
+                  [class.ss-input--invalid]="rowInvalid(i, 'entryFeeGel')"
+                />
+              </label>
+              <label class="ss-field">
+                <span class="ss-label georgian-text" lang="ka">{{ 'ადგილები' | t }}</span>
+                <input
+                  class="ss-input"
+                  type="number"
+                  min="2"
+                  max="512"
+                  formControlName="maxParticipants"
+                  [class.ss-input--invalid]="rowInvalid(i, 'maxParticipants')"
+                />
+              </label>
+            </div>
+          </div>
+        }
+        @if (categoryCount() >= 2) {
+          <p class="text-xs georgian-text m-0" lang="ka" style="color: var(--tui-text-secondary)">
+            {{ 'სახელი, ობიექტი, თარიღები, აღწერა და პრიზი ღონისძიების ყველა კატეგორიას აქვს საერთო' | t }}
+          </p>
+        }
+      </div>
+    }
 
     <!-- Start date + time -->
     <div class="grid grid-cols-2 gap-4">
@@ -224,25 +385,27 @@
       </label>
     </div>
 
-    <!-- Fee + capacity -->
-    <div class="grid grid-cols-2 gap-4">
-      <label class="ss-field">
-        <span class="ss-label georgian-text" lang="ka">
-          {{ 'საფასური (₾)' | t }} <span class="text-red-500">*</span>
-        </span>
-        <input class="ss-input" type="number" min="0" step="0.5" formControlName="entryFeeGel" />
-        <span class="text-xs georgian-text" style="color: var(--tui-text-secondary)" lang="ka">{{ '0 = უფასო' | t }}</span>
-      </label>
-      <label class="ss-field">
-        <span class="ss-label georgian-text" lang="ka">
-          {{ 'ადგილები' | t }} <span class="text-red-500">*</span>
-        </span>
-        <input class="ss-input" type="number" min="2" max="512" formControlName="maxParticipants" />
-        <span class="text-xs georgian-text" style="color: var(--tui-text-secondary)" lang="ka">
-          {{ 'წყვილებისთვის — წყვილების რაოდენობა' | t }}
-        </span>
-      </label>
-    </div>
+    <!-- Fee + capacity (per category once the event has categories) -->
+    @if (categoryCount() < 2) {
+      <div class="grid grid-cols-2 gap-4">
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">
+            {{ 'საფასური (₾)' | t }} <span class="text-red-500">*</span>
+          </span>
+          <input class="ss-input" type="number" min="0" step="0.5" formControlName="entryFeeGel" />
+          <span class="text-xs georgian-text" style="color: var(--tui-text-secondary)" lang="ka">{{ '0 = უფასო' | t }}</span>
+        </label>
+        <label class="ss-field">
+          <span class="ss-label georgian-text" lang="ka">
+            {{ 'ადგილები' | t }} <span class="text-red-500">*</span>
+          </span>
+          <input class="ss-input" type="number" min="2" max="512" formControlName="maxParticipants" />
+          <span class="text-xs georgian-text" style="color: var(--tui-text-secondary)" lang="ka">
+            {{ 'წყვილებისთვის — წყვილების რაოდენობა' | t }}
+          </span>
+        </label>
+      </div>
+    }
 
     <!-- Prize -->
     <label class="ss-field">

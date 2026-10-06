@@ -1,3 +1,128 @@
+<!-- Row actions (shared by the table rows and the mobile cards) -->
+<ng-template #actions let-t>
+  <div class="flex items-center gap-1 justify-end flex-wrap">
+    @if (canManage(t)) {
+      <a
+        class="ss-btn ss-btn--outline ss-btn--s"
+        data-testid="tournament-manage"
+        [routerLink]="['/tournaments', t._id]"
+      >
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/settings.svg')"></i>
+        <span class="georgian-text" lang="ka">{{ 'მართვა' | t }}</span>
+      </a>
+    }
+    @if (t.status === 'draft') {
+      <button
+        class="ss-icon-btn"
+        type="button"
+        [attr.aria-label]="'გამოქვეყნება' | t"
+        [title]="'გამოქვეყნება' | t"
+        (click)="publish(t)"
+      >
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/rocket.svg')"></i>
+      </button>
+    }
+    @if (t.status === 'published') {
+      <button
+        class="ss-icon-btn"
+        type="button"
+        [attr.aria-label]="'დასრულება' | t"
+        [title]="'დასრულება' | t"
+        (click)="complete(t)"
+      >
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/flag.svg')"></i>
+      </button>
+    }
+    @if (t.external) {
+      <a
+        class="ss-icon-btn"
+        target="_blank"
+        rel="noopener"
+        data-testid="external-link"
+        [href]="t.external.registrationUrl"
+        [attr.aria-label]="'რეგისტრაციის ბმული' | t"
+        [title]="'რეგისტრაციის ბმული' | t"
+      >
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/external-link.svg')"></i>
+      </a>
+    } @else {
+      <button
+        class="ss-icon-btn"
+        type="button"
+        [attr.aria-label]="'რეგისტრაციები' | t"
+        [title]="'რეგისტრაციები' | t"
+        (click)="openRegistrations(t)"
+      >
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
+      </button>
+    }
+    @if (hasResults(t)) {
+      <button
+        class="ss-icon-btn"
+        type="button"
+        data-testid="tournament-results"
+        [attr.aria-label]="'შედეგები' | t"
+        [title]="'შედეგები' | t"
+        (click)="openResults(t)"
+      >
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/list-ordered.svg')"></i>
+      </button>
+    }
+    @if (t.status === 'draft' || t.status === 'published') {
+      <button
+        class="ss-icon-btn"
+        type="button"
+        [attr.aria-label]="'რედაქტირება' | t"
+        [title]="'რედაქტირება' | t"
+        (click)="editTournament(t)"
+      >
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+      </button>
+    }
+    @if (t.status === 'published') {
+      <button
+        class="ss-icon-btn ss-icon-btn--danger"
+        type="button"
+        [attr.aria-label]="'გაუქმება' | t"
+        [title]="'გაუქმება' | t"
+        (click)="cancel(t)"
+      >
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/circle-x.svg')"></i>
+      </button>
+    }
+    @if (t.status === 'draft') {
+      <button
+        class="ss-icon-btn ss-icon-btn--danger"
+        type="button"
+        [attr.aria-label]="'წაშლა' | t"
+        [title]="'წაშლა' | t"
+        (click)="deleteTournament(t)"
+      >
+        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+      </button>
+    }
+  </div>
+</ng-template>
+
+<!-- Type · category / format · level -->
+<ng-template #kind let-t>
+  <div class="text-sm georgian-text" lang="ka">
+    {{ typeLabel(t) }} · {{ categoryLabel(t) }}
+    <div class="text-xs" style="color: var(--tui-text-secondary)">
+      {{ formatLabel(t) }} · {{ levelLabel(t) }}
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #places let-t>
+  @if (t.external) {
+    <!-- registration happens off-site: our counter says nothing -->
+    <span style="color: var(--tui-text-tertiary)">—</span>
+  } @else {
+    <span class="font-medium">{{ t.registeredCount }}/{{ t.maxParticipants }}</span>
+  }
+</ng-template>
+
 <div class="pt-8 p-0 sm:p-8">
   <header class="mb-6 flex items-center justify-between">
     <h1 class="text-2xl font-semibold georgian-text" lang="ka">{{ 'ტურნირები' | t }}</h1>
@@ -35,157 +160,131 @@
             </tr>
           </thead>
           <tbody>
-            @for (t of tournaments(); track t._id) {
-              <tr data-testid="tournament-row">
-                <td>
-                  <div class="font-medium flex items-center gap-2">
-                    <span>{{ tournamentLabel(t) }}</span>
-                    @if (t.external) {
-                      <span
-                        class="ss-badge ss-badge--info georgian-text"
-                        lang="ka"
-                        data-testid="external-badge"
-                      >
-                        {{ 'გარე' | t }}
-                      </span>
-                    }
-                  </div>
-                  <div class="text-xs" style="color: var(--tui-text-secondary)">
-                    {{ facilityLabel(t) }} @if (t.city) { · {{ t.city }} }
-                  </div>
-                </td>
-                <td class="text-sm whitespace-nowrap">
-                  {{ t.startDate }} · {{ t.startTime }}
-                  @if (t.endDate) {
-                    <div class="text-xs" style="color: var(--tui-text-secondary)">
-                      → {{ t.endDate }}
+            @for (block of blocks(); track block.key) {
+              @if (block.kind === 'single') {
+                <tr data-testid="tournament-row">
+                  <td>
+                    <div class="font-medium flex items-center gap-2">
+                      <span>{{ tournamentLabel(block.tournament) }}</span>
+                      @if (block.tournament.external) {
+                        <span
+                          class="ss-badge ss-badge--info georgian-text"
+                          lang="ka"
+                          data-testid="external-badge"
+                        >
+                          {{ 'გარე' | t }}
+                        </span>
+                      }
                     </div>
-                  }
-                </td>
-                <td class="text-sm georgian-text" lang="ka">
-                  {{ typeLabel(t) }} · {{ categoryLabel(t) }}
-                  <div class="text-xs" style="color: var(--tui-text-secondary)">
-                    {{ formatLabel(t) }} · {{ levelLabel(t) }}
-                  </div>
-                </td>
-                <td class="text-sm georgian-text whitespace-nowrap" lang="ka">{{ feeLabel(t) }}</td>
-                <td class="text-sm">
-                  @if (t.external) {
-                    <!-- registration happens off-site: our counter says nothing -->
-                    <span style="color: var(--tui-text-tertiary)">—</span>
-                  } @else {
-                    <span class="font-medium">{{ t.registeredCount }}/{{ t.maxParticipants }}</span>
-                  }
-                </td>
-                <td>
-                  <span
-                    class="georgian-text"
-                    lang="ka"
-                    [class]="statusClass(t.status)"
-                    data-testid="tournament-status"
-                  >
-                    {{ statusLabel(t.status) }}
-                  </span>
-                </td>
-                <td class="text-sm">
-                  <div class="flex items-center gap-1 justify-end">
-                    @if (t.status === 'draft') {
-                      <button
-                        class="ss-icon-btn"
-                        type="button"
-                        [attr.aria-label]="'გამოქვეყნება' | t"
-                        [title]="'გამოქვეყნება' | t"
-                        (click)="publish(t)"
-                      >
-                        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/rocket.svg')"></i>
-                      </button>
+                    <div class="text-xs" style="color: var(--tui-text-secondary)">
+                      {{ facilityLabel(block.tournament) }}
+                      @if (block.tournament.city) {
+                        · {{ block.tournament.city }}
+                      }
+                    </div>
+                  </td>
+                  <td class="text-sm whitespace-nowrap">
+                    {{ block.tournament.startDate }} · {{ block.tournament.startTime }}
+                    @if (block.tournament.endDate) {
+                      <div class="text-xs" style="color: var(--tui-text-secondary)">
+                        → {{ block.tournament.endDate }}
+                      </div>
                     }
-                    @if (t.status === 'published') {
-                      <button
-                        class="ss-icon-btn"
-                        type="button"
-                        [attr.aria-label]="'დასრულება' | t"
-                        [title]="'დასრულება' | t"
-                        (click)="complete(t)"
+                  </td>
+                  <td>
+                    <ng-container
+                      [ngTemplateOutlet]="kind"
+                      [ngTemplateOutletContext]="{ $implicit: block.tournament }"
+                    />
+                  </td>
+                  <td class="text-sm georgian-text whitespace-nowrap" lang="ka">
+                    {{ feeLabel(block.tournament) }}
+                  </td>
+                  <td class="text-sm">
+                    <ng-container
+                      [ngTemplateOutlet]="places"
+                      [ngTemplateOutletContext]="{ $implicit: block.tournament }"
+                    />
+                  </td>
+                  <td>
+                    <span
+                      class="georgian-text"
+                      lang="ka"
+                      [class]="statusClass(block.tournament.status)"
+                      data-testid="tournament-status"
+                    >
+                      {{ statusLabel(block.tournament.status) }}
+                    </span>
+                  </td>
+                  <td class="text-sm">
+                    <ng-container
+                      [ngTemplateOutlet]="actions"
+                      [ngTemplateOutletContext]="{ $implicit: block.tournament }"
+                    />
+                  </td>
+                </tr>
+              } @else {
+                <tr data-testid="event-row">
+                  <td colspan="7">
+                    <div class="font-semibold flex items-center gap-2 flex-wrap">
+                      <span>{{ tournamentLabel(block.head) }}</span>
+                      <span class="ss-badge ss-badge--accent georgian-text" lang="ka">
+                        {{ block.categories.length }} {{ 'კატეგორია' | t }}
+                      </span>
+                    </div>
+                    <div class="text-xs" style="color: var(--tui-text-secondary)">
+                      {{ facilityLabel(block.head) }}
+                      @if (block.head.city) {
+                        · {{ block.head.city }}
+                      }
+                    </div>
+                  </td>
+                </tr>
+                @for (t of block.categories; track t._id) {
+                  <tr data-testid="tournament-row" data-category="true">
+                    <td>
+                      <div class="pl-4 flex items-center gap-2">
+                        <span style="color: var(--tui-text-tertiary)">↳</span>
+                        <span class="font-medium georgian-text" lang="ka" data-testid="category-name">
+                          {{ categoryName(t) }}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="text-sm whitespace-nowrap">
+                      {{ t.startDate }} · {{ t.startTime }}
+                    </td>
+                    <td>
+                      <ng-container
+                        [ngTemplateOutlet]="kind"
+                        [ngTemplateOutletContext]="{ $implicit: t }"
+                      />
+                    </td>
+                    <td class="text-sm georgian-text whitespace-nowrap" lang="ka">{{ feeLabel(t) }}</td>
+                    <td class="text-sm">
+                      <ng-container
+                        [ngTemplateOutlet]="places"
+                        [ngTemplateOutletContext]="{ $implicit: t }"
+                      />
+                    </td>
+                    <td>
+                      <span
+                        class="georgian-text"
+                        lang="ka"
+                        [class]="statusClass(t.status)"
+                        data-testid="tournament-status"
                       >
-                        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/flag.svg')"></i>
-                      </button>
-                    }
-                    @if (t.external) {
-                      <a
-                        class="ss-icon-btn"
-                        target="_blank"
-                        rel="noopener"
-                        data-testid="external-link"
-                        [href]="t.external.registrationUrl"
-                        [attr.aria-label]="'რეგისტრაციის ბმული' | t"
-                        [title]="'რეგისტრაციის ბმული' | t"
-                      >
-                        <i
-                          class="ss-ic"
-                          style="--ss-ic: url('assets/taiga-ui/icons/external-link.svg')"
-                        ></i>
-                      </a>
-                    } @else {
-                      <button
-                        class="ss-icon-btn"
-                        type="button"
-                        [attr.aria-label]="'რეგისტრაციები' | t"
-                        [title]="'რეგისტრაციები' | t"
-                        (click)="openRegistrations(t)"
-                      >
-                        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
-                      </button>
-                    }
-                    @if (hasResults(t)) {
-                      <button
-                        class="ss-icon-btn"
-                        type="button"
-                        data-testid="tournament-results"
-                        [attr.aria-label]="'შედეგები' | t"
-                        [title]="'შედეგები' | t"
-                        (click)="openResults(t)"
-                      >
-                        <i
-                          class="ss-ic"
-                          style="--ss-ic: url('assets/taiga-ui/icons/list-ordered.svg')"
-                        ></i>
-                      </button>
-                    }
-                    @if (t.status === 'draft' || t.status === 'published') {
-                      <button
-                        class="ss-icon-btn"
-                        type="button"
-                        [attr.aria-label]="'რედაქტირება' | t"
-                        (click)="editTournament(t)"
-                      >
-                        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
-                      </button>
-                    }
-                    @if (t.status === 'published') {
-                      <button
-                        class="ss-icon-btn ss-icon-btn--danger"
-                        type="button"
-                        [attr.aria-label]="'გაუქმება' | t"
-                        [title]="'გაუქმება' | t"
-                        (click)="cancel(t)"
-                      >
-                        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/circle-x.svg')"></i>
-                      </button>
-                    }
-                    @if (t.status === 'draft') {
-                      <button
-                        class="ss-icon-btn ss-icon-btn--danger"
-                        type="button"
-                        [attr.aria-label]="'წაშლა' | t"
-                        (click)="deleteTournament(t)"
-                      >
-                        <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
-                      </button>
-                    }
-                  </div>
-                </td>
-              </tr>
+                        {{ statusLabel(t.status) }}
+                      </span>
+                    </td>
+                    <td class="text-sm">
+                      <ng-container
+                        [ngTemplateOutlet]="actions"
+                        [ngTemplateOutletContext]="{ $implicit: t }"
+                      />
+                    </td>
+                  </tr>
+                }
+              }
             }
           </tbody>
         </table>
@@ -195,135 +294,99 @@
     <!-- Mobile Cards View -->
     @if (isMobile()) {
       <div class="flex flex-col gap-4">
-        @for (t of tournaments(); track t._id) {
-          <div class="ss-card p-4" data-testid="tournament-row">
-            <div class="flex items-start justify-between gap-2 mb-2">
-              <div class="min-w-0">
-                <h3 class="font-semibold truncate">{{ tournamentLabel(t) }}</h3>
-                @if (t.external) {
-                  <span
-                    class="ss-badge ss-badge--info georgian-text"
-                    lang="ka"
-                    data-testid="external-badge"
-                  >
-                    {{ 'გარე' | t }}
-                  </span>
+        @for (block of blocks(); track block.key) {
+          @if (block.kind === 'single') {
+            <div class="ss-card p-4" data-testid="tournament-row">
+              <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="min-w-0">
+                  <h3 class="font-semibold truncate">{{ tournamentLabel(block.tournament) }}</h3>
+                  @if (block.tournament.external) {
+                    <span
+                      class="ss-badge ss-badge--info georgian-text"
+                      lang="ka"
+                      data-testid="external-badge"
+                    >
+                      {{ 'გარე' | t }}
+                    </span>
+                  }
+                  <p class="text-sm truncate" style="color: var(--tui-text-secondary)">
+                    {{ facilityLabel(block.tournament) }} · {{ block.tournament.startDate }}
+                    {{ block.tournament.startTime }}
+                  </p>
+                </div>
+                <span
+                  class="georgian-text shrink-0"
+                  lang="ka"
+                  [class]="statusClass(block.tournament.status)"
+                >
+                  {{ statusLabel(block.tournament.status) }}
+                </span>
+              </div>
+              <div
+                class="flex flex-wrap gap-2 text-xs georgian-text mb-3"
+                lang="ka"
+                style="color: var(--tui-text-secondary)"
+              >
+                <span>{{ typeLabel(block.tournament) }}</span>
+                <span>·</span>
+                <span>{{ categoryLabel(block.tournament) }}</span>
+                <span>·</span>
+                <span>{{ formatLabel(block.tournament) }}</span>
+                <span>·</span>
+                <span>{{ feeLabel(block.tournament) }}</span>
+                @if (!block.tournament.external) {
+                  <span>·</span>
+                  <span>{{ block.tournament.registeredCount }}/{{ block.tournament.maxParticipants }}</span>
                 }
+              </div>
+              <ng-container
+                [ngTemplateOutlet]="actions"
+                [ngTemplateOutletContext]="{ $implicit: block.tournament }"
+              />
+            </div>
+          } @else {
+            <div class="ss-card p-4" data-testid="event-row">
+              <div class="mb-3 min-w-0">
+                <h3 class="font-semibold truncate">{{ tournamentLabel(block.head) }}</h3>
                 <p class="text-sm truncate" style="color: var(--tui-text-secondary)">
-                  {{ facilityLabel(t) }} · {{ t.startDate }} {{ t.startTime }}
+                  {{ facilityLabel(block.head) }} · {{ block.head.startDate }} {{ block.head.startTime }}
                 </p>
               </div>
-              <span
-                class="georgian-text shrink-0"
-                lang="ka"
-                [class]="statusClass(t.status)"
-              >
-                {{ statusLabel(t.status) }}
-              </span>
+              <div class="flex flex-col gap-2">
+                @for (t of block.categories; track t._id) {
+                  <div
+                    class="rounded-lg p-3"
+                    style="border: 1px solid var(--hairline)"
+                    data-testid="tournament-row"
+                  >
+                    <div class="flex items-center justify-between gap-2 mb-1">
+                      <span class="font-medium georgian-text truncate" lang="ka" data-testid="category-name">
+                        {{ categoryName(t) }}
+                      </span>
+                      <span class="georgian-text shrink-0" lang="ka" [class]="statusClass(t.status)">
+                        {{ statusLabel(t.status) }}
+                      </span>
+                    </div>
+                    <div
+                      class="flex flex-wrap gap-2 text-xs georgian-text mb-2"
+                      lang="ka"
+                      style="color: var(--tui-text-secondary)"
+                    >
+                      <span>{{ formatLabel(t) }}</span>
+                      <span>·</span>
+                      <span>{{ feeLabel(t) }}</span>
+                      <span>·</span>
+                      <span>{{ t.registeredCount }}/{{ t.maxParticipants }}</span>
+                    </div>
+                    <ng-container
+                      [ngTemplateOutlet]="actions"
+                      [ngTemplateOutletContext]="{ $implicit: t }"
+                    />
+                  </div>
+                }
+              </div>
             </div>
-            <div class="flex flex-wrap gap-2 text-xs georgian-text mb-3" lang="ka" style="color: var(--tui-text-secondary)">
-              <span>{{ typeLabel(t) }}</span>
-              <span>·</span>
-              <span>{{ categoryLabel(t) }}</span>
-              <span>·</span>
-              <span>{{ formatLabel(t) }}</span>
-              <span>·</span>
-              <span>{{ feeLabel(t) }}</span>
-              @if (!t.external) {
-                <span>·</span>
-                <span>{{ t.registeredCount }}/{{ t.maxParticipants }}</span>
-              }
-            </div>
-            <div class="flex items-center gap-1 justify-end">
-              @if (t.status === 'draft') {
-                <button
-                  class="ss-icon-btn"
-                  type="button"
-                  [attr.aria-label]="'გამოქვეყნება' | t"
-                  (click)="publish(t)"
-                >
-                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/rocket.svg')"></i>
-                </button>
-              }
-              @if (t.status === 'published') {
-                <button
-                  class="ss-icon-btn"
-                  type="button"
-                  [attr.aria-label]="'დასრულება' | t"
-                  (click)="complete(t)"
-                >
-                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/flag.svg')"></i>
-                </button>
-              }
-              @if (t.external) {
-                <a
-                  class="ss-icon-btn"
-                  target="_blank"
-                  rel="noopener"
-                  [href]="t.external.registrationUrl"
-                  [attr.aria-label]="'რეგისტრაციის ბმული' | t"
-                >
-                  <i
-                    class="ss-ic"
-                    style="--ss-ic: url('assets/taiga-ui/icons/external-link.svg')"
-                  ></i>
-                </a>
-              } @else {
-                <button
-                  class="ss-icon-btn"
-                  type="button"
-                  [attr.aria-label]="'რეგისტრაციები' | t"
-                  (click)="openRegistrations(t)"
-                >
-                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/users.svg')"></i>
-                </button>
-              }
-              @if (hasResults(t)) {
-                <button
-                  class="ss-icon-btn"
-                  type="button"
-                  data-testid="tournament-results"
-                  [attr.aria-label]="'შედეგები' | t"
-                  (click)="openResults(t)"
-                >
-                  <i
-                    class="ss-ic"
-                    style="--ss-ic: url('assets/taiga-ui/icons/list-ordered.svg')"
-                  ></i>
-                </button>
-              }
-              @if (t.status === 'draft' || t.status === 'published') {
-                <button
-                  class="ss-icon-btn"
-                  type="button"
-                  [attr.aria-label]="'რედაქტირება' | t"
-                  (click)="editTournament(t)"
-                >
-                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
-                </button>
-              }
-              @if (t.status === 'published') {
-                <button
-                  class="ss-icon-btn ss-icon-btn--danger"
-                  type="button"
-                  [attr.aria-label]="'გაუქმება' | t"
-                  (click)="cancel(t)"
-                >
-                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/circle-x.svg')"></i>
-                </button>
-              }
-              @if (t.status === 'draft') {
-                <button
-                  class="ss-icon-btn ss-icon-btn--danger"
-                  type="button"
-                  [attr.aria-label]="'წაშლა' | t"
-                  (click)="deleteTournament(t)"
-                >
-                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
-                </button>
-              }
-            </div>
-          </div>
+          }
         }
       </div>
     }

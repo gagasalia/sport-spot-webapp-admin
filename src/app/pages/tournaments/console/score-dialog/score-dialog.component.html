@@ -1,0 +1,170 @@
+<div class="sd" data-testid="score-dialog">
+  <p class="sd-sub">
+    <span class="georgian-text" lang="ka">{{ data.label }}</span>
+    @if (when) {
+      <span class="ss-num">· {{ when }}</span>
+    }
+    @if (match.court) {
+      <span>· {{ match.court }}</span>
+    }
+    @if (match.rated) {
+      <span class="ss-badge ss-badge--accent georgian-text" lang="ka">{{ 'რეიტინგში' | t }}</span>
+    }
+  </p>
+
+  @if (state().outcome !== 'walkover') {
+    <div
+      class="sd-board"
+      role="group"
+      [class.is-muted]="awarded()"
+      [attr.aria-label]="'შედეგის ანგარიში' | t"
+    >
+      @if (isSets) {
+        <div class="sd-row sd-row--head" aria-hidden="true">
+          <span></span>
+          @for (c of columns(); track c) {
+            <span class="sd-col ss-num" [class.is-tb]="tiebreakColumn(c)">{{ c + 1 }}</span>
+          }
+        </div>
+      }
+      @for (side of [0, 1]; track side) {
+        <div class="sd-row" [class.is-winner]="winner() === side" [attr.data-testid]="'side-' + side">
+          <span class="sd-name">{{ names[side] }}</span>
+          @if (isSets) {
+            @for (c of columns(); track c) {
+              <input
+                class="sd-cell ss-num"
+                type="text"
+                inputmode="numeric"
+                autocomplete="off"
+                maxlength="2"
+                [attr.data-cell]="c * 2 + side"
+                [attr.aria-label]="names[side] + ' · ' + ('სეტი' | t) + ' ' + (c + 1)"
+                [value]="cellValue(state().sets[c][side])"
+                (input)="onSetInput($event, c, side === 0 ? 0 : 1)"
+                (focus)="$any($event.target).select()"
+              />
+            }
+          } @else {
+            <input
+              class="sd-cell sd-cell--wide ss-num"
+              type="text"
+              inputmode="numeric"
+              autocomplete="off"
+              maxlength="2"
+              [attr.data-cell]="side"
+              [attr.aria-label]="names[side] + ' · ' + ('ქულები' | t)"
+              [value]="cellValue(state().points[side])"
+              (input)="onPointsInput($event, side === 0 ? 0 : 1)"
+              (focus)="$any($event.target).select()"
+            />
+          }
+        </div>
+      }
+    </div>
+    <p class="sd-hint georgian-text" lang="ka">
+      @if (isSets) {
+        {{ 'სეტი: 6-0…6-4, 7-5 ან 7-6' | t }}
+        @if (scoring.type === 'sets' && scoring.superTiebreak && scoring.bestOf > 1) {
+          · {{ 'გადამწყვეტი სეტი შეიძლება იყოს სუპერ ტაიბრეიკი (10-x)' | t }}
+        }
+      } @else if (target) {
+        {{ 'ორი ქულის ჯამი' | t }}: <span class="ss-num">{{ target }}</span>
+      } @else {
+        {{ 'დროზე: ქულები 0–64, ფრე დასაშვებია' | t }}
+      }
+    </p>
+  }
+
+  <!-- Secondary row: walkover / retirement, one tap + the winner -->
+  <div class="sd-alt">
+    <span class="sd-alt-label georgian-text" lang="ka">{{ 'ტექნიკური მოგება / მოხსნა' | t }}</span>
+    <div class="ss-chip-rail ss-chip-rail--wrap">
+      <button
+        type="button"
+        class="ss-chip"
+        data-testid="outcome-walkover"
+        [class.is-active]="state().outcome === 'walkover'"
+        (click)="setOutcome(state().outcome === 'walkover' ? 'played' : 'walkover')"
+      >
+        <span class="georgian-text" lang="ka">{{ 'ტექნიკური მოგება' | t }}</span>
+      </button>
+      <button
+        type="button"
+        class="ss-chip"
+        data-testid="outcome-retired"
+        [class.is-active]="state().outcome === 'retired'"
+        (click)="setOutcome(state().outcome === 'retired' ? 'played' : 'retired')"
+      >
+        <span class="georgian-text" lang="ka">{{ 'თამაშიდან მოხსნა' | t }}</span>
+      </button>
+    </div>
+    @if (awarded()) {
+      <div class="sd-winner" role="radiogroup" [attr.aria-label]="'გამარჯვებული' | t">
+        <span class="sd-alt-label georgian-text" lang="ka">{{ 'გამარჯვებული' | t }}</span>
+        @for (side of [0, 1]; track side) {
+          <button
+            type="button"
+            class="ss-chip"
+            role="radio"
+            [attr.data-testid]="'winner-' + side"
+            [class.is-active]="state().winner === side"
+            [attr.aria-checked]="state().winner === side"
+            (click)="setWinner(side === 0 ? 0 : 1)"
+          >
+            {{ names[side] }}
+          </button>
+        }
+      </div>
+      @if (state().outcome === 'retired') {
+        <p class="sd-hint georgian-text" lang="ka">
+          {{ 'შეგიძლიათ შეიყვანოთ ანგარიში შეწყვეტის მომენტისთვის — რეიტინგში არ ჩაითვლება' | t }}
+        </p>
+      }
+    }
+  </div>
+
+  @if (errors().length) {
+    <ul class="sd-errors" data-testid="score-errors">
+      @for (line of errors(); track $index) {
+        <li class="georgian-text" lang="ka">{{ line }}</li>
+      }
+    </ul>
+  }
+  @if (serverError(); as e) {
+    <div class="sd-server georgian-text" lang="ka" role="alert" data-testid="score-server-error">
+      {{ e.message | t }}
+      @if (e.detail) {
+        <span class="sd-server-detail">{{ e.detail }}</span>
+      }
+    </div>
+  }
+
+  <div class="sd-foot">
+    @if (canClear) {
+      <button
+        class="ss-btn ss-btn--danger ss-btn--s"
+        type="button"
+        data-testid="score-clear"
+        [disabled]="isSaving()"
+        (click)="clear()"
+      >
+        <span class="georgian-text" lang="ka">{{ 'შედეგის წაშლა' | t }}</span>
+      </button>
+    }
+    <span class="sd-spacer"></span>
+    <button class="ss-btn ss-btn--flat" type="button" (click)="cancel()">
+      <span class="georgian-text" lang="ka">{{ 'გაუქმება' | t }}</span>
+    </button>
+    <button
+      class="ss-btn ss-btn--primary"
+      type="button"
+      data-save
+      data-testid="score-save"
+      [disabled]="isSaving()"
+      (click)="save()"
+    >
+      <span class="georgian-text" lang="ka">{{ (isSaving() ? 'ინახება...' : 'შენახვა') | t }}</span>
+    </button>
+  </div>
+</div>

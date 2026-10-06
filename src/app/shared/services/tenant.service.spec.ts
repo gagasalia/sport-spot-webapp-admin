@@ -1,7 +1,9 @@
 import { TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { of, Subject } from 'rxjs';
 
 import { TenantService } from './tenant.service';
+import { AuthService } from './auth.service';
 import { AcademyService } from '../../services/http-services/academy.service';
 import { Academy, AcademyStatus } from '../models/academy.model';
 
@@ -15,19 +17,43 @@ const mockAcademy: Academy = {
 describe('TenantService', () => {
   let service: TenantService;
   let academyServiceSpy: jasmine.SpyObj<AcademyService>;
+  const isOrganizer = signal(false);
 
   function configure() {
     TestBed.configureTestingModule({
       providers: [
         TenantService,
         { provide: AcademyService, useValue: academyServiceSpy },
+        { provide: AuthService, useValue: { isOrganizer } },
       ],
     });
     service = TestBed.inject(TenantService);
   }
 
   beforeEach(() => {
+    isOrganizer.set(false);
     academyServiceSpy = jasmine.createSpyObj<AcademyService>('AcademyService', ['getMyAcademy']);
+  });
+
+  // ─── Tournament maker (docs/33 §6) ─────────────────────────────────────────
+
+  describe('organizer', () => {
+    it('resolves to null WITHOUT calling the academy endpoint (it would 403)', (done) => {
+      isOrganizer.set(true);
+      academyServiceSpy.getMyAcademy.and.returnValue(of(mockAcademy));
+      configure();
+
+      service.ensure().subscribe((academy) => {
+        expect(academy).toBeNull();
+        expect(academyServiceSpy.getMyAcademy).not.toHaveBeenCalled();
+        expect(service.hasTenant()).toBeFalse();
+        service.resolveAcademy().subscribe((again) => {
+          expect(again).toBeNull();
+          expect(academyServiceSpy.getMyAcademy).not.toHaveBeenCalled();
+          done();
+        });
+      });
+    });
   });
 
   // ─── Operator resolution via /academy/my ──────────────────────────────────

@@ -1,4 +1,9 @@
 /** Tournament shapes for the operator app (docs/13-tournaments-design.md). */
+import type {
+  DrawStatus,
+  TournamentCategoryDto,
+  TournamentStructure,
+} from './tournament-engine.model';
 
 export type TournamentType = 'singles' | 'doubles';
 export type TournamentFormat =
@@ -58,7 +63,25 @@ export interface Tournament {
   status: TournamentStatus;
   /** Set = an external tournament (registration off-site, superadmin-managed). */
   external?: TournamentExternal | null;
+  /** Set = one CATEGORY of a multi-category event (docs/33 §2.5). */
+  event?: TournamentEvent;
+  /** The engine configuration (docs/33 §2.1); absent = not configured yet. */
+  structure?: TournamentStructure | null;
+  /** Draw state (docs/33 §2.2); absent = never drawn. */
+  draw?: { status: DrawStatus } | null;
+  /** Organizer accounts running this tournament (docs/33 §6). */
+  organizers?: string[];
   createdAt?: string;
+}
+
+/** Sibling tournaments sharing `id` are the categories of one event. */
+export interface TournamentEvent {
+  id: string;
+  /** The category's display name ("კაცები A"); absent = category + level. */
+  label?: string;
+  labelEn?: string;
+  order: number;
+  primary?: boolean;
 }
 
 export interface CreateTournamentDto {
@@ -71,23 +94,40 @@ export interface CreateTournamentDto {
   description?: string;
   descriptionEn?: string;
   sportType?: string;
-  type: TournamentType;
-  format: TournamentFormat;
+  /** Required unless `categories` describes the event's categories. */
+  type?: TournamentType;
+  /** Required unless `categories` is set. */
+  format?: TournamentFormat;
   level?: TournamentLevel;
   category?: TournamentCategory;
   startDate: string;
   startTime: string;
   endDate?: string;
   registrationDeadline?: string;
-  entryFeeTetri: number;
+  /** Required unless `categories` is set. */
+  entryFeeTetri?: number;
   prizeDescription?: string;
   prizeDescriptionEn?: string;
-  maxParticipants: number;
+  /** Required unless `categories` is set. */
+  maxParticipants?: number;
+  /**
+   * A multi-category EVENT (docs/33 §2.5, ≥ 2 entries): one tournament per
+   * category sharing every event-level field; the top-level type / format /
+   * level / category / fee / capacity are then left out.
+   */
+  categories?: TournamentCategoryDto[];
 }
 
-/** Every key optional; the kind (internal/external) is fixed at creation — `external` only replaces the block of an external one. */
-export type UpdateTournamentDto = Partial<Omit<CreateTournamentDto, 'external'>> & {
+/**
+ * Every key optional; the kind (internal/external) is fixed at creation —
+ * `external` only replaces the block of an external one. `label` / `labelEn`
+ * name this category inside its event; categories are added through
+ * POST /tournaments/:id/categories, never by an update.
+ */
+export type UpdateTournamentDto = Partial<Omit<CreateTournamentDto, 'external' | 'categories'>> & {
   external?: TournamentExternal | null;
+  label?: string;
+  labelEn?: string;
 };
 
 // Caps mirrored from the API (tournament.constants.ts).
@@ -100,7 +140,14 @@ export type RegistrationPaymentStatus = 'pay_at_venue' | 'paid' | 'refunded';
 export interface TournamentRegistration {
   _id: string;
   tournament: string;
-  user: string;
+  /** Absent on an entrant the organizer added by hand without an account (docs/33 D7). */
+  user?: string;
+  /** Who created the row: the player, or the organizer by hand (absent on legacy rows = player). */
+  source?: 'player' | 'operator';
+  /** Draw seed (1 = top); absent = unseeded. */
+  seed?: number;
+  /** The partner's account when the partner phone belongs to one. */
+  partnerUser?: string;
   status: 'registered' | 'cancelled';
   partnerName?: string;
   /**
@@ -119,10 +166,16 @@ export interface TournamentRegistration {
   createdAt?: string;
 }
 
-/** PATCH /tournaments/:id/registrations/:registrationId — empty fields are ignored. */
+/**
+ * PATCH /tournaments/:id/registrations/:registrationId — empty fields are
+ * ignored. `playerName` / `playerPhone` only on an entrant the organizer added
+ * by hand (`source: 'operator'`).
+ */
 export interface UpdateRegistrationDto {
   partnerPhone?: string;
   partnerName?: string;
+  playerName?: string;
+  playerPhone?: string;
 }
 
 /** API bound on `partnerName` (UpdateRegistrationDTO). */

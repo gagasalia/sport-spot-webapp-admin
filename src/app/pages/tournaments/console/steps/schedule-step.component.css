@@ -1,0 +1,187 @@
+.sc {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.sc-form,
+.sc-board {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px;
+}
+.sc-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+.sc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.sc-courts,
+.sc-toggles,
+.sc-unscheduled {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.sc-unscheduled {
+  gap: 6px;
+}
+.sc-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+.sc-extra {
+  max-width: 460px;
+}
+.sc-session {
+  display: grid;
+  grid-template-columns: minmax(130px, 170px) minmax(96px, 120px) 12px minmax(96px, 120px) 32px;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 560px) {
+  .sc-session {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 32px;
+  }
+  .sc-session input[type='date'] {
+    grid-column: 1 / -1;
+  }
+  .sc-dash {
+    display: none;
+  }
+}
+.sc-dash {
+  text-align: center;
+  color: var(--text-faint);
+}
+.sc-add {
+  align-self: flex-start;
+}
+.sc-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+}
+.sc-num {
+  width: 120px;
+}
+.sc-error {
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--tui-status-negative-pale);
+  color: var(--danger);
+  font-size: 13px;
+}
+.sc-detail {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+.sc-actions,
+.sc-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.sc-actions {
+  justify-content: flex-end;
+}
+.sc-spacer {
+  flex: 1;
+}
+.sc-late {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.sc-empty {
+  margin: 0;
+  padding: 16px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.sc-scroll {
+  overflow-x: auto;
+}
+.sc-grid {
+  border-collapse: separate;
+  border-spacing: 4px;
+  font-size: 12px;
+}
+.sc-grid thead th {
+  min-width: 170px;
+  padding: 4px 6px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+.sc-grid .sc-time {
+  min-width: 52px;
+  width: 52px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-align: left;
+  vertical-align: top;
+}
+.sc-day th {
+  padding: 8px 4px 2px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+}
+.sc-grid td {
+  vertical-align: top;
+}
+.sc-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 100%;
+  max-width: 220px;
+  margin-bottom: 4px;
+  padding: 6px 8px;
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sc-chip:hover:not(:disabled) {
+  border-color: var(--accent-line);
+}
+.sc-chip:disabled {
+  cursor: default;
+}
+.sc-chip.is-done {
+  border-left-color: var(--hairline-2);
+  opacity: 0.55;
+}
+.sc-chip.is-clash {
+  border-left-color: var(--danger);
+}
+.sc-chip-label {
+  font-size: 10.5px;
+  color: var(--text-faint);
+}
+.sc-chip-names {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

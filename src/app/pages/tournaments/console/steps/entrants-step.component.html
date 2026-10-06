@@ -1,0 +1,143 @@
+<div class="es">
+  <div class="es-bar">
+    <span class="es-count" data-testid="entrants-count">
+      <b class="ss-num">{{ store.entrants().length }}</b>
+      <span class="georgian-text" lang="ka">/ {{ capacityLine() }}</span>
+    </span>
+    <span class="es-spacer"></span>
+    @if (canEdit() && store.entrants().length > 1) {
+      <span class="es-seed-label georgian-text" lang="ka">{{ 'განთესვა' | t }}:</span>
+      <button class="ss-btn ss-btn--outline ss-btn--s" type="button" data-testid="seed-rating" [disabled]="busy()" (click)="seedBy('rating')">
+        <span class="georgian-text" lang="ka">{{ 'რეიტინგით' | t }}</span>
+      </button>
+      <button class="ss-btn ss-btn--outline ss-btn--s" type="button" data-testid="seed-random" [disabled]="busy()" (click)="seedBy('random')">
+        <span class="georgian-text" lang="ka">{{ 'შემთხვევით' | t }}</span>
+      </button>
+      <button class="ss-btn ss-btn--flat ss-btn--s" type="button" data-testid="seed-clear" [disabled]="busy()" (click)="seedBy('clear')">
+        <span class="georgian-text" lang="ka">{{ 'გასუფთავება' | t }}</span>
+      </button>
+    }
+  </div>
+
+  @if (store.hasDraw()) {
+    <p class="es-note georgian-text" lang="ka" data-testid="entrants-locked">
+      {{ 'კენჭისყრა ჩატარებულია — სია ჩაკეტილია, სანამ კენჭისყრა არ გაუქმდება.' | t }}
+    </p>
+  } @else if (canEdit() && store.entrants().length > 1) {
+    <p class="es-note georgian-text" lang="ka">
+      {{ 'გადაათრიეთ რიგის შესაცვლელად — რიგი = განთესვა. განუთესავები კენჭისყრით ნაწილდება.' | t }}
+    </p>
+  }
+
+  @if (error(); as e) {
+    <div class="es-error georgian-text" lang="ka" role="alert" data-testid="entrants-error">
+      {{ e.message | t }}
+      @if (e.detail) {
+        <span class="es-detail">{{ e.detail }}</span>
+      }
+    </div>
+  }
+
+  @if (rows().length === 0) {
+    <p class="es-empty georgian-text" lang="ka">{{ 'მონაწილეები ჯერ არ არის' | t }}</p>
+  } @else {
+    <ol
+      class="es-list"
+      cdkDropList
+      [cdkDropListDisabled]="!canEdit() || busy()"
+      (cdkDropListDropped)="drop($event)"
+      data-testid="entrants-list"
+    >
+      @for (row of rows(); track row.entrant.id) {
+        <li class="es-row" cdkDrag [cdkDragDisabled]="!canEdit() || busy()" [attr.data-testid]="'entrant-' + row.entrant.id">
+          <div class="es-main">
+            @if (canEdit()) {
+              <span class="es-handle" cdkDragHandle [attr.aria-label]="'გადათრევა' | t" [title]="'გადათრევა' | t">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <circle cx="9" cy="6" r="1.6" /><circle cx="15" cy="6" r="1.6" />
+                  <circle cx="9" cy="12" r="1.6" /><circle cx="15" cy="12" r="1.6" />
+                  <circle cx="9" cy="18" r="1.6" /><circle cx="15" cy="18" r="1.6" />
+                </svg>
+              </span>
+            }
+            <span class="es-seed ss-num" [class.is-seeded]="row.entrant.seed">{{ row.entrant.seed ?? '—' }}</span>
+            <div class="es-who">
+              <span class="es-names">{{ playerLine(row) }}</span>
+              <span class="es-phones ss-num">{{ phonesOf(row) }}</span>
+            </div>
+            <div class="es-badges">
+              <span class="georgian-text" lang="ka" [class]="row.byHand ? 'ss-badge ss-badge--accent' : 'ss-badge ss-badge--neutral'">
+                {{ (row.byHand ? 'ხელით' : 'რეგისტრაციით') | t }}
+              </span>
+              @if (row.registration?.paymentStatus; as payment) {
+                <span class="georgian-text" lang="ka" [class]="paymentClass(payment)">
+                  {{ paymentLabel(payment) }}
+                </span>
+              }
+            </div>
+            @if (canEdit()) {
+              <div class="es-actions">
+                @if (row.byHand || doubles()) {
+                  <button class="ss-icon-btn ss-icon-btn--s" type="button" [attr.aria-label]="'რედაქტირება' | t" [title]="'რედაქტირება' | t" (click)="startEdit(row)">
+                    <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/pencil.svg')"></i>
+                  </button>
+                }
+                <button class="ss-icon-btn ss-icon-btn--s ss-icon-btn--danger" type="button" [attr.aria-label]="'წაშლა' | t" [title]="'წაშლა' | t" (click)="remove(row)">
+                  <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                </button>
+              </div>
+            }
+          </div>
+
+          @if (editingId() === row.entrant.id) {
+            <div class="es-form" data-testid="entrant-edit">
+              @if (row.byHand) {
+                <input class="ss-input georgian-text" lang="ka" [maxlength]="nameMax" [placeholder]="'სახელი' | t" [attr.aria-label]="'სახელი' | t" [ngModel]="editing().playerName" (ngModelChange)="patchEditing('playerName', $event)" />
+                <input class="ss-input" type="tel" inputmode="tel" placeholder="+995 5XX XX XX XX" [attr.aria-label]="'ტელეფონი' | t" [ngModel]="editing().playerPhone" (ngModelChange)="patchEditing('playerPhone', $event)" />
+              }
+              @if (doubles()) {
+                <input class="ss-input georgian-text" lang="ka" [maxlength]="nameMax" [placeholder]="'პარტნიორის სახელი' | t" [attr.aria-label]="'პარტნიორის სახელი' | t" [ngModel]="editing().partnerName" (ngModelChange)="patchEditing('partnerName', $event)" />
+                <input class="ss-input" type="tel" inputmode="tel" placeholder="+995 5XX XX XX XX" [attr.aria-label]="'პარტნიორის ტელეფონი' | t" [ngModel]="editing().partnerPhone" (ngModelChange)="patchEditing('partnerPhone', $event)" />
+              }
+              @if (editError(); as e) {
+                <span class="ss-error georgian-text es-span" lang="ka">{{ e | t }}</span>
+              }
+              <div class="es-form-actions es-span">
+                <button class="ss-btn ss-btn--flat ss-btn--s" type="button" (click)="cancelEdit()">
+                  <span class="georgian-text" lang="ka">{{ 'გაუქმება' | t }}</span>
+                </button>
+                <button class="ss-btn ss-btn--primary ss-btn--s" type="button" data-testid="entrant-save" [disabled]="busy() || !editBody(row)" (click)="saveEdit(row)">
+                  <span class="georgian-text" lang="ka">{{ 'შენახვა' | t }}</span>
+                </button>
+              </div>
+            </div>
+          }
+        </li>
+      }
+    </ol>
+  }
+
+  @if (canEdit()) {
+    <div class="es-add" data-testid="entrant-add">
+      <span class="es-add-title georgian-text" lang="ka">{{ (doubles() ? 'წყვილის დამატება ხელით' : 'მონაწილის დამატება ხელით') | t }}</span>
+      <div class="es-form">
+        <input class="ss-input georgian-text" lang="ka" data-testid="add-name" [maxlength]="nameMax" [placeholder]="'სახელი და გვარი' | t" [attr.aria-label]="'სახელი და გვარი' | t" [class.ss-input--invalid]="addSubmitted() && !!addError()" [ngModel]="adding().playerName" (ngModelChange)="patchAdding('playerName', $event)" />
+        <input class="ss-input" type="tel" inputmode="tel" data-testid="add-phone" placeholder="+995 5XX XX XX XX" [attr.aria-label]="'ტელეფონი' | t" [ngModel]="adding().playerPhone" (ngModelChange)="patchAdding('playerPhone', $event)" />
+        @if (doubles()) {
+          <input class="ss-input georgian-text" lang="ka" data-testid="add-partner-name" [maxlength]="nameMax" [placeholder]="'პარტნიორის სახელი' | t" [attr.aria-label]="'პარტნიორის სახელი' | t" [ngModel]="adding().partnerName" (ngModelChange)="patchAdding('partnerName', $event)" />
+          <input class="ss-input" type="tel" inputmode="tel" data-testid="add-partner-phone" placeholder="+995 5XX XX XX XX" [attr.aria-label]="'პარტნიორის ტელეფონი' | t" [ngModel]="adding().partnerPhone" (ngModelChange)="patchAdding('partnerPhone', $event)" />
+        }
+        <div class="es-form-actions es-span">
+          <span class="es-hint georgian-text" lang="ka">{{ 'ტელეფონით მოთამაშე რეიტინგში ჩაითვლება' | t }}</span>
+          <button class="ss-btn ss-btn--primary ss-btn--s" type="button" data-testid="add-submit" [disabled]="busy()" (click)="add()">
+            <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
+            <span class="georgian-text" lang="ka">{{ 'დამატება' | t }}</span>
+          </button>
+        </div>
+        @if (addSubmitted() && addError(); as e) {
+          <span class="ss-error georgian-text es-span" lang="ka">{{ e | t }}</span>
+        }
+      </div>
+    </div>
+  }
+</div>

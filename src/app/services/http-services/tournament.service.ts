@@ -12,6 +12,7 @@ import {
   UpdateRegistrationDto,
   UpdateTournamentDto,
 } from '../../shared/models/tournament.model';
+import { TournamentVenue } from '../../shared/models/tournament-engine.model';
 
 export interface PaginatedTournaments {
   data: Tournament[];
@@ -35,6 +36,23 @@ export class TournamentService {
       .pipe(map((res) => ({ data: res.result.data, page: res.result.page })));
   }
 
+  /** GET /tournaments/:id — one own tournament (any status; engine fields included). */
+  getTournament(id: string): Observable<Tournament> {
+    return this.http
+      .get<ApiResponse<Tournament>>(`${this.apiUrl}/tournaments/${id}`)
+      .pipe(map((res) => res.result.data));
+  }
+
+  /**
+   * GET /tournaments/venues — where the caller may host (docs/33 §6): an
+   * admin its academy's facilities, an organizer / superadmin every live one.
+   */
+  getVenues(): Observable<TournamentVenue[]> {
+    return this.http
+      .get<ApiResponse<TournamentVenue[]>>(`${this.apiUrl}/tournaments/venues`)
+      .pipe(map((res) => res.result.data ?? []));
+  }
+
   createTournament(dto: CreateTournamentDto): Observable<Tournament> {
     return this.http
       .post<ApiResponse<Tournament>>(`${this.apiUrl}/tournaments`, dto)
@@ -47,10 +65,15 @@ export class TournamentService {
       .pipe(map((res) => res.result.data));
   }
 
-  /** Lifecycle transition; cancelling refunds every paid registration. */
-  setStatus(id: string, status: TournamentStatus): Observable<Tournament> {
+  /**
+   * Lifecycle transition; cancelling refunds every paid registration.
+   * `wholeEvent` moves every category of the event that can make the
+   * transition (docs/33 §2.5) — the answer is this category only.
+   */
+  setStatus(id: string, status: TournamentStatus, wholeEvent?: boolean): Observable<Tournament> {
+    const body = wholeEvent ? { status, wholeEvent: true } : { status };
     return this.http
-      .patch<ApiResponse<Tournament>>(`${this.apiUrl}/tournaments/${id}/status`, { status })
+      .patch<ApiResponse<Tournament>>(`${this.apiUrl}/tournaments/${id}/status`, body)
       .pipe(map((res) => res.result.data));
   }
 

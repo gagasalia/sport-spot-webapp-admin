@@ -56,6 +56,10 @@ export class ShellComponent {
   protected readonly darkMode = this.theme.dark;
   protected readonly isEnglish = this.i18n.isEnglish;
   protected readonly isSuperAdmin = this.auth.isSuperAdmin;
+  /** A tournament maker (docs/33 §6): the nav holds «ტურნირები» only. */
+  protected readonly isOrganizer = this.auth.isOrganizer;
+  /** Where the brand mark leads. */
+  protected readonly homeLink = computed(() => (this.isOrganizer() ? '/tournaments' : '/reservations'));
   protected expanded = signal(true);
   protected isMobile = signal(false);
 

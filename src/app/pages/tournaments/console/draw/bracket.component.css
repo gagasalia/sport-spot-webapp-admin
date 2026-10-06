@@ -1,0 +1,95 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.bk-scroll {
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+.bk {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 100%;
+}
+.bk-heads,
+.bk-tree {
+  display: flex;
+}
+.bk-head {
+  flex: 0 0 236px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
+}
+.bk-col {
+  display: flex;
+  flex: 0 0 236px;
+  flex-direction: column;
+}
+.bk-cell {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  padding: 4px 18px;
+}
+.bk-card {
+  width: 100%;
+}
+/* the arm into the next round */
+.bk-cell.has-out::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 18px;
+  border-top: 1px solid var(--hairline-2);
+}
+/* the vertical join of a pair (top half / bottom half) */
+.bk-cell.has-out::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  border-right: 1px solid var(--hairline-2);
+}
+.bk-cell.has-out.is-top::before {
+  top: 50%;
+  bottom: 0;
+}
+.bk-cell.has-out.is-bottom::before {
+  top: 0;
+  bottom: 50%;
+}
+/* the arm out of the previous round */
+.bk-in {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 18px;
+  border-top: 1px solid var(--hairline-2);
+}
+.bk-bronze {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 236px;
+  padding: 0 18px;
+}
+.bk-bronze .bk-head {
+  flex: none;
+  text-align: left;
+}
+@media (max-width: 768px) {
+  .bk-scroll {
+    scroll-snap-type: x proximity;
+  }
+  .bk-col,
+  .bk-head {
+    flex-basis: 210px;
+    scroll-snap-align: start;
+  }
+}

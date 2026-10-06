@@ -33,6 +33,14 @@ const superAdminClaims = {
   academies: [],
 };
 
+/** docs/33 §6: the tournament maker. */
+const organizerClaims = {
+  sub: 'user-4',
+  username: 'maker1',
+  userType: [UserType.ORGANIZER],
+  academies: [],
+};
+
 const playerClaims = {
   sub: 'user-3',
   phone: '995533333333',
@@ -123,6 +131,36 @@ describe('AuthService', () => {
       expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBeNull();
       expect(service.currentUser()).toBeNull();
       expect(service.isAuthenticated()).toBeFalse();
+    });
+
+    it('should accept an organizer (username + password) and flag isOrganizer', () => {
+      const token = makeJwt(organizerClaims);
+      service.login('Maker1', 'secret').subscribe();
+
+      const req = httpMock.expectOne(`${base}/auth/login`);
+      expect(req.request.body).toEqual({ username: 'maker1', password: 'secret' });
+      req.flush({ result: { data: { accessToken: token, user: {} } }, errors: [] });
+
+      expect(localStorage.getItem(TOKEN_STORAGE_KEY)).toBe(token);
+      expect(service.isOrganizer()).toBeTrue();
+      expect(service.isAdmin()).toBeFalse();
+      expect(service.isSuperAdmin()).toBeFalse();
+    });
+
+    it('should not flag isOrganizer for an organizer that is also an admin', () => {
+      service.login('both', 'x').subscribe();
+      httpMock.expectOne(`${base}/auth/login`).flush({
+        result: {
+          data: {
+            accessToken: makeJwt({ ...adminClaims, userType: [UserType.ADMIN, UserType.ORGANIZER] }),
+            user: {},
+          },
+        },
+        errors: [],
+      });
+
+      expect(service.isAdmin()).toBeTrue();
+      expect(service.isOrganizer()).toBeFalse();
     });
 
     it('should not persist a token on a 401 error', () => {

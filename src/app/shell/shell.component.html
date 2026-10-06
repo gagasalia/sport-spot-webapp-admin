@@ -1,5 +1,5 @@
 <header class="shell-header">
-  <a class="brandmark" routerLink="/reservations" aria-label="Sport Space Admin">
+  <a class="brandmark" [routerLink]="homeLink()" aria-label="Sport Space Admin">
     <span class="brand-dot" aria-hidden="true">
       <i class="ss-ic" style="--ss-ic: url('logos/mark-mono-tight.svg')"></i>
     </span>
@@ -79,6 +79,21 @@
   closeMenu(), a no-op on desktop where the sheet never opens.
 -->
 <ng-template #navList>
+  @if (isOrganizer()) {
+    <!-- Tournament maker (docs/33 §6): tournaments only, nothing else. -->
+    <div class="nav-group">
+      <a
+        automation-id="tournaments"
+        class="nav-item"
+        routerLink="/tournaments"
+        routerLinkActive="is-active"
+        (click)="closeMenu()"
+      >
+        <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/trophy.svg')"></i>
+        <span lang="ka" class="georgian-text nav-label">{{ 'ტურნირები' | t }}</span>
+      </a>
+    </div>
+  } @else {
   <div class="nav-group">
     <button automation-id="setting" class="nav-item" type="button" (click)="toggleConfig()">
       <i class="ss-ic nav-ic" style="--ss-ic: url('assets/taiga-ui/icons/settings.svg')"></i>
@@ -305,6 +320,7 @@
       }
     </div>
   }
+  }
 </ng-template>
 
 <div class="shell-body">
@@ -348,7 +364,13 @@
 <!-- Mobile chrome: three primary tabs + a "Menu" sheet carrying the full nav -->
 @if (isMobile()) {
   @if (menuOpen()) {
-    <div class="sheet-backdrop" (click)="closeMenu()"></div>
+    <!-- Pointer dismissal; the keyboard closes the sheet with Esc (also handled at document level). -->
+    <div
+      class="sheet-backdrop"
+      tabindex="-1"
+      (click)="closeMenu()"
+      (keydown.escape)="closeMenu()"
+    ></div>
 
     <div class="menu-sheet" role="dialog" aria-modal="true" [attr.aria-label]="'მენიუ' | t">
       <div class="menu-head">
@@ -369,6 +391,20 @@
     </div>
   }
 
+  @if (isOrganizer()) {
+    <!-- Tournament maker: one destination, no menu sheet. -->
+    <nav class="tab-bar">
+      <a
+        automation-id="tab-tournaments"
+        class="tab-item"
+        routerLink="/tournaments"
+        routerLinkActive="is-active"
+      >
+        <i class="ss-ic tab-ic" style="--ss-ic: url('assets/taiga-ui/icons/trophy.svg')"></i>
+        <span lang="ka" class="georgian-text">{{ 'ტურნირები' | t }}</span>
+      </a>
+    </nav>
+  } @else {
   <nav class="tab-bar">
     <a
       automation-id="tab-reservations"
@@ -409,4 +445,5 @@
       <span lang="ka" class="georgian-text">{{ 'მენიუ' | t }}</span>
     </button>
   </nav>
+  }
 }

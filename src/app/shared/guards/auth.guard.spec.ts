@@ -24,6 +24,7 @@ describe('authGuard', () => {
   let authStub: {
     isAuthenticated: jasmine.Spy<() => boolean>;
     isAdmin: jasmine.Spy<() => boolean>;
+    isOrganizer: jasmine.Spy<() => boolean>;
     logout: jasmine.Spy<() => void>;
   };
   let tenantStub: { clear: jasmine.Spy<() => void> };
@@ -32,6 +33,7 @@ describe('authGuard', () => {
     authStub = {
       isAuthenticated: jasmine.createSpy('isAuthenticated').and.returnValue(false),
       isAdmin: jasmine.createSpy('isAdmin').and.returnValue(false),
+      isOrganizer: jasmine.createSpy('isOrganizer').and.returnValue(false),
       logout: jasmine.createSpy('logout'),
     };
     tenantStub = { clear: jasmine.createSpy('clear') };
@@ -77,6 +79,15 @@ describe('authGuard', () => {
     expect(tenantStub.clear).toHaveBeenCalled();
     expect(result instanceof UrlTree).toBeTrue();
     expect((result as UrlTree).toString()).toContain('/login');
+  });
+
+  // docs/33 §6: a tournament maker uses the panel (narrowed by organizerGuard).
+  it('should allow an authenticated organizer', () => {
+    authStub.isAuthenticated.and.returnValue(true);
+    authStub.isOrganizer.and.returnValue(true);
+
+    expect(runGuard('/tournaments')).toBeTrue();
+    expect(authStub.logout).not.toHaveBeenCalled();
   });
 
   it('should not log out an authenticated admin', () => {

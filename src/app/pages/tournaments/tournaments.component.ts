@@ -9,70 +9,79 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { filter, switchMap, take } from 'rxjs';
+import { Observable, filter, map, switchMap, take } from 'rxjs';
 import { TournamentService } from '../../services/http-services/tournament.service';
 import {
   Tournament,
   TournamentStatus,
 } from '../../shared/models/tournament.model';
-import { tetriToGel } from '../../shared/utils/money.util';
 import {
   CATEGORY_LABELS,
   FORMAT_LABELS,
   LEVEL_LABELS,
+  STATUS_CLASSES,
+  STATUS_LABELS,
   TYPE_LABELS,
-  TournamentFormComponent,
-} from './tournament-form/tournament-form.component';
+  categoryLabel,
+  feeLabel,
+  groupTournaments,
+} from './tournament-labels';
+import { TournamentFormComponent } from './tournament-form/tournament-form.component';
 import { RegistrationsDialogComponent } from './registrations-dialog.component';
 import { TournamentResultsDialogComponent } from './results-dialog/tournament-results-dialog.component';
+import {
+  EventScope,
+  EventScopeDialogComponent,
+  EventScopeDialogData,
+} from './event-scope-dialog.component';
 
-import { liveLabels, tr } from '../../shared/i18n/lang';
+import { tr } from '../../shared/i18n/lang';
 import { FacilityNamesService } from '../../shared/i18n/facility-names.service';
 import { localizedName } from '../../shared/i18n/localized';
 import { TPipe } from '../../shared/i18n/t.pipe';
+import { AuthService } from '../../shared/services/auth.service';
 import { SsToastService } from '../../shared/ui/toast.service';
 import { SsDialogService } from '../../shared/ui/dialog.service';
 import { SsConfirmComponent, SsConfirmData } from '../../shared/ui/confirm.component';
-const STATUS_LABELS: Record<TournamentStatus, string> = liveLabels({
-  draft: 'დრაფტი',
-  published: 'გამოქვეყნებული',
-  completed: 'დასრულებული',
-  cancelled: 'გაუქმებული',
-});
-
-// Theme-aware ss-badge variants (the old Tailwind color classes broke in dark mode).
-const STATUS_CLASSES: Record<TournamentStatus, string> = {
-  draft: 'ss-badge ss-badge--neutral',
-  published: 'ss-badge ss-badge--positive',
-  completed: 'ss-badge ss-badge--info',
-  cancelled: 'ss-badge ss-badge--negative',
-};
 
 /**
- * Operator tournaments (docs/13 §7): the academy's tournaments in every
- * status, lifecycle actions with confirms (cancelling warns about the
- * automatic fee refunds), the participants dialog and the create/edit form.
+ * Operator tournaments (docs/13 §7, docs/33 §5): the academy's tournaments
+ * (an organizer's own) in every status. The categories of one EVENT render as
+ * one block — the event name once, then a compact row per category. Each
+ * internal tournament opens its organizer CONSOLE («მართვა»,
+ * `/tournaments/:id`); lifecycle actions on a category of an event offer
+ * «ყველა კატეგორია» or this category only. The legacy results dialog stays
+ * for tournaments without an engine draw.
  */
 @Component({
   selector: 'app-tournaments',
   standalone: true,
-  imports: [CommonModule, TPipe],
+  imports: [CommonModule, RouterLink, TPipe],
   templateUrl: './tournaments.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TournamentsComponent implements OnInit {
   private readonly tournamentService = inject(TournamentService);
+  private readonly auth = inject(AuthService);
   private readonly facilityNames = inject(FacilityNamesService);
   private readonly dialogs = inject(SsDialogService);
   private readonly alerts = inject(SsToastService);
-    private readonly destroyRef = inject(DestroyRef);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly tournaments = signal<Tournament[]>([]);
+  /** Plain tournaments and events (their categories together), in list order. */
+  protected readonly blocks = computed(() => groupTournaments(this.tournaments()));
 
   /** Operator content: `nameEn` in an English session, Georgian otherwise. */
   protected tournamentLabel(tournament: Tournament): string {
     return localizedName(tournament);
+  }
+
+  /** A category's name inside its event ("კაცები A" or "კაცები · საშუალო"). */
+  protected categoryName(tournament: Tournament): string {
+    return categoryLabel(tournament);
   }
 
   /**
@@ -190,9 +199,21 @@ export class TournamentsComponent implements OnInit {
       .subscribe();
   }
 
-  /** Results are entered once the tournament is live or over (docs/25 §4.1). */
+  /** The organizer console runs every internal tournament (docs/33 §7). */
+  protected canManage(tournament: Tournament): boolean {
+    return !tournament.external;
+  }
+
+  /**
+   * The legacy results dialog (docs/25 §4.1): a live or finished tournament
+   * WITHOUT an engine draw — once a draw exists, results go in the console.
+   */
   protected hasResults(tournament: Tournament): boolean {
-    return tournament.status === 'published' || tournament.status === 'completed';
+    // Its player lookup is an academy tool (admin only) — a tournament maker
+    // enters results in the console.
+    if (this.auth.isOrganizer()) return false;
+    const engine = tournament.draw?.status === 'draft' || tournament.draw?.status === 'published';
+    return !engine && (tournament.status === 'published' || tournament.status === 'completed');
   }
 
   /** The results dialog: rated games + the `+ თამაში` entry form (docs/25 §6.5). */
@@ -236,6 +257,7 @@ export class TournamentsComponent implements OnInit {
       tr('ტურნირის გაუქმება'),
       `${tr('გავაუქმოთ')} „${localizedName(tournament)}"? ${tr('ბალანსით გადახდილი საფასურები ავტომატურად დაბრუნდება.')}`,
       tr('ტურნირი გაუქმდა — გადახდილი საფასურები დაბრუნდა'),
+      true,
     );
   }
 
@@ -245,7 +267,7 @@ export class TournamentsComponent implements OnInit {
         label: tr('ტურნირის წაშლა'),
         size: 's',
         data: {
-          content: `${tr('ნამდვილად წავშალოთ დრაფტი')} „${localizedName(tournament)}"?`,
+          content: `${tr('ნამდვილად წავშალოთ დრაფტი')} „${this.rowTitle(tournament)}"?`,
           yes: tr('წაშლა'),
           no: tr('გაუქმება'),
         } as SsConfirmData,
@@ -269,36 +291,75 @@ export class TournamentsComponent implements OnInit {
       });
   }
 
+  /** How many categories of this tournament's event the list holds. */
+  private categoriesOf(tournament: Tournament): number {
+    const eventId = tournament.event?.id;
+    return eventId ? this.tournaments().filter((t) => t.event?.id === eventId).length : 1;
+  }
+
+  /** "Autumn Open · კაცები A" for a category, the name otherwise. */
+  private rowTitle(tournament: Tournament): string {
+    const name = localizedName(tournament);
+    return tournament.event ? `${name} · ${categoryLabel(tournament)}` : name;
+  }
+
+  /**
+   * Confirm, then move the status. A category of an event with siblings asks
+   * for the scope instead: «ყველა კატეგორია» (`wholeEvent`) or this one.
+   */
   private confirmThenSetStatus(
     tournament: Tournament,
     status: TournamentStatus,
     label: string,
     content: string,
     successMessage: string,
+    destructive = false,
   ): void {
-    this.dialogs
-      .open<boolean>(SsConfirmComponent, {
-        label,
-        size: 's',
-        data: { content, yes: tr('დიახ'), no: tr('არა') } as SsConfirmData,
-      })
-      .pipe(take(1), filter(Boolean))
-      .subscribe(() => this.setStatus(tournament, status, successMessage));
+    const scope$: Observable<EventScope> =
+      this.categoriesOf(tournament) > 1
+        ? this.dialogs.open<EventScope>(EventScopeDialogComponent, {
+            label,
+            size: 's',
+            data: {
+              content,
+              category: categoryLabel(tournament),
+              destructive,
+            } as EventScopeDialogData,
+          })
+        : this.dialogs
+            .open<boolean>(SsConfirmComponent, {
+              label,
+              size: 's',
+              data: { content, yes: tr('დიახ'), no: tr('არა') } as SsConfirmData,
+            })
+            .pipe(
+              filter(Boolean),
+              map((): EventScope => 'one'),
+            );
+    scope$
+      .pipe(take(1))
+      .subscribe((scope) => this.setStatus(tournament, status, successMessage, scope === 'all'));
   }
 
   private setStatus(
     tournament: Tournament,
     status: TournamentStatus,
     successMessage: string,
+    wholeEvent = false,
   ): void {
     this.tournamentService
-      .setStatus(tournament._id, status)
+      .setStatus(tournament._id, status, wholeEvent)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (updated) => {
-          this.tournaments.update((list) =>
-            list.map((t) => (t._id === updated._id ? updated : t)),
-          );
+          if (wholeEvent) {
+            // Every sibling may have moved — read the list again.
+            this.load();
+          } else {
+            this.tournaments.update((list) =>
+              list.map((t) => (t._id === updated._id ? updated : t)),
+            );
+          }
           this.alerts
             .open(successMessage, { appearance: 'success' })
             .pipe(take(1))
@@ -334,6 +395,6 @@ export class TournamentsComponent implements OnInit {
   }
 
   protected feeLabel(t: Tournament): string {
-    return t.entryFeeTetri === 0 ? tr('უფასო') : `${tetriToGel(t.entryFeeTetri)} ₾`;
+    return feeLabel(t.entryFeeTetri);
   }
 }

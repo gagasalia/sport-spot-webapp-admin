@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
+  FormArray,
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
@@ -18,11 +19,8 @@ import {
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, catchError, map, of, take } from 'rxjs';
 import { TournamentService } from '../../../services/http-services/tournament.service';
-import { FacilityService } from '../../../services/http-services/facility.service';
-import { AcademyService } from '../../../services/http-services/academy.service';
 import { VenueService } from '../../../services/http-services/venue.service';
 import { AuthService } from '../../../shared/services/auth.service';
-import { TenantService } from '../../../shared/services/tenant.service';
 import {
   CreateTournamentDto,
   EXTERNAL_ORGANIZER_MAX,
@@ -36,39 +34,67 @@ import {
   TournamentType,
   UpdateTournamentDto,
 } from '../../../shared/models/tournament.model';
-import { Facility } from '../../../shared/models/facility.model';
+import {
+  CATEGORY_LABEL_MAX,
+  EVENT_CATEGORIES_MAX,
+  TournamentCategoryDto,
+  TournamentVenue,
+} from '../../../shared/models/tournament-engine.model';
 import { Venue, venueCityName } from '../../../shared/models/venue.model';
 import { gelToTetri, tetriToGel } from '../../../shared/utils/money.util';
-import { loadPartnerFacilities } from '../../venues/partner-facilities';
+import {
+  CATEGORY_LABELS,
+  FORMAT_LABELS,
+  LEVEL_LABELS,
+  TYPE_LABELS,
+} from '../tournament-labels';
 
-import { liveLabels, tr } from '../../../shared/i18n/lang';
+import { tr } from '../../../shared/i18n/lang';
 import { localizedName } from '../../../shared/i18n/localized';
 import { TPipe } from '../../../shared/i18n/t.pipe';
 import { SsToastService } from '../../../shared/ui/toast.service';
 import { SS_DIALOG_CONTEXT, SsDialogContext } from '../../../shared/ui/dialog.service';
-export const TYPE_LABELS: Record<TournamentType, string> = liveLabels({
-  singles: 'სინგლები',
-  doubles: 'წყვილები',
-});
-export const FORMAT_LABELS: Record<TournamentFormat, string> = liveLabels({
-  knockout: 'ნოკაუტი',
-  round_robin: 'წრიული',
-  groups_playoffs: 'ჯგუფები + პლეიოფი',
-  championship: 'ჩემპიონატი',
-  americano: 'ამერიკანო',
-  mexicano: 'მექსიკანო',
-});
-export const LEVEL_LABELS: Record<TournamentLevel, string> = liveLabels({
-  any: 'ნებისმიერი',
-  beginner: 'დამწყები',
-  intermediate: 'საშუალო',
-  advanced: 'გამოცდილი',
-});
-export const CATEGORY_LABELS: Record<TournamentCategory, string> = liveLabels({
-  men: 'კაცები',
-  women: 'ქალები',
-  mixed: 'შერეული',
-});
+
+// The vocabulary lives in tournament-labels.ts; re-exported for existing importers.
+export { CATEGORY_LABELS, FORMAT_LABELS, LEVEL_LABELS, TYPE_LABELS };
+
+/** The top-level controls a multi-category event moves into its category rows. */
+const CATEGORY_CONTROLS = [
+  'type',
+  'format',
+  'level',
+  'category',
+  'entryFeeGel',
+  'maxParticipants',
+] as const;
+
+/** One «კატეგორიები» row as typed. */
+interface CategoryRowValue {
+  label: string;
+  labelEn: string;
+  type: TournamentType;
+  format: TournamentFormat;
+  category: TournamentCategory;
+  level: TournamentLevel;
+  entryFeeGel: number;
+  maxParticipants: number;
+}
+
+/** A category row → the API's category (fee GEL → tetri, empty labels left out). */
+export function categoryRowToDto(row: CategoryRowValue): TournamentCategoryDto {
+  const label = (row.label ?? '').trim();
+  const labelEn = (row.labelEn ?? '').trim();
+  return {
+    ...(label ? { label } : {}),
+    ...(labelEn ? { labelEn } : {}),
+    type: row.type,
+    format: row.format,
+    category: row.category,
+    level: row.level,
+    entryFeeTetri: gelToTetri(row.entryFeeGel),
+    maxParticipants: Number(row.maxParticipants),
+  };
+}
 
 /** Off-site registration link: http(s), no whitespace (the API's rule). */
 const HTTP_URL_RE = /^https?:\/\/\S+$/i;
@@ -145,6 +171,10 @@ interface TournamentFormValue {
   organizerName: string;
   externalVenue: string;
   externalVenueName: string;
+  /** Edit of an event's category: its display name. */
+  label: string;
+  labelEn: string;
+  categories: CategoryRowValue[];
 }
 
 /**
@@ -159,6 +189,15 @@ interface TournamentFormValue {
  * organizer, a directory venue or a free-text place) and no facility. The
  * kind is fixed at creation (the API rejects internal ↔ external switches, so
  * registrations and fees are never stranded): the switch is locked on edit.
+ *
+ * Host venues come from `GET /tournaments/venues` (docs/33 §6): an admin's
+ * academy facilities, every live facility for an organizer / superadmin.
+ *
+ * CREATE can describe a multi-category EVENT (docs/33 §5): «+ კატეგორია»
+ * turns the single tournament into two category rows (the current values +
+ * a new one) and hides the top-level type / format / level / category / fee
+ * / capacity; removing back to one row folds it into the single tournament
+ * again. EDIT of an event's category shows its `label` / `labelEn`.
  */
 @Component({
   selector: 'app-tournament-form',
@@ -176,16 +215,22 @@ export class TournamentFormComponent implements OnInit {
   >;
   private readonly fb = inject(FormBuilder);
   private readonly tournamentService = inject(TournamentService);
-  private readonly facilityService = inject(FacilityService);
-  private readonly academyService = inject(AcademyService);
   private readonly venueService = inject(VenueService);
   private readonly auth = inject(AuthService);
-  private readonly tenant = inject(TenantService);
   private readonly alerts = inject(SsToastService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly isSuperAdmin = this.auth.isSuperAdmin;
-  protected readonly facilities = signal<Facility[]>([]);
+  /** Where the caller may host (GET /tournaments/venues). */
+  protected readonly facilities = signal<TournamentVenue[]>([]);
+  /** Mirrors the «კატეგორიები» rows (OnPush-friendly); 0 = a single tournament. */
+  protected readonly categoryCount = signal(0);
+  protected readonly categoriesMax = EVENT_CATEGORIES_MAX;
+  protected readonly labelMax = CATEGORY_LABEL_MAX;
+  protected readonly typeLabels = TYPE_LABELS;
+  protected readonly formatLabels = FORMAT_LABELS;
+  protected readonly levelLabels = LEVEL_LABELS;
+  protected readonly categoryLabels = CATEGORY_LABELS;
   /** Superadmin: directory venues for the external-venue picker. */
   protected readonly venues = signal<Venue[]>([]);
   /** Mirrors the `external` switch (OnPush-friendly). */
@@ -200,7 +245,7 @@ export class TournamentFormComponent implements OnInit {
   };
 
   /** Option label — the operator's English facility name when one exists. */
-  protected facilityLabel(facility: Facility): string {
+  protected facilityLabel(facility: TournamentVenue): string {
     return localizedName(facility);
   }
 
@@ -229,6 +274,16 @@ export class TournamentFormComponent implements OnInit {
 
   protected get isEditMode(): boolean {
     return !!this.context.data?.tournament;
+  }
+
+  /** Editing one category of an event (label inputs + the shared-fields hint). */
+  protected get isEventCategory(): boolean {
+    return !!this.context.data?.tournament?.event;
+  }
+
+  /** The «კატეგორიები» rows. */
+  protected get categoryRows(): FormArray<FormGroup> {
+    return this.form.get('categories') as FormArray<FormGroup>;
   }
 
   ngOnInit(): void {
@@ -276,6 +331,11 @@ export class TournamentFormComponent implements OnInit {
           ext?.venueName ?? '',
           [Validators.maxLength(EXTERNAL_VENUE_NAME_MAX)],
         ],
+        // this category's display name inside its event (edit only)
+        label: [t?.event?.label ?? '', [Validators.maxLength(CATEGORY_LABEL_MAX)]],
+        labelEn: [t?.event?.labelEn ?? '', [Validators.maxLength(CATEGORY_LABEL_MAX)]],
+        // a multi-category event (create only): 0 rows = a single tournament
+        categories: this.fb.array<FormGroup>([]),
       },
       { validators: externalPlaceValidator },
     );
@@ -306,33 +366,119 @@ export class TournamentFormComponent implements OnInit {
         .subscribe((venues) => this.venues.set(venues));
     }
 
-    // The academy's facilities feed the host-venue chip rail; when creating,
-    // the first facility is preselected so the required control starts valid.
-    // A superadmin has no academy of their own — they get every facility (no
-    // preselection: a guessed host would land the tournament in some academy).
-    this.tenant
-      .ensure()
-      .pipe(take(1))
-      .subscribe(() => {
-        const academyId = this.tenant.academyId();
-        if (!academyId) {
-          if (this.isSuperAdmin()) {
-            loadPartnerFacilities(this.academyService, this.facilityService)
-              .pipe(take(1))
-              .subscribe((options) => this.facilities.set(options.map((o) => o.facility)));
-          }
-          return;
+    // Where the caller may host feeds the venue chip rail (GET
+    // /tournaments/venues, docs/33 §6). An admin's first facility is
+    // preselected on create so the required control starts valid; a
+    // superadmin / organizer sees every live facility and picks (a guessed
+    // host would land the tournament in some academy) — unless only one is
+    // on offer. An edited tournament's own venue always stays on the rail.
+    this.tournamentService
+      .getVenues()
+      .pipe(
+        take(1),
+        catchError(() => of([] as TournamentVenue[])),
+      )
+      .subscribe((venues) => {
+        const list = [...venues];
+        if (t?.facility && !list.some((v) => v._id === t.facility)) {
+          list.push({ _id: t.facility, name: t.facilityName ?? t.facility });
         }
-        this.facilityService
-          .getFacilitiesByAcademy(academyId)
-          .pipe(take(1))
-          .subscribe((facilities) => {
-            this.facilities.set(facilities);
-            if (!this.selectedFacilityId() && facilities.length > 0) {
-              this.selectFacility(this.facilityId(facilities[0]));
-            }
-          });
+        this.facilities.set(list);
+        const pickFirst =
+          !this.isSuperAdmin() && !this.auth.isOrganizer() ? list.length > 0 : list.length === 1;
+        if (!this.isEditMode && !this.selectedFacilityId() && pickFirst) {
+          this.selectFacility(list[0]._id);
+        }
       });
+  }
+
+  // ── «კატეგორიები» (create only) ────────────────────────────────────────────
+
+  private categoryGroup(value: Partial<CategoryRowValue>): FormGroup {
+    return this.fb.group({
+      label: [value.label ?? '', [Validators.maxLength(CATEGORY_LABEL_MAX)]],
+      labelEn: [value.labelEn ?? '', [Validators.maxLength(CATEGORY_LABEL_MAX)]],
+      type: [value.type ?? 'doubles', [Validators.required]],
+      format: [value.format ?? 'knockout', [Validators.required]],
+      category: [value.category ?? 'mixed', [Validators.required]],
+      level: [value.level ?? 'any', [Validators.required]],
+      entryFeeGel: [
+        value.entryFeeGel ?? 0,
+        [Validators.required, Validators.min(0), Validators.max(10_000)],
+      ],
+      maxParticipants: [
+        value.maxParticipants ?? 16,
+        [Validators.required, Validators.min(2), Validators.max(512)],
+      ],
+    });
+  }
+
+  /** The top-level category fields, as a row. */
+  private topLevelRow(): Partial<CategoryRowValue> {
+    const v = this.form.getRawValue() as TournamentFormValue;
+    return {
+      type: v.type,
+      format: v.format,
+      category: v.category,
+      level: v.level,
+      entryFeeGel: v.entryFeeGel,
+      maxParticipants: v.maxParticipants,
+    };
+  }
+
+  /**
+   * «+ კატეგორია». The first tap makes an event of two categories: the
+   * values typed so far + a new one; later taps add one more (copying the
+   * last row's type and format). The top-level category fields step aside.
+   */
+  protected addCategory(): void {
+    const rows = this.categoryRows;
+    if (rows.length >= EVENT_CATEGORIES_MAX) return;
+    if (rows.length === 0) {
+      const current = this.topLevelRow();
+      rows.push(this.categoryGroup(current));
+      rows.push(this.categoryGroup({ ...current, label: '', labelEn: '' }));
+    } else {
+      const last = rows.at(rows.length - 1).getRawValue() as CategoryRowValue;
+      rows.push(this.categoryGroup({ ...last, label: '', labelEn: '' }));
+    }
+    this.syncCategories();
+  }
+
+  /** Removing down to one row folds it back into the single tournament. */
+  protected removeCategory(index: number): void {
+    const rows = this.categoryRows;
+    rows.removeAt(index);
+    if (rows.length === 1) {
+      const only = rows.at(0).getRawValue() as CategoryRowValue;
+      rows.clear();
+      this.form.patchValue({
+        type: only.type,
+        format: only.format,
+        category: only.category,
+        level: only.level,
+        entryFeeGel: only.entryFeeGel,
+        maxParticipants: only.maxParticipants,
+      });
+    }
+    this.syncCategories();
+  }
+
+  /** With category rows the top-level category fields are disabled (not validated, not sent). */
+  private syncCategories(): void {
+    const event = this.categoryRows.length >= 2;
+    this.categoryCount.set(this.categoryRows.length);
+    for (const name of CATEGORY_CONTROLS) {
+      const control = this.form.get(name)!;
+      if (event) control.disable({ emitEvent: false });
+      else control.enable({ emitEvent: false });
+    }
+    this.form.updateValueAndValidity({ emitEvent: false });
+  }
+
+  protected rowInvalid(index: number, name: string): boolean {
+    const control = this.categoryRows.at(index)?.get(name);
+    return !!control && control.touched && control.invalid;
   }
 
   /**
@@ -346,6 +492,10 @@ export class TournamentFormComponent implements OnInit {
     const hasVenue = !!this.form.get('externalVenue')!.value;
     this.isExternal.set(on);
     this.hasDirectoryVenue.set(hasVenue);
+    // An external tournament is one listing — it has no categories.
+    if (on && this.categoryRows.length) {
+      while (this.categoryRows.length > 1) this.removeCategory(this.categoryRows.length - 1);
+    }
 
     const facility = this.form.get('facility')!;
     if (on) {
@@ -365,8 +515,8 @@ export class TournamentFormComponent implements OnInit {
     this.form.updateValueAndValidity({ emitEvent: false });
   }
 
-  protected facilityId(facility: Facility): string {
-    return facility._id ?? facility.id ?? '';
+  protected facilityId(facility: TournamentVenue): string {
+    return facility._id;
   }
 
   protected selectFacility(id: string): void {
@@ -389,27 +539,34 @@ export class TournamentFormComponent implements OnInit {
 
     const v = this.form.getRawValue() as TournamentFormValue;
     const external = this.isExternal();
+    // A multi-category event (create, internal, ≥ 2 rows).
+    const event = !external && !this.isEditMode && v.categories.length >= 2;
 
-    const base: Omit<CreateTournamentDto, 'facility' | 'external'> = {
+    const shared: Omit<CreateTournamentDto, 'facility' | 'external'> = {
       name: v.name.trim(),
       nameEn: v.nameEn.trim() || undefined,
-      type: v.type,
-      format: v.format,
-      level: v.level,
-      category: v.category,
       startDate: v.startDate,
       startTime: v.startTime,
       endDate: v.endDate || undefined,
       registrationDeadline: v.registrationDeadline
         ? new Date(v.registrationDeadline).toISOString()
         : undefined,
-      entryFeeTetri: gelToTetri(v.entryFeeGel),
-      maxParticipants: v.maxParticipants,
       prizeDescription: v.prizeDescription.trim() || undefined,
       prizeDescriptionEn: v.prizeDescriptionEn.trim() || undefined,
       description: v.description.trim() || undefined,
       descriptionEn: v.descriptionEn.trim() || undefined,
     };
+    const base: Omit<CreateTournamentDto, 'facility' | 'external'> = event
+      ? { ...shared, categories: v.categories.map(categoryRowToDto) }
+      : {
+          ...shared,
+          type: v.type,
+          format: v.format,
+          level: v.level,
+          category: v.category,
+          entryFeeTetri: gelToTetri(v.entryFeeGel),
+          maxParticipants: v.maxParticipants,
+        };
 
     this.isSaving.set(true);
     const editing = this.context.data?.tournament;
@@ -418,6 +575,11 @@ export class TournamentFormComponent implements OnInit {
       const dto: UpdateTournamentDto = external
         ? { ...base, external: this.externalPayload(v, true) }
         : { facility: v.facility, ...base };
+      if (editing.event) {
+        // This category's name inside its event ('' clears it).
+        dto.label = v.label.trim();
+        dto.labelEn = v.labelEn.trim();
+      }
       request = this.tournamentService.updateTournament(editing._id, dto);
     } else {
       const dto: CreateTournamentDto = external

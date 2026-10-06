@@ -15,12 +15,20 @@ import { SsDialogService } from '../shared/ui/dialog.service';
 describe('ShellComponent', () => {
   // `isSuperAdmin` is a Signal; a plain stub exposing a callable signal models it
   // without dragging the real AuthService (and its HttpClient) into the test.
-  let authStub: { isSuperAdmin: ReturnType<typeof signal<boolean>>; logout: jasmine.Spy };
+  let authStub: {
+    isSuperAdmin: ReturnType<typeof signal<boolean>>;
+    isOrganizer: ReturnType<typeof signal<boolean>>;
+    logout: jasmine.Spy;
+  };
   let tenantStub: { clear: jasmine.Spy };
   let dialogStub: { open: jasmine.Spy };
 
   beforeEach(async () => {
-    authStub = { isSuperAdmin: signal(false), logout: jasmine.createSpy('logout') };
+    authStub = {
+      isSuperAdmin: signal(false),
+      isOrganizer: signal(false),
+      logout: jasmine.createSpy('logout'),
+    };
     tenantStub = { clear: jasmine.createSpy('clear') };
     dialogStub = { open: jasmine.createSpy('open').and.returnValue(of(true)) };
 
@@ -231,6 +239,42 @@ describe('ShellComponent', () => {
     expect(
       fixture.nativeElement.querySelector('[routerLink="/super-admin/user-management"]'),
     ).not.toBeNull();
+  });
+
+  // docs/33 §6: a tournament maker sees ONLY «ტურნირები» — rail, sheet and tab bar.
+  it('shows an organizer nothing but tournaments, on desktop and on mobile', () => {
+    authStub.isOrganizer.set(true);
+    const fixture = TestBed.createComponent(ShellComponent);
+    const shell = fixture.componentInstance as unknown as { isMobile: { set(v: boolean): void } };
+    shell.isMobile.set(false);
+    fixture.detectChanges();
+
+    const navLinks = (): string[] =>
+      Array.from(fixture.nativeElement.querySelectorAll('.aside-nav [routerLink]')).map(
+        (a) => (a as HTMLElement).getAttribute('routerLink') ?? '',
+      );
+    expect(navLinks()).toEqual(['/tournaments']);
+    expect(fixture.nativeElement.querySelector('[automation-id="setting"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[automation-id="reservations"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[automation-id="customers"]')).toBeNull();
+
+    shell.isMobile.set(true);
+    fixture.detectChanges();
+    const tabs = Array.from(fixture.nativeElement.querySelectorAll('.tab-bar .tab-item')) as HTMLElement[];
+    expect(tabs.length).toBe(1);
+    expect(tabs[0].getAttribute('automation-id')).toBe('tab-tournaments');
+    expect(fixture.nativeElement.querySelector('[automation-id="tab-menu"]')).toBeNull();
+  });
+
+  it('keeps today’s navigation for an admin', () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    (fixture.componentInstance as unknown as { isMobile: { set(v: boolean): void } }).isMobile.set(
+      false,
+    );
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[automation-id="reservations"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[automation-id="tournaments"]')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('[automation-id="setting"]')).not.toBeNull();
   });
 
   it('declined signOut leaves the session untouched', () => {

@@ -1,0 +1,170 @@
+<div class="sc">
+  @if (!store.hasDraw()) {
+    <p class="sc-empty georgian-text" lang="ka">{{ 'განრიგი კენჭისყრის შემდეგ დგება' | t }}</p>
+  } @else {
+    @if (store.playable()) {
+      <section class="sc-form ss-card" data-testid="auto-schedule">
+        <h3 class="sc-title georgian-text" lang="ka">{{ 'ავტომატური განრიგი' | t }}</h3>
+
+        <div class="sc-field">
+          <span class="ss-label georgian-text" lang="ka">{{ 'კორტები' | t }}</span>
+          @if (store.courts().length) {
+            <div class="sc-courts">
+              @for (court of store.courts(); track court._id) {
+                <label class="sc-check">
+                  <input class="ss-checkbox" type="checkbox" [checked]="ticked().has(court._id)" (change)="toggleCourt(court._id)" />
+                  <span>{{ courtLabel(court) }}</span>
+                </label>
+              }
+            </div>
+          }
+          <input
+            class="ss-input sc-extra"
+            type="text"
+            data-testid="extra-courts"
+            [placeholder]="'სხვა კორტები, მძიმით: ცენტრალური, კორტი 7' | t"
+            [attr.aria-label]="'სხვა კორტები' | t"
+            [ngModel]="extraCourts()"
+            (ngModelChange)="extraCourts.set($event ?? '')"
+          />
+        </div>
+
+        <div class="sc-field">
+          <span class="ss-label georgian-text" lang="ka">{{ 'სესიები' | t }}</span>
+          @for (session of sessions(); track $index; let i = $index) {
+            <div class="sc-session" [attr.data-testid]="'session-' + i">
+              <input class="ss-input" type="date" [attr.aria-label]="'თარიღი' | t" [ngModel]="session.date" (ngModelChange)="patchSession(i, 'date', $event)" />
+              <input class="ss-input" type="time" [attr.aria-label]="'დან' | t" [ngModel]="session.from" (ngModelChange)="patchSession(i, 'from', $event)" />
+              <span class="sc-dash">–</span>
+              <input class="ss-input" type="time" [attr.aria-label]="'მდე' | t" [ngModel]="session.to" (ngModelChange)="patchSession(i, 'to', $event)" />
+              <button class="ss-icon-btn ss-icon-btn--s" type="button" [disabled]="sessions().length < 2" [attr.aria-label]="'სესიის წაშლა' | t" (click)="removeSession(i)">
+                <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/x.svg')"></i>
+              </button>
+            </div>
+          }
+          @if (sessions().length < sessionsMax) {
+            <button class="ss-btn ss-btn--flat ss-btn--s sc-add" type="button" (click)="addSession()">
+              <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/plus.svg')"></i>
+              <span class="georgian-text" lang="ka">{{ 'სესია' | t }}</span>
+            </button>
+          }
+        </div>
+
+        <div class="sc-row">
+          <label class="sc-field">
+            <span class="ss-label georgian-text" lang="ka">{{ 'მატჩის ხანგრძლივობა (წთ)' | t }}</span>
+            <input class="ss-input sc-num" type="number" data-testid="match-minutes" [min]="minutesMin" [max]="minutesMax" [ngModel]="matchMinutes()" (ngModelChange)="matchMinutes.set($event)" />
+          </label>
+          <div class="sc-toggles">
+            <label class="sc-check">
+              <input class="ss-checkbox" type="checkbox" [checked]="onlyUnscheduled()" (change)="onlyUnscheduled.set(!onlyUnscheduled())" />
+              <span class="georgian-text" lang="ka">{{ 'მხოლოდ დაუგეგმავი' | t }}</span>
+            </label>
+            @if (store.isEvent()) {
+              <label class="sc-check">
+                <input class="ss-checkbox" type="checkbox" data-testid="whole-event" [checked]="wholeEvent()" (change)="wholeEvent.set(!wholeEvent())" />
+                <span class="georgian-text" lang="ka">{{ 'მთელი ტურნირი (ყველა კატეგორია)' | t }}</span>
+              </label>
+            }
+          </div>
+        </div>
+
+        @if (problem(); as p) {
+          <span class="ss-error georgian-text" lang="ka">{{ p | t }}</span>
+        }
+        @if (error(); as e) {
+          <div class="sc-error georgian-text" lang="ka" role="alert">
+            {{ e.message | t }}
+            @if (e.detail) {
+              <span class="sc-detail">{{ e.detail }}</span>
+            }
+          </div>
+        }
+        <div class="sc-actions">
+          <button class="ss-btn ss-btn--primary" type="button" data-testid="auto-schedule-run" [disabled]="busy() || !!problem()" (click)="autoSchedule()">
+            <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/calendar-range.svg')"></i>
+            <span class="georgian-text" lang="ka">{{ (busy() ? 'მიმდინარეობს…' : 'განრიგის შედგენა') | t }}</span>
+          </button>
+        </div>
+      </section>
+    }
+
+    <section class="sc-board ss-card">
+      <div class="sc-bar">
+        <h3 class="sc-title georgian-text" lang="ka">{{ 'განრიგი' | t }}</h3>
+        <span class="sc-spacer"></span>
+        @if (store.playable() && hasScheduled()) {
+          <span class="sc-late georgian-text" lang="ka">{{ 'დაგვიანება' | t }}:</span>
+          @for (m of delays; track m) {
+            <button class="ss-btn ss-btn--outline ss-btn--s" type="button" [attr.data-testid]="'shift-' + m" [disabled]="busy()" (click)="shift(m)">
+              <span class="ss-num">+{{ m }}</span>&nbsp;<span class="georgian-text" lang="ka">{{ 'წთ' | t }}</span>
+            </button>
+          }
+        }
+      </div>
+
+      @if (hasScheduled()) {
+        <div class="sc-scroll">
+          <table class="sc-grid" data-testid="schedule-grid">
+            <thead>
+              <tr>
+                <th class="sc-time georgian-text" lang="ka">{{ 'დრო' | t }}</th>
+                @for (court of grid().courts; track court) {
+                  <th>{{ court || '—' }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (day of grid().days; track day.date) {
+                <tr class="sc-day">
+                  <th [attr.colspan]="grid().courts.length + 1" class="ss-num">{{ shortDay(day.date) }}</th>
+                </tr>
+                @for (row of day.rows; track row.at) {
+                  <tr>
+                    <th class="sc-time ss-num">{{ row.time }}</th>
+                    @for (cell of row.cells; track $index) {
+                      <td>
+                        @for (m of cell; track m.id) {
+                          <button
+                            type="button"
+                            class="sc-chip"
+                            [class.is-done]="m.status === 'done'"
+                            [class.is-clash]="cell.length > 1"
+                            [disabled]="!store.playable()"
+                            [attr.data-testid]="'slot-' + m.id"
+                            (click)="open(m)"
+                          >
+                            <span class="sc-chip-label georgian-text" lang="ka">{{ store.matchLabel(m) }}</span>
+                            <span class="sc-chip-names">{{ chipNames(m) }}</span>
+                          </button>
+                        }
+                      </td>
+                    }
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <p class="sc-empty georgian-text" lang="ka">{{ 'ჯერ არცერთ მატჩს არ აქვს დრო' | t }}</p>
+      }
+
+      @if (grid().unscheduled.length) {
+        <div class="sc-field">
+          <span class="ss-label georgian-text" lang="ka">
+            {{ 'დაუგეგმავი' | t }} · <span class="ss-num">{{ grid().unscheduled.length }}</span>
+          </span>
+          <div class="sc-unscheduled" data-testid="unscheduled">
+            @for (m of grid().unscheduled; track m.id) {
+              <button type="button" class="sc-chip" [class.is-done]="m.status === 'done'" [disabled]="!store.playable()" (click)="open(m)">
+                <span class="sc-chip-label georgian-text" lang="ka">{{ store.matchLabel(m) }}</span>
+                <span class="sc-chip-names">{{ chipNames(m) }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </section>
+  }
+</div>
