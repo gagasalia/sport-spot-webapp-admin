@@ -4,16 +4,42 @@ import { DatePipe } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, convertToParamMap } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { Subject, of, throwError } from 'rxjs';
 
 import { OTHER_CITY, VenueEditComponent } from './venue-edit.component';
 import { TPipe } from '../../../shared/i18n/t.pipe';
 import { VenueService } from '../../../services/http-services/venue.service';
 import { AcademyService } from '../../../services/http-services/academy.service';
 import { FacilityService } from '../../../services/http-services/facility.service';
+import {
+  MediaService,
+  MediaUnconfiguredError,
+} from '../../../services/http-services/media.service';
 import { CreateVenueDto, UpdateVenueDto, Venue } from '../../../shared/models/venue.model';
-import { Facility } from '../../../shared/models/facility.model';
+import { Facility, IMedia } from '../../../shared/models/facility.model';
 import { SsToastService } from '../../../shared/ui/toast.service';
+
+/** What MediaService.uploadImage resolves to (both renditions + keys). */
+const uploaded: IMedia = {
+  url: 'https://cdn.example/venue-photo/new-web.webp',
+  thumbUrl: 'https://cdn.example/venue-photo/new-thumb.webp',
+  key: 'venue-photo/new-web.webp',
+  thumbKey: 'venue-photo/new-thumb.webp',
+  type: 'image/webp',
+  size: 1234,
+};
+
+/** ...and the media fields of it the API stores. */
+const uploadedPayload = {
+  url: 'https://cdn.example/venue-photo/new-web.webp',
+  type: 'image/webp',
+  thumbUrl: 'https://cdn.example/venue-photo/new-thumb.webp',
+  key: 'venue-photo/new-web.webp',
+  thumbKey: 'venue-photo/new-thumb.webp',
+};
+
+const fileEvent = (file: File) => ({ target: { files: [file], value: '' } }) as unknown as Event;
+const imageFile = () => new File(['x'], 'aia.jpg', { type: 'image/jpeg' });
 
 const existing: Venue = {
   _id: 'v-1',
@@ -42,6 +68,21 @@ const existing: Venue = {
     sun: null,
   },
   description: 'ორი სიტყვა',
+  // a borrowed cover (provenance in metadata.sourceUrl) and an own logo
+  cover: {
+    url: 'https://cdn.example/venue-photo/aia-web.webp',
+    thumbUrl: 'https://cdn.example/venue-photo/aia-thumb.webp',
+    key: 'venue-photo/aia-web.webp',
+    thumbKey: 'venue-photo/aia-thumb.webp',
+    type: 'image/webp',
+    size: 2048,
+    metadata: { sourceUrl: 'https://padelspot.ge/venues/aia-padel' },
+  },
+  logo: {
+    url: 'https://cdn.example/venue-photo/logo-web.webp',
+    thumbUrl: 'https://cdn.example/venue-photo/logo-thumb.webp',
+    type: 'image/webp',
+  },
   kind: 'club',
   status: 'published',
   partnerFacility: 'f-1',
@@ -55,6 +96,7 @@ describe('VenueEditComponent', () => {
   let venueSpy: jasmine.SpyObj<VenueService>;
   let routerSpy: jasmine.SpyObj<Router>;
   let alertSpy: jasmine.SpyObj<SsToastService>;
+  let mediaSpy: jasmine.SpyObj<MediaService>;
 
   async function setup(id?: string) {
     venueSpy = jasmine.createSpyObj<VenueService>('VenueService', [
@@ -81,6 +123,8 @@ describe('VenueEditComponent', () => {
     routerSpy.navigate.and.resolveTo(true);
     alertSpy = jasmine.createSpyObj<SsToastService>('SsToastService', ['open']);
     alertSpy.open.and.returnValue(of(undefined));
+    mediaSpy = jasmine.createSpyObj<MediaService>('MediaService', ['uploadImage']);
+    mediaSpy.uploadImage.and.returnValue(of(uploaded));
 
     await TestBed.configureTestingModule({
       imports: [VenueEditComponent],
@@ -92,6 +136,7 @@ describe('VenueEditComponent', () => {
         { provide: VenueService, useValue: venueSpy },
         { provide: AcademyService, useValue: academySpy },
         { provide: FacilityService, useValue: facilitySpy },
+        { provide: MediaService, useValue: mediaSpy },
         { provide: Router, useValue: routerSpy },
         { provide: SsToastService, useValue: alertSpy },
       ],
@@ -110,6 +155,8 @@ describe('VenueEditComponent', () => {
   }
 
   const form = () => component.form;
+  const q = (testid: string): HTMLElement | null =>
+    fixture.nativeElement.querySelector(`[data-testid="${testid}"]`);
   const createBody = (): CreateVenueDto => venueSpy.createVenue.calls.mostRecent().args[0];
   const updateBody = (): UpdateVenueDto => venueSpy.updateVenue.calls.mostRecent().args[1];
 
@@ -356,6 +403,50 @@ describe('VenueEditComponent', () => {
       form().controls.partnerFacility.setValue('f-gone');
       expect(component['unknownPartner']()).toBe('f-gone');
     });
+
+    describe('photos', () => {
+      it('uploads a cover with the venue-photo scope; the POST carries its media fields', () => {
+        expect(q('cover-drop')).not.toBeNull();
+        const file = imageFile();
+        component['onImageSelected']('cover', fileEvent(file));
+
+        expect(mediaSpy.uploadImage).toHaveBeenCalledWith(file, 'venue-photo');
+        expect(form().controls.cover.value).toEqual(uploadedPayload);
+        fixture.detectChanges();
+        expect(q('cover-preview')!.querySelector('img')!.getAttribute('src')).toBe(
+          uploaded.thumbUrl!,
+        );
+        expect(q('cover-source')).toBeNull();
+        expect(q('logo-drop')).not.toBeNull();
+
+        form().controls.name.setValue('X');
+        component['onSubmit']();
+        expect(createBody().cover).toEqual(uploadedPayload);
+        expect('logo' in createBody()).toBeFalse();
+      });
+
+      it('rejects a non-image file before uploading', () => {
+        const file = new File(['x'], 'menu.pdf', { type: 'application/pdf' });
+        component['onImageSelected']('logo', fileEvent(file));
+        expect(mediaSpy.uploadImage).not.toHaveBeenCalled();
+        expect(alertSpy.open).toHaveBeenCalledWith(
+          'გთხოვთ აირჩიოთ სურათის ფაილი',
+          jasmine.objectContaining({ appearance: 'error' }),
+        );
+      });
+
+      it('toasts when uploads are not configured here and leaves the slot empty', () => {
+        mediaSpy.uploadImage.and.returnValue(throwError(() => new MediaUnconfiguredError()));
+        component['onImageSelected']('logo', fileEvent(imageFile()));
+
+        expect(form().controls.logo.value).toBeNull();
+        expect(component['isUploadingImage']()).toBeFalse();
+        expect(alertSpy.open).toHaveBeenCalledWith(
+          'სურათების ატვირთვა ამ გარემოში არ არის კონფიგურირებული',
+          jasmine.objectContaining({ appearance: 'error' }),
+        );
+      });
+    });
   });
 
   describe('edit mode (/venues/:id)', () => {
@@ -423,6 +514,89 @@ describe('VenueEditComponent', () => {
       const hours = updateBody().openingHours!;
       expect(hours.sun).toBeNull();
       expect(hours.sat).toEqual({ open: '09:00', close: '01:00' });
+    });
+
+    describe('photos', () => {
+      it('previews the loaded images and captions the borrowed cover with its source', () => {
+        expect(q('cover-preview')!.querySelector('img')!.getAttribute('src')).toBe(
+          existing.cover!.thumbUrl!,
+        );
+        expect(q('logo-preview')).not.toBeNull();
+
+        const source = q('cover-source') as HTMLAnchorElement;
+        expect(source.getAttribute('href')).toBe('https://padelspot.ge/venues/aia-padel');
+        expect(source.getAttribute('target')).toBe('_blank');
+        expect(source.getAttribute('rel')).toBe('noopener');
+        expect(source.textContent).toContain('წყარო: padelspot.ge');
+        // the logo carries no provenance → no caption
+        expect(q('logo-source')).toBeNull();
+      });
+
+      it('leaves untouched images out of the PUT, so a re-save keeps their provenance', () => {
+        component['onSubmit']();
+
+        const body = updateBody();
+        expect('cover' in body).toBeFalse();
+        expect('logo' in body).toBeFalse();
+      });
+
+      it('a replaced cover goes over as its media fields only, and its source caption goes', () => {
+        component['onImageSelected']('cover', fileEvent(imageFile()));
+        fixture.detectChanges();
+
+        expect(q('cover-source')).toBeNull();
+        expect(q('cover-preview')!.querySelector('img')!.getAttribute('src')).toBe(
+          uploaded.thumbUrl!,
+        );
+
+        component['onSubmit']();
+        const body = updateBody();
+        expect(body.cover).toEqual(uploadedPayload);
+        expect('logo' in body).toBeFalse();
+      });
+
+      it('a removed logo goes over as logo: null while the cover stays out', () => {
+        q('logo-remove')!.click();
+        fixture.detectChanges();
+        expect(q('logo-preview')).toBeNull();
+        expect(q('logo-drop')).not.toBeNull();
+
+        component['onSubmit']();
+        const body = updateBody();
+        expect('logo' in body).toBeTrue();
+        expect(body.logo).toBeNull();
+        expect('cover' in body).toBeFalse();
+      });
+
+      it('removing the borrowed cover hides its source caption', () => {
+        component['removeImage']('cover');
+        fixture.detectChanges();
+
+        expect(q('cover-preview')).toBeNull();
+        expect(q('cover-source')).toBeNull();
+      });
+
+      it('blocks save while an upload runs', () => {
+        const upload$ = new Subject<IMedia>();
+        mediaSpy.uploadImage.and.returnValue(upload$);
+
+        component['onImageSelected']('logo', fileEvent(imageFile()));
+        fixture.detectChanges();
+        expect(component['isUploadingImage']()).toBeTrue();
+        expect((q('venue-save') as HTMLButtonElement).disabled).toBeTrue();
+
+        component['onSubmit']();
+        expect(venueSpy.updateVenue).not.toHaveBeenCalled();
+
+        upload$.next(uploaded);
+        fixture.detectChanges();
+        expect(component['isUploadingImage']()).toBeFalse();
+        expect((q('venue-save') as HTMLButtonElement).disabled).toBeFalse();
+
+        component['onSubmit']();
+        expect(updateBody().logo).toEqual(uploadedPayload);
+        expect('cover' in updateBody()).toBeFalse();
+      });
     });
   });
 

@@ -26,6 +26,24 @@ export interface VenueDayHours {
 /** Per-day hours; `null` = closed that day. An absent object = hours unknown. */
 export type VenueOpeningHours = Record<VenueDay, VenueDayHours | null>;
 
+/**
+ * A venue image — the `cover` (page hero + card) or the club `logo`, uploaded
+ * under media scope `venue-photo` — as the admin read returns it (the API's
+ * IMedia, whose `size` may be absent). `metadata.sourceUrl` records where a
+ * borrowed photo came from, so a takedown request can be traced; the admin
+ * never sends `metadata` back.
+ */
+export interface VenueImage {
+  url: string;
+  type: string;
+  thumbUrl?: string;
+  key?: string;
+  thumbKey?: string;
+  size?: number;
+  metadata?: { sourceUrl?: string; [key: string]: unknown } | null;
+  id?: string;
+}
+
 /** A venue as returned by `GET /venues` and `GET /venues/:id`. */
 export interface Venue {
   _id: string;
@@ -60,6 +78,8 @@ export interface Venue {
   openingHours?: VenueOpeningHours | null;
   description?: string;
   descriptionEn?: string;
+  cover?: VenueImage | null;
+  logo?: VenueImage | null;
   kind: VenueKind;
   status: VenueStatus;
   /** Linked bookable facility id once the venue became a partner. */
@@ -100,6 +120,9 @@ export interface CreateVenueDto {
   openingHours?: VenueOpeningHours;
   description?: string;
   descriptionEn?: string;
+  /** Media fields only (url, type, thumbUrl, key, thumbKey). */
+  cover?: VenueImage;
+  logo?: VenueImage;
   kind: VenueKind;
   status: VenueStatus;
   partnerFacility?: string;
@@ -108,7 +131,8 @@ export interface CreateVenueDto {
 /**
  * `PUT /venues/:id` body — every key optional. An explicit `null` clears an
  * optional field server-side (a cleared partner link, website, price bound, a
- * whole opening-hours block …); omitting a key leaves it untouched.
+ * whole opening-hours block, the cover or logo …); omitting a key leaves it
+ * untouched.
  */
 export type UpdateVenueDto = {
   [K in keyof CreateVenueDto]?: CreateVenueDto[K] | null;

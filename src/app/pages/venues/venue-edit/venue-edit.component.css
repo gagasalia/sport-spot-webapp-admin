@@ -174,6 +174,77 @@
   font-weight: 600;
 }
 
+/* ── photos: a wide cover beside a square logo (stacked on mobile) ──────── */
+.vf-image {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.vf-image > .ss-label,
+.vf-image > .vf-hint {
+  margin: 0;
+}
+.vf-image-preview {
+  width: 100%;
+  max-width: 420px;
+}
+.vf-image-preview img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+}
+.vf-image-preview.is-logo {
+  width: 140px;
+}
+.vf-image-preview.is-logo img {
+  height: 140px;
+  aspect-ratio: 1;
+  padding: 8px;
+  object-fit: contain;
+  background: #fff;
+}
+/* where a borrowed photo came from — the trail for a takedown request */
+.vf-image-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  font-size: 12px;
+  color: var(--tui-text-secondary);
+  text-decoration: none;
+}
+.vf-image-source:hover {
+  color: var(--tui-text-primary);
+  text-decoration: underline;
+}
+.vf-image-source .ss-ic {
+  flex: none;
+  width: 12px;
+  height: 12px;
+}
+.vf-image-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vf-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+  text-align: center;
+  border: 2px dashed var(--tui-border-hover);
+  border-radius: var(--r-md);
+}
+
 .vf-actions {
   display: flex;
   justify-content: flex-end;

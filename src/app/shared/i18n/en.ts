@@ -1465,6 +1465,13 @@ export const EN: Record<string, string> = {
   'არ არის პარტნიორი': 'Not a partner',
   'უცნობი ობიექტი': 'Unknown facility',
   'აირჩიეთ, როცა კლუბი პლატფორმას შემოუერთდება': 'Pick one once the club joins the platform',
+  // photos (cover + logo); the other buttons and the upload toasts reuse existing keys
+  'ფოტოები': 'Photos',
+  'ფოტო (ქავერი)': 'Cover photo',
+  'ლოგოს შეცვლა': 'Change logo',
+  'რეკომენდებული: ჰორიზონტალური ფოტო (16:9), მინ. 1600×900':
+    'Recommended: a landscape photo (16:9), min. 1600×900',
+  'რეკომენდებული: კვადრატული ლოგო, მინ. 400×400': 'Recommended: a square logo, min. 400×400',
 
   // ── articles / blog (superadmin, docs/26 §WP-3) ───────────────────────
   // (category names «რჩევები» / «ადგილები» / «სიახლეები» translate in

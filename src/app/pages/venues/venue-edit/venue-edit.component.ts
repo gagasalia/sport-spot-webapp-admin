@@ -20,10 +20,15 @@ import {
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { map, startWith, take } from 'rxjs';
+import { finalize, map, startWith, take } from 'rxjs';
 import { VenueService } from '../../../services/http-services/venue.service';
 import { AcademyService } from '../../../services/http-services/academy.service';
 import { FacilityService } from '../../../services/http-services/facility.service';
+import {
+  MediaFileTooLargeError,
+  MediaService,
+  MediaUnconfiguredError,
+} from '../../../services/http-services/media.service';
 import {
   CreateVenueDto,
   UpdateVenueDto,
@@ -49,6 +54,7 @@ import {
   Venue,
   VenueDay,
   VenueDayHours,
+  VenueImage,
   VenueKind,
   VenueOpeningHours,
   VenueStatus,
@@ -126,6 +132,33 @@ type DayForm = FormGroup<{
 
 type VenueFormControls = VenueEditComponent['form']['controls'];
 
+/** The venue's two images; both upload under media scope `venue-photo`. */
+export type VenueImageSlot = 'cover' | 'logo';
+
+/** The «ფოტოები» section's slots, in display order (texts RAW Georgian, translated at render). */
+const IMAGE_SLOTS: readonly {
+  id: VenueImageSlot;
+  label: string;
+  change: string;
+  choose: string;
+  hint: string;
+}[] = [
+  {
+    id: 'cover',
+    label: 'ფოტო (ქავერი)',
+    change: 'ფოტოს შეცვლა',
+    choose: 'სურათის არჩევა',
+    hint: 'რეკომენდებული: ჰორიზონტალური ფოტო (16:9), მინ. 1600×900',
+  },
+  {
+    id: 'logo',
+    label: 'ლოგო',
+    change: 'ლოგოს შეცვლა',
+    choose: 'ლოგოს არჩევა',
+    hint: 'რეკომენდებული: კვადრატული ლოგო, მინ. 400×400',
+  },
+];
+
 /**
  * Venue create/edit page (`/venues/new`, `/venues/:id`) — the full-page form
  * of the directory (docs/26 §WP-1b). Money is edited in GEL and sent as
@@ -133,7 +166,9 @@ type VenueFormControls = VenueEditComponent['form']['controls'];
  * unknown hours never publishes invented ones, and a day off goes over as
  * `null`. On create empty optional fields are left out (the API also derives
  * the slug); on edit a cleared optional field is sent as `null` so the API
- * unsets it.
+ * unsets it. The cover and logo are the exception: an edit sends them only
+ * when changed in this session (new upload, or `null` = removed), so a plain
+ * re-save never overwrites a stored image and its `metadata.sourceUrl`.
  */
 @Component({
   selector: 'app-venue-edit',
@@ -150,9 +185,11 @@ export class VenueEditComponent implements OnInit {
   private readonly venueService = inject(VenueService);
   private readonly academyService = inject(AcademyService);
   private readonly facilityService = inject(FacilityService);
+  private readonly mediaService = inject(MediaService);
   private readonly alerts = inject(SsToastService);
   private readonly destroyRef = inject(DestroyRef);
 
+  protected readonly imageSlots = IMAGE_SLOTS;
   protected readonly otherCity = OTHER_CITY;
   protected readonly cityOptions = VENUE_CITY_OPTIONS;
   protected readonly districtOptions = DISTRICT_OPTIONS;
@@ -170,6 +207,15 @@ export class VenueEditComponent implements OnInit {
   protected readonly hasError = signal(false);
   protected readonly isSaving = signal(false);
   protected readonly partnerOptions = signal<PartnerFacilityOption[]>([]);
+  /** Image slots with an upload in flight. */
+  private readonly uploading = signal<Record<VenueImageSlot, boolean>>({
+    cover: false,
+    logo: false,
+  });
+  /** Save waits for every running upload. */
+  protected readonly isUploadingImage = computed(
+    () => this.uploading().cover || this.uploading().logo,
+  );
 
   /** Input `maxlength`s — the API's caps, so typing simply stops at the limit. */
   protected readonly limits = {
@@ -220,6 +266,9 @@ export class VenueEditComponent implements OnInit {
       // texts
       description: ['', [Validators.maxLength(VENUE_DESCRIPTION_MAX)]],
       descriptionEn: ['', [Validators.maxLength(VENUE_DESCRIPTION_MAX)]],
+      // images (dirty = changed in this session — only then do they go over)
+      cover: this.fb.control<VenueImage | null>(null),
+      logo: this.fb.control<VenueImage | null>(null),
       // partner link ('' = none)
       partnerFacility: [''],
     },
@@ -255,6 +304,27 @@ export class VenueEditComponent implements OnInit {
     ),
     { requireSync: true },
   );
+
+  private readonly coverValue = toSignal(
+    this.form.controls.cover.valueChanges.pipe(startWith(this.form.controls.cover.value)),
+    { requireSync: true },
+  );
+  private readonly logoValue = toSignal(
+    this.form.controls.logo.valueChanges.pipe(startWith(this.form.controls.logo.value)),
+    { requireSync: true },
+  );
+
+  /** Each slot's current image (null = none). */
+  protected readonly images = computed((): Record<VenueImageSlot, VenueImage | null> => ({
+    cover: this.coverValue(),
+    logo: this.logoValue(),
+  }));
+
+  /** Where each shown image was borrowed from; a fresh upload carries none. */
+  protected readonly imageSources = computed((): Record<VenueImageSlot, ImageSource | null> => ({
+    cover: imageSource(this.coverValue()),
+    logo: imageSource(this.logoValue()),
+  }));
 
   private readonly partnerValue = toSignal(
     this.form.controls.partnerFacility.valueChanges.pipe(
@@ -408,6 +478,8 @@ export class VenueEditComponent implements OnInit {
       hoursKnown: !!v.openingHours,
       description: v.description ?? '',
       descriptionEn: v.descriptionEn ?? '',
+      cover: v.cover ?? null,
+      logo: v.logo ?? null,
       partnerFacility: v.partnerFacility ?? '',
     });
     for (const day of VENUE_DAYS) {
@@ -421,10 +493,76 @@ export class VenueEditComponent implements OnInit {
     }
   }
 
+  // ── images (cover + logo) ──────────────────────────────────────────────────
+
+  protected onImageSelected(slot: VenueImageSlot, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (file) this.uploadImage(slot, file);
+  }
+
+  protected onImageDragOver(event: DragEvent): void {
+    event.preventDefault();
+  }
+
+  protected onImageDrop(slot: VenueImageSlot, event: DragEvent): void {
+    event.preventDefault();
+    const file = event.dataTransfer?.files?.[0];
+    if (file) this.uploadImage(slot, file);
+  }
+
+  protected isUploading(slot: VenueImageSlot): boolean {
+    return this.uploading()[slot];
+  }
+
+  private uploadImage(slot: VenueImageSlot, file: File): void {
+    if (!file.type.startsWith('image/')) {
+      this.toastError('გთხოვთ აირჩიოთ სურათის ფაილი');
+      return;
+    }
+    this.setUploading(slot, true);
+    this.mediaService
+      .uploadImage(file, 'venue-photo')
+      .pipe(
+        take(1),
+        finalize(() => this.setUploading(slot, false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (media) => this.setImage(slot, imagePayload(media)),
+        error: (error: unknown) => {
+          if (error instanceof MediaUnconfiguredError) {
+            this.toastError('სურათების ატვირთვა ამ გარემოში არ არის კონფიგურირებული');
+          } else if (error instanceof MediaFileTooLargeError) {
+            this.toastError('ფაილი ძალიან დიდია. მაქსიმალური ზომაა 10 MB.');
+          } else {
+            this.toastError('შეცდომა სურათის ატვირთვისას');
+          }
+        },
+      });
+  }
+
+  /** Removal is saved as `cover: null` / `logo: null` (the API then releases the media). */
+  protected removeImage(slot: VenueImageSlot): void {
+    this.setImage(slot, null);
+  }
+
+  /** Dirty marks the slot as changed in this session — only then does the PUT carry it. */
+  private setImage(slot: VenueImageSlot, image: VenueImage | null): void {
+    const control = this.form.controls[slot];
+    control.markAsDirty();
+    control.setValue(image);
+  }
+
+  private setUploading(slot: VenueImageSlot, on: boolean): void {
+    this.uploading.update((state) => ({ ...state, [slot]: on }));
+  }
+
   // ── save ───────────────────────────────────────────────────────────────────
 
   protected onSubmit(): void {
-    if (this.isSaving()) return;
+    if (this.isSaving() || this.isUploadingImage()) return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.alerts
@@ -513,6 +651,10 @@ export class VenueEditComponent implements OnInit {
     };
     // The slug is required while editing; never ask the API to unset it.
     if (dto.slug === null) delete dto.slug;
+    // An image goes over only when changed here: re-sending the stored object
+    // would overwrite it and drop its `metadata.sourceUrl` provenance.
+    if (this.form.controls.cover.dirty) dto.cover = v.cover ? imagePayload(v.cover) : null;
+    if (this.form.controls.logo.dirty) dto.logo = v.logo ? imagePayload(v.logo) : null;
     return dto;
   }
 
@@ -571,4 +713,37 @@ export class VenueEditComponent implements OnInit {
     if (!control.touched) return false;
     return error ? control.hasError(error) : control.invalid;
   }
+}
+
+/** A borrowed photo's origin: the link and the host the caption shows. */
+interface ImageSource {
+  url: string;
+  host: string;
+}
+
+/** `metadata.sourceUrl` as a caption link; anything but an http(s) URL shows none. */
+function imageSource(image: VenueImage | null): ImageSource | null {
+  const url = image?.metadata?.sourceUrl;
+  if (typeof url !== 'string') return null;
+  try {
+    const { protocol, hostname } = new URL(url);
+    return (protocol === 'https:' || protocol === 'http:') && hostname
+      ? { url, host: hostname }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Only the media fields the API stores — never `metadata`, `size` or a stray server-side key. */
+function imagePayload(
+  image: Pick<VenueImage, 'url' | 'type' | 'thumbUrl' | 'key' | 'thumbKey'>,
+): VenueImage {
+  return {
+    url: image.url,
+    type: image.type,
+    ...(image.thumbUrl ? { thumbUrl: image.thumbUrl } : {}),
+    ...(image.key ? { key: image.key } : {}),
+    ...(image.thumbKey ? { thumbKey: image.thumbKey } : {}),
+  };
 }

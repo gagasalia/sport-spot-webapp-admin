@@ -525,7 +525,107 @@
         </div>
       </section>
 
-      <!-- ── 7. Partner facility ─────────────────────────────────────────── -->
+      <!-- ── 7. Photos (media pipeline: webp web + thumb renditions) ──────── -->
+      <section class="ss-card vf-section">
+        <h2 class="vf-section-title georgian-text" lang="ka">{{ 'ფოტოები' | t }}</h2>
+        <div class="vf-grid">
+          @for (slot of imageSlots; track slot.id) {
+            <div class="ss-field vf-image" [attr.data-testid]="slot.id + '-slot'">
+              <span class="ss-label georgian-text" lang="ka">{{ slot.label | t }}</span>
+              @if (images()[slot.id]; as img) {
+                <div
+                  class="vf-image-preview"
+                  [class.is-logo]="slot.id === 'logo'"
+                  [attr.data-testid]="slot.id + '-preview'"
+                >
+                  <img [src]="img.thumbUrl || img.url" [alt]="slot.label | t" />
+                </div>
+                @if (imageSources()[slot.id]; as source) {
+                  <a
+                    class="vf-image-source georgian-text"
+                    lang="ka"
+                    [href]="source.url"
+                    target="_blank"
+                    rel="noopener"
+                    [attr.data-testid]="slot.id + '-source'"
+                  >
+                    {{ 'წყარო' | t }}: {{ source.host }}
+                    <i
+                      class="ss-ic"
+                      style="--ss-ic: url('assets/taiga-ui/icons/external-link.svg')"
+                    ></i>
+                  </a>
+                }
+                <div class="vf-image-actions">
+                  <button
+                    type="button"
+                    class="ss-btn ss-btn--outline ss-btn--s"
+                    [disabled]="isUploading(slot.id)"
+                    (click)="imageInput.click()"
+                  >
+                    <span class="georgian-text" lang="ka">
+                      {{ (isUploading(slot.id) ? 'იტვირთება...' : slot.change) | t }}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    class="ss-btn ss-btn--danger ss-btn--s"
+                    [disabled]="isUploading(slot.id)"
+                    [attr.data-testid]="slot.id + '-remove'"
+                    (click)="removeImage(slot.id)"
+                  >
+                    <i class="ss-ic" style="--ss-ic: url('assets/taiga-ui/icons/trash-2.svg')"></i>
+                    <span class="georgian-text" lang="ka">{{ 'წაშლა' | t }}</span>
+                  </button>
+                </div>
+              } @else {
+                <div
+                  class="vf-drop"
+                  [attr.data-testid]="slot.id + '-drop'"
+                  (dragover)="onImageDragOver($event)"
+                  (drop)="onImageDrop(slot.id, $event)"
+                >
+                  <i
+                    class="ss-ic ss-ic--lg"
+                    style="
+                      --ss-ic: url('assets/taiga-ui/icons/upload.svg');
+                      color: var(--tui-text-tertiary);
+                    "
+                  ></i>
+                  <p
+                    class="text-sm georgian-text"
+                    lang="ka"
+                    style="color: var(--tui-text-secondary)"
+                  >
+                    {{ 'გადმოიტანეთ სურათი ან აირჩიეთ ფაილი' | t }}
+                  </p>
+                  <button
+                    type="button"
+                    class="ss-btn ss-btn--outline ss-btn--s"
+                    [disabled]="isUploading(slot.id)"
+                    (click)="imageInput.click()"
+                  >
+                    <span class="georgian-text" lang="ka">
+                      {{ (isUploading(slot.id) ? 'იტვირთება...' : slot.choose) | t }}
+                    </span>
+                  </button>
+                </div>
+              }
+              <input
+                #imageInput
+                type="file"
+                accept="image/*"
+                class="hidden"
+                [attr.data-testid]="slot.id + '-input'"
+                (change)="onImageSelected(slot.id, $event)"
+              />
+              <span class="vf-hint georgian-text" lang="ka">{{ slot.hint | t }}</span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- ── 8. Partner facility ─────────────────────────────────────────── -->
       <section class="ss-card vf-section">
         <h2 class="vf-section-title georgian-text" lang="ka">{{ 'პარტნიორი ობიექტი' | t }}</h2>
         <label class="ss-field">
@@ -562,7 +662,7 @@
         <button
           class="ss-btn ss-btn--primary"
           type="submit"
-          [disabled]="isSaving()"
+          [disabled]="isSaving() || isUploadingImage()"
           data-testid="venue-save"
         >
           <span class="georgian-text" lang="ka">{{ 'შენახვა' | t }}</span>
