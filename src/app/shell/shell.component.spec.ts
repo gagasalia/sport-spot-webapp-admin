@@ -8,6 +8,7 @@ import { of } from 'rxjs';
 
 import { ShellComponent } from './shell.component';
 import { TPipe } from '../shared/i18n/t.pipe';
+import { ContactMessageService } from '../services/http-services/contact-message.service';
 import { AuthService } from '../shared/services/auth.service';
 import { TenantService } from '../shared/services/tenant.service';
 import { SsDialogService } from '../shared/ui/dialog.service';
@@ -22,6 +23,8 @@ describe('ShellComponent', () => {
   };
   let tenantStub: { clear: jasmine.Spy };
   let dialogStub: { open: jasmine.Spy };
+  // The inbox badge (docs/38): a signal for the count + the refresh call.
+  let inboxStub: { unread: ReturnType<typeof signal<number>>; refreshUnread: jasmine.Spy };
 
   beforeEach(async () => {
     authStub = {
@@ -31,6 +34,10 @@ describe('ShellComponent', () => {
     };
     tenantStub = { clear: jasmine.createSpy('clear') };
     dialogStub = { open: jasmine.createSpy('open').and.returnValue(of(true)) };
+    inboxStub = {
+      unread: signal(0),
+      refreshUnread: jasmine.createSpy('refreshUnread').and.returnValue(of(0)),
+    };
 
     await TestBed.configureTestingModule({
       imports: [ShellComponent],
@@ -40,6 +47,7 @@ describe('ShellComponent', () => {
         { provide: AuthService, useValue: authStub },
         { provide: TenantService, useValue: tenantStub },
         { provide: SsDialogService, useValue: dialogStub },
+        { provide: ContactMessageService, useValue: inboxStub },
       ],
       schemas: [NO_ERRORS_SCHEMA],
     })
@@ -97,6 +105,58 @@ describe('ShellComponent', () => {
     expect(shell.menuOpen()).toBeFalse();
     expect(document.body.style.overflow).toBe('');
     expect(document.documentElement.style.overflow).toBe('');
+  });
+
+  // The contact inbox (docs/38) heads the Super Admin group with its unread
+  // badge; operators never see it, and the count is only ever fetched for
+  // superadmins (the API refuses everyone else).
+  it('shows the inbox entry with its unread badge to superadmins only', () => {
+    const fixture = TestBed.createComponent(ShellComponent);
+    const shell = fixture.componentInstance as unknown as {
+      isMobile: { set(v: boolean): void };
+      toggleMenu(): void;
+      closeMenu(): void;
+    };
+    shell.isMobile.set(false);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[automation-id="contact-messages"]')).toBeNull();
+    expect(inboxStub.refreshUnread).not.toHaveBeenCalled();
+
+    authStub.isSuperAdmin.set(true);
+    inboxStub.unread.set(3);
+    fixture.detectChanges();
+    const link: HTMLElement = fixture.nativeElement.querySelector(
+      '[automation-id="contact-messages"]',
+    );
+    expect(link).not.toBeNull();
+    expect(link.getAttribute('routerLink')).toBe('/contact-messages');
+    expect(link.textContent).toContain('შეტყობინებები');
+    expect(link.querySelector('[data-testid="nav-unread"]')?.textContent?.trim()).toBe('3');
+    // first in the group, right after the Super Admin header
+    const previous = link.previousElementSibling as HTMLElement;
+    expect(previous.getAttribute('automation-id')).toBe('super-admin');
+
+    // no unread → no badge
+    inboxStub.unread.set(0);
+    fixture.detectChanges();
+    expect(link.querySelector('[data-testid="nav-unread"]')).toBeNull();
+
+    // Mobile: the same entry lives in the Menu sheet.
+    shell.isMobile.set(true);
+    shell.toggleMenu();
+    fixture.detectChanges();
+    expect(
+      fixture.nativeElement.querySelector('.menu-sheet [automation-id="contact-messages"]'),
+    ).not.toBeNull();
+    shell.closeMenu();
+    fixture.detectChanges();
+  });
+
+  it('fetches the unread count for a superadmin on creation', () => {
+    authStub.isSuperAdmin.set(true);
+    const fixture = TestBed.createComponent(ShellComponent);
+    fixture.detectChanges();
+    expect(inboxStub.refreshUnread).toHaveBeenCalled();
   });
 
   // The venues directory is a superadmin tool; it lives in the (always open)

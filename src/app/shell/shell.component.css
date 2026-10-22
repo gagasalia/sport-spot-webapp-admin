@@ -173,6 +173,34 @@
   padding-left: 38px;
   font-size: 13px;
 }
+/* unread count on the inbox entry (docs/38) */
+.nav-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+  background: var(--tui-background-accent-1);
+}
+.shell-aside.is-collapsed .nav-item {
+  position: relative;
+}
+.shell-aside.is-collapsed .nav-badge {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+}
 .aside-foot {
   flex: 0 0 auto;
   padding-top: 10px;

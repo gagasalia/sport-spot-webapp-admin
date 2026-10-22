@@ -15,6 +15,7 @@ import { filter, take } from 'rxjs';
 import { I18nService } from '../shared/i18n/i18n.service';
 import { tr } from '../shared/i18n/lang';
 import { TPipe } from '../shared/i18n/t.pipe';
+import { ContactMessageService } from '../services/http-services/contact-message.service';
 import { AuthService } from '../shared/services/auth.service';
 import { TenantService } from '../shared/services/tenant.service';
 import { SsConfirmComponent, SsConfirmData } from '../shared/ui/confirm.component';
@@ -52,10 +53,13 @@ export class ShellComponent {
   private readonly theme = inject(SsThemeService);
   private readonly dialogs = inject(SsDialogService);
   private readonly i18n = inject(I18nService);
+  private readonly inbox = inject(ContactMessageService);
 
   protected readonly darkMode = this.theme.dark;
   protected readonly isEnglish = this.i18n.isEnglish;
   protected readonly isSuperAdmin = this.auth.isSuperAdmin;
+  /** Unread contact messages (docs/38) — the badge on the inbox entry. */
+  protected readonly unread = this.inbox.unread;
   /** A tournament maker (docs/33 §6): the nav holds «ტურნირები» only. */
   protected readonly isOrganizer = this.auth.isOrganizer;
   /** Where the brand mark leads. */
@@ -86,6 +90,7 @@ export class ShellComponent {
 
   constructor() {
     this.checkMobile();
+    this.refreshUnread();
     this.router.events
       .pipe(
         filter((e): e is NavigationEnd => e instanceof NavigationEnd),
@@ -95,6 +100,8 @@ export class ShellComponent {
         this.url.set(e.urlAfterRedirects);
         // Back/forward also dismisses the sheet, not just taps on its tiles.
         this.menuOpen.set(false);
+        // One cheap count per navigation keeps the inbox badge honest.
+        this.refreshUnread();
       });
 
     // The sheet is modal: freeze the page behind it so a stray drag scrolls the
@@ -122,6 +129,17 @@ export class ShellComponent {
 
   private checkMobile(): void {
     this.isMobile.set(typeof window !== 'undefined' && window.innerWidth <= 768);
+  }
+
+  /** Superadmins only (the API refuses everyone else); a failure keeps the last count. */
+  private refreshUnread(): void {
+    if (!this.isSuperAdmin()) {
+      return;
+    }
+    this.inbox
+      .refreshUnread()
+      .pipe(take(1))
+      .subscribe({ error: () => undefined });
   }
 
   protected handleToggle(): void {

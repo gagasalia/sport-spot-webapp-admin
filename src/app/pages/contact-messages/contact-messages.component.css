@@ -1,0 +1,99 @@
+/* ── filter row: status tabs + topic select + search ─────────────────────── */
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+.search-field {
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+.select-field {
+  flex: 0 1 190px;
+  min-width: 160px;
+}
+
+/* segmented status tabs (all / new / read / archived) */
+.status-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--r-md, 10px);
+  background: var(--tui-background-neutral-1);
+  align-self: flex-end;
+}
+.status-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--tui-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.status-tab:hover {
+  color: var(--tui-text-primary);
+}
+.status-tab.is-active {
+  background: var(--tui-background-base);
+  color: var(--tui-text-primary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--tui-background-accent-1);
+}
+
+/* ── rows: the whole row opens the reading dialog ───────────────────────── */
+.msg-row,
+.msg-card {
+  cursor: pointer;
+}
+.msg-row:hover td {
+  background: var(--tui-background-neutral-1);
+}
+.msg-row:focus-visible,
+.msg-card:focus-visible {
+  outline: 2px solid var(--tui-background-accent-1);
+  outline-offset: -2px;
+}
+/* unread = bold name + accent edge, the mail-client convention */
+.msg-row.is-unread td:first-child {
+  box-shadow: inset 3px 0 0 var(--tui-background-accent-1);
+}
+.msg-row.is-unread .msg-preview,
+.msg-card.is-unread .msg-preview {
+  color: var(--tui-text-primary);
+  font-weight: 500;
+}
+.msg-card.is-unread {
+  box-shadow: inset 3px 0 0 var(--tui-background-accent-1);
+}
+.msg-preview {
+  max-width: 420px;
+  color: var(--tui-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

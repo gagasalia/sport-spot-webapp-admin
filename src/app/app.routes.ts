@@ -187,6 +187,16 @@ export const routes: Routes = [
           ),
       },
       {
+        // Contact inbox (docs/38): messages from the player site's /contact
+        // form — addressed to the platform, so superadmin-only (API too).
+        path: 'contact-messages',
+        canActivate: [superAdminGuard],
+        loadComponent: () =>
+          import('./pages/contact-messages/contact-messages.component').then(
+            (m) => m.ContactMessagesComponent,
+          ),
+      },
+      {
         path: 'super-admin/academies-management',
         canActivate: [superAdminGuard],
         loadComponent: () =>
